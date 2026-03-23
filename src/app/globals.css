@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #080808;
+  --color-foreground: #ffffff;
+  
+  --color-primary: #cc0000;
+  --color-primary-foreground: #ffffff;
+
+  --color-accent: #ff3333;
+  --color-accent-foreground: #ffffff;
+  
+  --color-card: #0f0f0f;
+  --color-card-foreground: #ffffff;
+  
+  --color-border: #1a1a1a;
+  
+  --shadow-primary: 0 0 15px rgba(204, 0, 0, 0.4);
+  
+  --radius: 1rem;
+  
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+.manga-theme {
+  --color-primary: #ff6600; /* Distinct Orange */
+  --color-accent: #ffa500;
+  --color-primary-foreground: #ffffff;
+  --shadow-primary: 0 0 15px rgba(255, 102, 0, 0.4);
+}
+
+@utility glass {
+  background: rgba(15, 15, 15, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    @apply antialiased selection:bg-primary/30 selection:text-primary overflow-x-hidden;
+  }
+  
+  h1 { @apply text-[clamp(2.5rem,8vw,4.5rem)] font-black leading-[0.95] tracking-tighter; }
+  h2 { @apply text-[clamp(1.5rem,5vw,2.5rem)] font-bold tracking-tight; }
+  h3 { @apply text-[clamp(1.2rem,3vw,1.8rem)] font-semibold; }
+
+  a {
+    @apply transition-all duration-300 ease-out;
+  }
+}
+
+/* Global Custom Scrollbar */
+@layer base {
+  :root {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-primary) var(--color-background);
+  }
+  
+  .manga-theme {
+    scrollbar-color: #ff6600 #080808;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-background);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-primary) 30%, transparent);
+    border-radius: 20px;
+    border: 3px solid var(--color-background);
+    transition: all 0.3s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary);
+  }
+}
+
+/* Specific elements that might need it */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.01);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Video Player Range Styling - Removed Neon */
+.video-range-input::after {
+  content: "";
+  position: absolute;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: -10;
+  pointer-events: none;
+  width: var(--value);
+  background-color: var(--color-primary);
+}
+
+

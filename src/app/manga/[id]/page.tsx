@@ -1,0 +1,248 @@
+import { Navbar } from "@/components/Navbar";
+import { getAnimeDetails, getPopularAnime, getMangaDetails } from "@/lib/consumet";
+import { getAnimeTitle, getMangaFormat } from "@/lib/anime-utils";
+import Image from "next/image";
+import Link from "next/link";
+import { BookOpen, ListOrdered, Star, Calendar, Info, ChevronRight, Play } from "lucide-react";
+import { MangaCard } from "@/components/MangaCard";
+
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function MangaDetailPage({ params }: PageProps) {
+  const { id } = await params;
+  const manga = await getMangaDetails(id) as any;
+
+  if (!manga) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center px-4">
+        <h1 className="text-3xl font-black text-primary mb-4 uppercase italic tracking-tighter">Manga Not Found</h1>
+        <p className="text-white/40 mb-8 max-w-md">The requested title could not be retrieved from our providers. Please try again later.</p>
+        <Link href="/manga" className="px-8 py-3 bg-primary text-white rounded-xl font-bold uppercase tracking-widest shadow-xl shadow-primary/20">Back to Library</Link>
+      </div>
+    );
+  }
+
+  const title = getAnimeTitle(manga.title);
+  const chapters = manga.chapters || [];
+  const relations = manga.relations || [];
+  const recommendations = manga.recommendations || [];
+  const animeRelation = relations.find((r: any) => r.type === 'ANIME');
+
+  return (
+    <div className="min-h-screen bg-background text-foreground pb-20 manga-theme">
+      <Navbar />
+
+      {/* Hero Header */}
+      <div className="relative w-full min-h-[60vh] flex items-end">
+        <div className="absolute inset-0">
+          <Image
+            src={manga.cover || manga.image || ""}
+            alt={title}
+            fill
+            sizes="100vw"
+            className="object-cover object-top opacity-20"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/90 to-transparent" />
+        </div>
+
+        <div className="container relative z-10 px-6 md:px-12 mx-auto pb-16 pt-32">
+          <div className="flex flex-col lg:flex-row gap-12 items-start lg:items-end">
+            <div className="hidden lg:block w-64 shrink-0 rounded-3xl overflow-hidden shadow-2xl border border-white/5 relative aspect-[2/3]">
+              <Image
+                src={manga.image || ""}
+                alt="Poster"
+                fill
+                sizes="256px"
+                className="object-cover"
+                priority
+              />
+            </div>
+
+            <div className="flex-1 space-y-6">
+              <div>
+                <h1 className="text-4xl md:text-6xl font-black mb-4 tracking-tighter text-white uppercase italic">
+                  {title}
+                </h1>
+                <div className="flex items-center gap-4 text-xs font-black uppercase tracking-[0.2em] text-primary/60">
+                  <span>{getMangaFormat(manga.countryOfOrigin)}</span>
+                  <div className="w-1 h-1 bg-white/10 rounded-full" />
+                  <span>{manga.status?.replace(/_/g, ' ') || "Unknown"}</span>
+                  <div className="w-1 h-1 bg-white/10 rounded-full" />
+                  <span>{chapters.length} Chapters</span>
+                </div>
+              </div>
+
+              <div className="max-w-3xl">
+                <p className="text-base md:text-lg text-white/50 font-medium leading-relaxed line-clamp-4">
+                  {manga.description?.replace(/<[^>]*>?/gm, '') || "No description available."}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-6 pt-6 flex-wrap">
+                {chapters.length > 0 && (
+                  <Link 
+                    href={`/manga/read/${chapters[0].id}`}
+                    className="flex items-center gap-3 px-8 py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-primary/20 hover:scale-105 transition-all"
+                  >
+                    <BookOpen className="w-5 h-5" />
+                    Read Chapter 1
+                  </Link>
+                )}
+                
+                {animeRelation && (
+                  <Link 
+                    href={`/anime/${animeRelation.id}`}
+                    className="flex items-center gap-3 px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl transition-all border border-white/5"
+                  >
+                    <Play className="w-5 h-5 fill-current" />
+                    Watch Anime
+                  </Link>
+                )}
+
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Score</span>
+                    <div className="flex items-center gap-2 text-primary">
+                      <Star className="w-4 h-4 fill-current" />
+                      <span className="text-lg font-black italic">{(manga.rating || 85) / 10}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-6 md:px-12 mt-12">
+        <div className="flex flex-col lg:flex-row gap-12">
+          {/* Chapter List */}
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/5">
+              <div className="flex items-center gap-4">
+                <ListOrdered className="w-6 h-6 text-primary" />
+                <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Chapters List</h2>
+              </div>
+              <span className="text-xs font-black text-white/20 uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5">
+                Total {chapters.length}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {chapters.length > 0 ? chapters.map((chapter: any, index: number) => (
+                <Link 
+                  key={chapter.id} 
+                  href={`/manga/read/${chapter.id}`}
+                  className="group flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-sm group-hover:bg-primary group-hover:text-white transition-colors">
+                      {chapter.number || index + 1}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white/80 group-hover:text-white transition-colors">
+                        Chapter {chapter.number || index + 1}
+                      </h4>
+                      <p className="text-[10px] text-white/20 font-black uppercase tracking-widest line-clamp-1">
+                        {chapter.title || "Untitled Chapter"}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-primary transition-all translate-x-0 group-hover:translate-x-1" />
+                </Link>
+              )) : (
+                <div className="col-span-full py-20 text-center text-white/20 font-medium italic bg-white/5 rounded-[2.5rem] border border-white/5">
+                   No chapters indexed yet. Our library is updating daily.
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Sidebar Info */}
+          <aside className="w-full lg:w-96 shrink-0 space-y-8">
+            <div className="p-8 bg-card/40 border border-white/5 rounded-[2.5rem] space-y-8">
+              <h3 className="text-lg font-black uppercase tracking-widest text-white flex items-center gap-3">
+                 <div className="w-2 h-2 bg-primary rounded-full shadow-[var(--shadow-primary)]" />
+                 Media Details
+              </h3>
+              
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 rounded-lg bg-white/5 text-primary">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-white/20 uppercase tracking-widest block mb-0.5">Release Date</span>
+                    <span className="text-sm font-bold text-white/80">{manga.releaseDate || "2024"}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="p-2 rounded-lg bg-white/5 text-primary">
+                    <Info className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-white/20 uppercase tracking-widest block mb-0.5">Genres</span>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {manga.genres?.map((genre: string) => (
+                        <span key={genre} className="px-2 py-0.5 bg-white/5 text-[10px] font-black text-white/60 rounded-md uppercase tracking-tight">
+                          {genre}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                {relations.length > 0 && (
+                  <div className="pt-6 border-t border-white/5 space-y-4">
+                    <span className="text-[10px] font-black text-white/20 uppercase tracking-widest block">Relations</span>
+                    {relations.slice(0, 3).map((rel: any) => (
+                       <Link key={rel.id} href={rel.type === 'MANGA' ? `/manga/${rel.id}` : `/anime/${rel.id}`} className="flex items-center gap-3 group">
+                         <div className="w-12 h-16 rounded-lg overflow-hidden bg-white/5 relative shrink-0">
+                           <Image src={rel.image || ""} alt="" fill className="object-cover" />
+                         </div>
+                         <div>
+                           <h5 className="text-xs font-black text-white/70 group-hover:text-primary transition-colors line-clamp-2">{getAnimeTitle(rel.title)}</h5>
+                           <span className="text-[10px] font-black text-primary/50 uppercase tracking-widest">{rel.type === 'ANIME' ? 'Watch Now' : 'Read Now'}</span>
+                         </div>
+                       </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-6 md:px-12 mt-20">
+        {recommendations.length > 0 && (
+          <div className="space-y-8">
+            <h2 className="text-2xl md:text-3xl font-black uppercase tracking-widest text-white/40 flex items-center gap-4">
+               Similar Manga
+               <div className="h-[2px] flex-1 bg-white/10" />
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+              {recommendations.map((rec: any) => (
+                <MangaCard 
+                  key={rec.id}
+                  id={rec.id}
+                  title={getAnimeTitle(rec.title)}
+                  image={rec.image}
+                  rating={8.5}
+                  type={rec.type}
+                  countryOfOrigin={rec.countryOfOrigin}
+                  chapters={rec.chapters}
+                  chapterNumber={rec.chapters}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
