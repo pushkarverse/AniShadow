@@ -70,8 +70,8 @@ export function SearchFilters() {
   const activeFilterCount = currentGenres.length + (currentStatus ? 1 : 0) + (currentFormat ? 1 : 0) + (currentSeason ? 1 : 0);
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-4">
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-3">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all text-sm font-bold uppercase tracking-widest group"

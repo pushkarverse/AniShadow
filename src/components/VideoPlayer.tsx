@@ -53,12 +53,17 @@ export function VideoPlayer({
   poster,
   allServers = [],
 }: VideoPlayerProps): ReactElement {
+  const [sourceUrl, setSourceUrl] = useState(initialVideoUrl);
   const [currentVideoUrl, setCurrentVideoUrl] = useState(initialVideoUrl);
   const [isExtracting, setIsExtracting] = useState(false);
 
   // Audio group switching (Sub/Dub) inside the player
   const [activeAudioGroup, setActiveAudioGroup] = useState<"other" | "dub">("other");
   const [showAudioMenu, setShowAudioMenu] = useState(false);
+
+  useEffect(() => {
+    setSourceUrl(initialVideoUrl);
+  }, [initialVideoUrl]);
 
   const groupedServers = useMemo(() => {
     const dub: ServerEntry[] = [];
@@ -76,7 +81,7 @@ export function VideoPlayer({
     setActiveAudioGroup(kind);
     const nextServer = (kind === "dub" ? groupedServers.dub : groupedServers.other)[0];
     if (nextServer) {
-      setCurrentVideoUrl(nextServer.url);
+      setSourceUrl(nextServer.url);
     }
     setShowAudioMenu(false);
   };
@@ -106,15 +111,17 @@ export function VideoPlayer({
   
   // Update internal URL or extract direct stream if it's an embed provider
   useEffect(() => {
-    if (!initialVideoUrl) return;
+    if (!sourceUrl) return;
 
-    const urlLower = initialVideoUrl.toLowerCase();
+    const urlLower = sourceUrl.toLowerCase();
     const isVibe = urlLower.includes("vibeplayer.site");
     const isOtakuHg = urlLower.includes("otakuhg.site");
     const isOtakuVid = urlLower.includes("otakuvid.online");
 
+    setIsBuffering(true);
+
     if (!isVibe && !isOtakuHg && !isOtakuVid) {
-      setCurrentVideoUrl(initialVideoUrl);
+      setCurrentVideoUrl(sourceUrl);
       setIsExtracting(false);
       return;
     }
@@ -124,11 +131,11 @@ export function VideoPlayer({
 
     const extract = async () => {
       try {
-        const proxyUrl = `/api/stream?url=${encodeURIComponent(initialVideoUrl)}`;
+        const proxyUrl = `/api/stream?url=${encodeURIComponent(sourceUrl)}`;
         const res = await fetch(proxyUrl);
         if (!res.ok) {
           if (active) {
-            setCurrentVideoUrl(initialVideoUrl);
+            setCurrentVideoUrl(sourceUrl);
             setIsExtracting(false);
           }
           return;
@@ -155,11 +162,11 @@ export function VideoPlayer({
         if (m3u8Url) {
           setCurrentVideoUrl(m3u8Url);
         } else {
-          setCurrentVideoUrl(initialVideoUrl);
+          setCurrentVideoUrl(sourceUrl);
         }
       } catch (err) {
         console.error("Client-side extraction error:", err);
-        if (active) setCurrentVideoUrl(initialVideoUrl);
+        if (active) setCurrentVideoUrl(sourceUrl);
       } finally {
         if (active) setIsExtracting(false);
       }
@@ -170,7 +177,7 @@ export function VideoPlayer({
     return () => {
       active = false;
     };
-  }, [initialVideoUrl]);
+  }, [sourceUrl]);
 
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -219,10 +226,10 @@ export function VideoPlayer({
   };
 
   const proxiedSubtitleUrl = useMemo(() => {
-    const sub = getSubtitleUrl(initialVideoUrl);
+    const sub = getSubtitleUrl(sourceUrl);
     if (!sub) return "";
     return `/api/stream?url=${encodeURIComponent(sub)}`;
-  }, [initialVideoUrl]);
+  }, [sourceUrl]);
 
   const formatTime = (time: number) => {
     const mins = Math.floor(time / 60);
@@ -487,12 +494,7 @@ export function VideoPlayer({
     setLevels([]);
     setCurrentLevel(-1);
     setShowQualityMenu(false);
-    setIsBuffering(true);
-  }, [initialVideoUrl]);
-
-  useEffect(() => {
-    setIsBuffering(true);
-  }, [currentVideoUrl]);
+  }, [sourceUrl]);
 
   useEffect(() => {
     if (!currentVideoUrl) return;
@@ -649,6 +651,10 @@ export function VideoPlayer({
           allowFullScreen
           allow="autoplay; encrypted-media; picture-in-picture"
           sandbox="allow-scripts allow-same-origin allow-forms"
+          onLoad={() => {
+            setIsBuffering(false);
+            setIsExtracting(false);
+          }}
         />
       ) : (
         <>
@@ -660,14 +666,9 @@ export function VideoPlayer({
             onTimeUpdate={() => {
                 const time = videoRef.current?.currentTime || 0;
                 setProgress(time);
-                if (time > 5) localStorage.setItem(`anis-progress-${title}-${episodeTitle}`, time.toString());
             }}
             onLoadedMetadata={() => {
                 setDuration(videoRef.current?.duration || 0);
-                const saved = localStorage.getItem(`anis-progress-${title}-${episodeTitle}`);
-                if (saved && videoRef.current) {
-                    videoRef.current.currentTime = parseFloat(saved);
-                }
             }}
             onClick={handleVideoClick}
             onPlay={() => setIsPlaying(true)}
