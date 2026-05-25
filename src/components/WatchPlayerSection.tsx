@@ -146,35 +146,6 @@ export function WatchPlayerSection({
         )}
       </div>
 
-      {activeGroupServers.length > 1 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/5 bg-black/80 px-4 py-3">
-          <span className="text-[10px] font-black uppercase tracking-[0.25em] text-white/30 mr-1 shrink-0">
-            Select Server
-          </span>
-          <div className="flex flex-wrap items-center gap-2">
-            {activeGroupServers.map((server) => {
-              const isSelected = selectedServer === server.name;
-              return (
-                <button
-                  key={server.name + "-" + server.url}
-                  onClick={() => {
-                    setSelectedServer(server.name);
-                    setCurrentVideoUrl(server.url);
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all ${
-                    isSelected
-                      ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                      : "bg-white/5 border-white/10 text-white/45 hover:text-white hover:bg-white/10"
-                  }`}
-                >
-                  {server.name}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       <div className="flex flex-col gap-2">
         <h1 className="text-[clamp(1.5rem,4vw,2.5rem)] font-black tracking-tighter leading-none text-white">{title}</h1>
         <p className="text-lg text-primary font-black uppercase tracking-widest opacity-80">
