@@ -187,7 +187,26 @@ export function VideoPlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [buffered, setBuffered] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+
+  const updateBuffered = () => {
+    const video = videoRef.current;
+    if (video && video.buffered.length > 0 && duration > 0) {
+      const time = video.currentTime;
+      let currentBufferEnd = 0;
+      for (let i = 0; i < video.buffered.length; i++) {
+        if (video.buffered.start(i) <= time && time <= video.buffered.end(i)) {
+          currentBufferEnd = video.buffered.end(i);
+          break;
+        }
+      }
+      if (currentBufferEnd === 0) {
+        currentBufferEnd = video.buffered.end(0);
+      }
+      setBuffered(currentBufferEnd);
+    }
+  };
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -516,10 +535,12 @@ export function VideoPlayer({
     setCurrentLevel(-1);
     setShowQualityMenu(false);
     setIsBuffering(true);
+    setBuffered(0);
   }, [initialVideoUrl]);
 
   useEffect(() => {
     setIsBuffering(true);
+    setBuffered(0);
     if (videoRef.current && !videoRef.current.paused) {
       wasPlayingRef.current = true;
     } else {
@@ -693,9 +714,14 @@ export function VideoPlayer({
                 const time = videoRef.current?.currentTime || 0;
                 setProgress(time);
                 lastTimeRef.current = time;
+                updateBuffered();
+            }}
+            onProgress={() => {
+                updateBuffered();
             }}
             onLoadedMetadata={() => {
                 setDuration(videoRef.current?.duration || 0);
+                updateBuffered();
                 if (videoRef.current) {
                     videoRef.current.currentTime = lastTimeRef.current;
                     if (wasPlayingRef.current) {
@@ -819,7 +845,7 @@ export function VideoPlayer({
                   }}
                   className="flex-1 h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 transition-all focus:outline-none"
                   style={{
-                    background: `linear-gradient(to right, rgb(220, 38, 38) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.2) ${(duration ? (progress / duration) * 100 : 0)}%)`
+                    background: `linear-gradient(to right, rgb(220, 38, 38) 0%, rgb(220, 38, 38) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) 100%)`
                   }}
                 />
                 <span className="text-white/80 text-xs font-mono">{formatTime(duration)}</span>
