@@ -988,7 +988,7 @@ export function VideoPlayer({
                       onMouseLeave={handleProgressBarMouseLeave}
                       className="w-full h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 transition-all focus:outline-none"
                       style={{
-                        background: `linear-gradient(to right, rgb(220, 38, 38) 0%, rgb(220, 38, 38) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(120, 120, 120, 0.6) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(120, 120, 120, 0.6) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.1) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.1) 100%)`
+                        background: `linear-gradient(to right, rgb(220, 38, 38) 0%, rgb(220, 38, 38) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) 100%)`
                       }}
                     />
                   </div>

@@ -672,7 +672,6 @@ export async function getSeasonalAnime(season: string, year: number, page: numbe
       subEpisodes: getReleasedAnimeEpisodesCount(m)
     })) || [];
     results = await enrichAnimeResultsWithSubDub(results);
-
     return { results, hasNextPage: pageInfo?.hasNextPage || false };
   } catch {
     return { results: [], hasNextPage: false };
@@ -754,7 +753,6 @@ export async function advancedSearchAnime({
       countryOfOrigin: m.countryOfOrigin
     })) || [];
     results = await enrichAnimeResultsWithSubDub(results);
-
     return { results, hasNextPage: pageInfo?.hasNextPage || false };
   } catch {
     return { results: [], hasNextPage: false };
@@ -800,8 +798,7 @@ export async function getMediaByGenre(genres: string[], type: 'ANIME' | 'MANGA' 
       subEpisodes: m.type === "MANGA" ? m.chapters : getReleasedAnimeEpisodesCount(m),
       countryOfOrigin: m.countryOfOrigin
     })) || [];
-    const enrichedWithHianime = await enrichAnimeResultsWithSubDub(results);
-    return enrichedWithHianime;
+    return await enrichAnimeResultsWithSubDub(results);
   } catch {
     return [];
   }
@@ -846,7 +843,6 @@ export async function getPopularAnime(page: number = 1, perPage: number = 20) {
       subEpisodes: getReleasedAnimeEpisodesCount(m)
     })) || [];
     results = await enrichAnimeResultsWithSubDub(results);
-
     return { results, hasNextPage: pageInfo?.hasNextPage || false };
   } catch {
     return { results: [], hasNextPage: false };
@@ -855,12 +851,14 @@ export async function getPopularAnime(page: number = 1, perPage: number = 20) {
 
 export async function getAnimeDetails(id: string): Promise<IAnimeInfo | null> {
   try {
+    // 1. Try direct GraphQL first (Most reliable, no scraper noise)
     const directData = await fetchAnilistDirect(id);
     if (directData) return directData;
   } catch (e) {
     console.error("Anime details fetch failed:", e);
   }
 
+  // 2. Try library provider (Anilist mapping) as a fallback
   const provider = getAnilist();
   if (provider) {
     try {
@@ -869,6 +867,7 @@ export async function getAnimeDetails(id: string): Promise<IAnimeInfo | null> {
     } catch { }
   }
 
+  // 3. Fallback for slugs (Use AnimePahe as the primary detail provider for slugs)
   if (isNaN(Number(id))) {
     try {
       const pahe = getAnimePahe();
@@ -880,6 +879,7 @@ export async function getAnimeDetails(id: string): Promise<IAnimeInfo | null> {
 }
 
 function normalizeTitle(title: string): string[] {
+  // 1. Flatten curly quotes and special apostrophes for provider search compatibility
   const flatTitle = title.replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/\u2013|\u2014/g, "-");
   const variations = [flatTitle];
   if (flatTitle.includes(':')) variations.push(flatTitle.split(':')[0].trim());
@@ -890,6 +890,7 @@ function normalizeTitle(title: string): string[] {
   const tags = ['(TV)', '(Movie)', 'UNCENSORED', 'DUB', 'SUB', '(Dub)', '(Sub)'];
   let cleanTitle = flatTitle;
   tags.forEach(tag => {
+    // Simple case-insensitive replacement without regex for safety
     const index = cleanTitle.toLowerCase().indexOf(tag.toLowerCase());
     if (index !== -1) {
       cleanTitle = (cleanTitle.substring(0, index) + cleanTitle.substring(index + tag.length)).trim();
@@ -920,22 +921,12 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs = 10000): Promise<T
   return Promise.race([promise, timeout]);
 }
 
-function inferAudioKind(...values: Array<string | undefined>): "dub" | "hindi" | "other" {
+function inferAudioKind(...values: Array<string | undefined>): "dub" | "other" {
   const combined = values.filter(Boolean).join(" ").toLowerCase();
   if (/(english\s*dub|dual\s*audio|multi\s*audio|dubbed|\bdub\b)/i.test(combined)) {
     return "dub";
   }
-  if (/\b(hindi)\b/i.test(combined)) {
-    return "hindi";
-  }
   return "other";
-}
-
-interface StreamingLink {
-  url: string;
-  quality: string;
-  server?: string;
-  kind?: string;
 }
 
 async function attemptAniNekoStreaming(
@@ -943,8 +934,7 @@ async function attemptAniNekoStreaming(
   allVariations: string[],
   noSeasonVariations: string[],
   episodeNumber: number
-): Promise<StreamingLink[]> {
-
+): Promise<any[]> {
   const titleVariants = [...new Set([...titleCandidates, ...allVariations, ...noSeasonVariations])].filter(q => q && q.length > 2);
   console.log(`[AniNeko] Attempting streaming resolution for ep ${episodeNumber} with queries:`, titleVariants);
 
