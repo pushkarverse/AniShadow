@@ -934,7 +934,7 @@ async function attemptAniNekoStreaming(
   allVariations: string[],
   noSeasonVariations: string[],
   episodeNumber: number
-): Promise<any[]> {
+): Promise<any> {
   const titleVariants = [...new Set([...titleCandidates, ...allVariations, ...noSeasonVariations])].filter(q => q && q.length > 2);
   console.log(`[AniNeko] Attempting streaming resolution for ep ${episodeNumber} with queries:`, titleVariants);
 
@@ -1021,18 +1021,21 @@ async function attemptAniNekoStreaming(
 
       if (allFoundServers.length > 0) {
         console.log(`[AniNeko] Successfully resolved ${allFoundServers.length} server(s) for episode ${episodeNumber}.`);
-        return [
-          {
-            url: allFoundServers[0].url,
-            quality: 'auto'
-          }
-        ];
+        return {
+          sources: [
+            {
+              url: allFoundServers[0].url,
+              quality: 'auto'
+            }
+          ],
+          allServers: allFoundServers
+        };
       }
     } catch (err: any) {
       console.error(`[AniNeko] Error resolving streams:`, err.message || err);
     }
   }
-  return [];
+  return null;
 }
 
 export async function getStreamingLinks(
@@ -1052,7 +1055,7 @@ export async function getStreamingLinks(
 
   // Try AniNeko.to first as a fast and stable provider
   const nekoResult = await attemptAniNekoStreaming(titleCandidates, allVariations, noSeasonVariations, absEp);
-  if (nekoResult) {
+  if (nekoResult && nekoResult.sources?.length > 0) {
     return nekoResult;
   }
 
