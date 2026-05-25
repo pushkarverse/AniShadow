@@ -60,6 +60,7 @@ export function VideoPlayer({
   // Audio group switching (Sub/Dub) inside the player
   const [activeAudioGroup, setActiveAudioGroup] = useState<"other" | "dub">("other");
   const [showAudioMenu, setShowAudioMenu] = useState(false);
+  const shouldRestartFromBeginningRef = useRef(false);
 
   useEffect(() => {
     setSourceUrl(initialVideoUrl);
@@ -79,6 +80,11 @@ export function VideoPlayer({
 
   const switchAudioGroup = (kind: "other" | "dub") => {
     setActiveAudioGroup(kind);
+    shouldRestartFromBeginningRef.current = true;
+    setIsPlaying(false);
+    setProgress(0);
+    setDuration(0);
+    setHasInteracted(true);
     const nextServer = (kind === "dub" ? groupedServers.dub : groupedServers.other)[0];
     if (nextServer) {
       setSourceUrl(nextServer.url);
@@ -669,6 +675,10 @@ export function VideoPlayer({
             }}
             onLoadedMetadata={() => {
                 setDuration(videoRef.current?.duration || 0);
+                if (shouldRestartFromBeginningRef.current && videoRef.current) {
+                  videoRef.current.currentTime = 0;
+                  shouldRestartFromBeginningRef.current = false;
+                }
             }}
             onClick={handleVideoClick}
             onPlay={() => setIsPlaying(true)}
