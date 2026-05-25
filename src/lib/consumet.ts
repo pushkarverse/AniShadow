@@ -672,7 +672,7 @@ export async function getSeasonalAnime(season: string, year: number, page: numbe
       subEpisodes: getReleasedAnimeEpisodesCount(m)
     })) || [];
     results = await enrichAnimeResultsWithSubDub(results);
-    results = await enrichAnimeResultsWithAnimeDekho(results);
+
     return { results, hasNextPage: pageInfo?.hasNextPage || false };
   } catch {
     return { results: [], hasNextPage: false };
@@ -754,7 +754,7 @@ export async function advancedSearchAnime({
       countryOfOrigin: m.countryOfOrigin
     })) || [];
     results = await enrichAnimeResultsWithSubDub(results);
-    results = await enrichAnimeResultsWithAnimeDekho(results);
+
     return { results, hasNextPage: pageInfo?.hasNextPage || false };
   } catch {
     return { results: [], hasNextPage: false };
@@ -801,7 +801,7 @@ export async function getMediaByGenre(genres: string[], type: 'ANIME' | 'MANGA' 
       countryOfOrigin: m.countryOfOrigin
     })) || [];
     const enrichedWithHianime = await enrichAnimeResultsWithSubDub(results);
-    return await enrichAnimeResultsWithAnimeDekho(enrichedWithHianime);
+    return enrichedWithHianime;
   } catch {
     return [];
   }
@@ -846,7 +846,7 @@ export async function getPopularAnime(page: number = 1, perPage: number = 20) {
       subEpisodes: getReleasedAnimeEpisodesCount(m)
     })) || [];
     results = await enrichAnimeResultsWithSubDub(results);
-    results = await enrichAnimeResultsWithAnimeDekho(results);
+
     return { results, hasNextPage: pageInfo?.hasNextPage || false };
   } catch {
     return { results: [], hasNextPage: false };
@@ -855,14 +855,12 @@ export async function getPopularAnime(page: number = 1, perPage: number = 20) {
 
 export async function getAnimeDetails(id: string): Promise<IAnimeInfo | null> {
   try {
-    // 1. Try direct GraphQL first (Most reliable, no scraper noise)
     const directData = await fetchAnilistDirect(id);
     if (directData) return directData;
   } catch (e) {
     console.error("Anime details fetch failed:", e);
   }
 
-  // 2. Try library provider (Anilist mapping) as a fallback
   const provider = getAnilist();
   if (provider) {
     try {
@@ -871,7 +869,6 @@ export async function getAnimeDetails(id: string): Promise<IAnimeInfo | null> {
     } catch { }
   }
 
-  // 3. Fallback for slugs (Use AnimePahe as the primary detail provider for slugs)
   if (isNaN(Number(id))) {
     try {
       const pahe = getAnimePahe();
@@ -883,7 +880,6 @@ export async function getAnimeDetails(id: string): Promise<IAnimeInfo | null> {
 }
 
 function normalizeTitle(title: string): string[] {
-  // 1. Flatten curly quotes and special apostrophes for provider search compatibility
   const flatTitle = title.replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/\u2013|\u2014/g, "-");
   const variations = [flatTitle];
   if (flatTitle.includes(':')) variations.push(flatTitle.split(':')[0].trim());
@@ -894,7 +890,6 @@ function normalizeTitle(title: string): string[] {
   const tags = ['(TV)', '(Movie)', 'UNCENSORED', 'DUB', 'SUB', '(Dub)', '(Sub)'];
   let cleanTitle = flatTitle;
   tags.forEach(tag => {
-    // Simple case-insensitive replacement without regex for safety
     const index = cleanTitle.toLowerCase().indexOf(tag.toLowerCase());
     if (index !== -1) {
       cleanTitle = (cleanTitle.substring(0, index) + cleanTitle.substring(index + tag.length)).trim();
@@ -925,7 +920,7 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs = 10000): Promise<T
   return Promise.race([promise, timeout]);
 }
 
-async function inferAudioKind(...values: Array<string | undefined>): Promise<"dub" | "hindi" | "other"> {
+function inferAudioKind(...values: Array<string | undefined>): "dub" | "hindi" | "other" {
   const combined = values.filter(Boolean).join(" ").toLowerCase();
   if (/(english\s*dub|dual\s*audio|multi\s*audio|dubbed|\bdub\b)/i.test(combined)) {
     return "dub";
@@ -936,109 +931,19 @@ async function inferAudioKind(...values: Array<string | undefined>): Promise<"du
   return "other";
 }
 
-async function attemptAniNekoStreaming(
-  titleCandidates: string[],
-  allVariations: string[],
-  noSeasonVariations: string[],
-  episodeNumber: number
-) {
-  const queries = [...new Set([...titleCandidates, ...allVariations, ...noSeasonVariations])].filter(q => q && q.length > 2);
-  console.log(`[AnimeDekho] Attempting streaming resolution for ep ${episodeNumber} with queries:`, queries);
-
-  for (const query of queries) {
-    try {
-      const searchUrl = `https://animedekho.app/search?keyword=${encodeURIComponent(query.replace(/[\W_]+/g, " "))}`;
-      const res = await fetch(searchUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-          Referer: "https://animedekho.app/",
-        },
-      });
-      if (!res.ok) continue;
-      const html = await res.text();
-      const $ = load(html);
-
-      const results: { id: string; title: string }[] = [];
-      $(".movies.items .item").each((i, el) => {
-        const titleLink = $(el).find("a");
-        const title = titleLink.attr("title")?.trim() || "";
-        const href = titleLink.attr("href") || "";
-        if (title && href) {
-          results.push({ id: href, title });
-        }
-      });
-
-      if (results.length === 0) continue;
-
-      let bestMatch: (typeof results)[0] | null = null;
-      let bestScore = 0;
-      for (const item of results) {
-        const score = Math.max(...queries.map(q => scoreTitleMatch(q, item.title)));
-        if (score > bestScore) {
-          bestScore = score;
-          bestMatch = item;
-        }
-      }
-
-      if (!bestMatch || bestScore < 0.55) continue;
-
-      console.log(`[AnimeDekho] Found best match: "${bestMatch.title}" (URL: ${bestMatch.id}, Score: ${bestScore})`);
-
-      const epUrl = `https://animedekho.app${bestMatch.id.replace('.html', '')}/watching.html?ep=${episodeNumber}`;
-      console.log(`[AnimeDekho] Fetching episode page: ${epUrl}`);
-      const epRes = await fetch(epUrl, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-          Referer: `https://animedekho.app/`,
-        },
-      });
-      if (!epRes.ok) {
-        console.log(`[AnimeDekho] Failed to fetch episode page, status: ${epRes.status}`);
-        continue;
-      }
-      const epHtml = await epRes.text();
-      const $$ = load(epHtml);
-
-      const serverIframes = $$("iframe#iframe-to-load").attr("src");
-      if (!serverIframes) continue;
-
-      const streamRes = await fetch(serverIframes, {
-        headers: {
-          Referer: epUrl,
-        },
-      });
-      if (!streamRes.ok) continue;
-      const streamHtml = await streamRes.text();
-      const m3u8Match = streamHtml.match(/file:\s*['"](https?:\/\/[^'"]+\.m3u8[^'"]*)['"]/);
-
-      if (m3u8Match && m3u8Match[1]) {
-        console.log(`[AnimeDekho] Successfully extracted M3U8 URL for ep ${episodeNumber}`);
-        return [{
-          server: "AnimeDekho",
-          url: m3u8Match[1],
-          kind: "hindi",
-          quality: "auto",
-        }];
-      }
-    } catch (err) {
-      console.error(`[AnimeDekho] Error processing query "${query}":`, err);
-    }
-  }
-  return [];
+interface StreamingLink {
+  url: string;
+  quality: string;
+  server?: string;
+  kind?: string;
 }
 
 async function attemptAniNekoStreaming(
   titleCandidates: string[],
   allVariations: string[],
   noSeasonVariations: string[],
-  episodeNumber: number,
-  anime: Pick<IAnimeInfo, "title" | "season" | "seasonYear" | "episodes">
+  episodeNumber: number
 ): Promise<StreamingLink[]> {
-  const romaji = anime.title.romaji || "";
-  const english = anime.title.english || "";
-  const native = anime.title.native || "";
 
   const titleVariants = [...new Set([...titleCandidates, ...allVariations, ...noSeasonVariations])].filter(q => q && q.length > 2);
   console.log(`[AniNeko] Attempting streaming resolution for ep ${episodeNumber} with queries:`, titleVariants);
