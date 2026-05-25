@@ -230,6 +230,24 @@ export function VideoPlayer({
     _setIsScrubbing(val);
   };
 
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<number>(0);
+  const previewVideoRef = useRef<HTMLVideoElement>(null);
+  const previewHlsRef = useRef<Hls | null>(null);
+
+  const handleProgressBarMouseMove = (e: React.MouseEvent<HTMLInputElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, x / rect.width));
+    const time = percentage * duration;
+    setHoverTime(time);
+    setHoverPosition(percentage * 100);
+  };
+
+  const handleProgressBarMouseLeave = () => {
+    setHoverTime(null);
+  };
+
   const scheduleControlsHide = () => {
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     const delay = typeof window !== 'undefined' && window.innerWidth < 768 ? 6000 : 4000;
@@ -528,6 +546,51 @@ export function VideoPlayer({
     const referer = getReferer(currentVideoUrl);
     return `/api/stream?url=${encodeURIComponent(currentVideoUrl)}${referer ? `&referer=${encodeURIComponent(referer)}` : ""}`;
   }, [currentVideoUrl]);
+
+  useEffect(() => {
+    const previewVideo = previewVideoRef.current;
+    if (!previewVideo || !currentVideoUrl || hoverTime === null) return;
+
+    if (previewHlsRef.current) {
+      previewHlsRef.current.destroy();
+      previewHlsRef.current = null;
+    }
+
+    if (!useNative && Hls.isSupported() && (currentVideoUrl.includes("m3u8") || currentVideoUrl.includes(".m3u8"))) {
+      const hls = new Hls({
+        enableWorker: false,
+        lowLatencyMode: true,
+        maxBufferLength: 1,
+        maxMaxBufferLength: 2,
+        xhrSetup: (xhr, url) => {
+          if (!url.includes('/api/stream')) {
+            const referer = getReferer(url);
+            const proxiedUrl = `/api/stream?url=${encodeURIComponent(url)}${referer ? `&referer=${encodeURIComponent(referer)}` : ""}`;
+            xhr.open('GET', proxiedUrl, true);
+          }
+        }
+      });
+      hls.loadSource(initialProxiedUrl);
+      hls.attachMedia(previewVideo);
+      previewHlsRef.current = hls;
+    } else {
+      previewVideo.src = initialProxiedUrl;
+    }
+
+    return () => {
+      if (previewHlsRef.current) {
+        previewHlsRef.current.destroy();
+        previewHlsRef.current = null;
+      }
+    };
+  }, [hoverTime !== null, currentVideoUrl, useNative, initialProxiedUrl]);
+
+  useEffect(() => {
+    const previewVideo = previewVideoRef.current;
+    if (previewVideo && hoverTime !== null) {
+      previewVideo.currentTime = hoverTime;
+    }
+  }, [hoverTime]);
 
   // Clear levels when switching video sources
   useEffect(() => {
@@ -839,29 +902,51 @@ export function VideoPlayer({
             <div className="flex flex-col gap-4 pointer-events-auto mt-auto">
               <div className="flex items-center gap-4">
                 <span className="text-white/80 text-xs font-mono">{formatTime(progress)}</span>
-                <input
-                  type="range"
-                  min={0}
-                  max={duration || 100}
-                  value={progress}
-                  onChange={(e) => {
-                      if (videoRef.current) videoRef.current.currentTime = Number(e.target.value);
-                  }}
-                  onMouseDown={() => setIsScrubbing(true)}
-                  onTouchStart={() => setIsScrubbing(true)}
-                  onMouseUp={() => {
-                    setIsScrubbing(false);
-                    scheduleControlsHide();
-                  }}
-                  onTouchEnd={() => {
-                    setIsScrubbing(false);
-                    scheduleControlsHide();
-                  }}
-                  className="flex-1 h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 transition-all focus:outline-none"
-                  style={{
-                    background: `linear-gradient(to right, rgb(220, 38, 38) 0%, rgb(220, 38, 38) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) 100%)`
-                  }}
-                />
+                <div className="flex-1 relative flex items-center h-6">
+                  {hoverTime !== null && duration > 0 && (
+                    <div 
+                      className="absolute bottom-6 bg-zinc-950/95 border border-white/10 rounded-lg overflow-hidden shadow-2xl z-50 pointer-events-none -translate-x-1/2 flex flex-col items-center p-1 w-32 backdrop-blur-xs"
+                      style={{ left: `${hoverPosition}%` }}
+                    >
+                      <div className="w-full aspect-video bg-black rounded-md overflow-hidden relative">
+                        <video
+                          ref={previewVideoRef}
+                          className="w-full h-full object-cover"
+                          muted
+                          playsInline
+                        />
+                      </div>
+                      <span className="text-[10px] font-mono text-white/95 mt-1 font-semibold">
+                        {formatTime(hoverTime)}
+                      </span>
+                    </div>
+                  )}
+                  <input
+                    type="range"
+                    min={0}
+                    max={duration || 100}
+                    value={progress}
+                    onChange={(e) => {
+                        if (videoRef.current) videoRef.current.currentTime = Number(e.target.value);
+                    }}
+                    onMouseDown={() => setIsScrubbing(true)}
+                    onTouchStart={() => setIsScrubbing(true)}
+                    onMouseUp={() => {
+                      setIsScrubbing(false);
+                      scheduleControlsHide();
+                    }}
+                    onTouchEnd={() => {
+                      setIsScrubbing(false);
+                      scheduleControlsHide();
+                    }}
+                    onMouseMove={handleProgressBarMouseMove}
+                    onMouseLeave={handleProgressBarMouseLeave}
+                    className="w-full h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 transition-all focus:outline-none"
+                    style={{
+                      background: `linear-gradient(to right, rgb(220, 38, 38) 0%, rgb(220, 38, 38) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) 100%)`
+                    }}
+                  />
+                </div>
                 <span className="text-white/80 text-xs font-mono">{formatTime(duration)}</span>
               </div>
 
