@@ -25,12 +25,12 @@ function unpackDeanEdwards(html: string): string | null {
   const packedRegex = /eval\s*\(\s*function\s*\(\s*p\s*,\s*a\s*,\s*c\s*,\s*k\s*,\s*e\s*,\s*[r|d]\s*\)\s*\{[\s\S]*?return\s+p\s*\}\s*\(\s*['"]([\s\S]*?)['"]\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*['"]([\s\S]*?)['"]\.split\s*\(\s*['"]\|['"]\s*\)/i;
   const match = html.match(packedRegex);
   if (!match) return null;
-  
+
   let p = match[1];
   const a = parseInt(match[2]);
   const c = parseInt(match[3]);
   const k = match[4].split('|');
-  
+
   let count = c;
   while (count--) {
     if (k[count]) {
@@ -46,10 +46,10 @@ function unpackDeanEdwards(html: string): string | null {
 /**
  * Modern Anime Player with HLS support and Proxy integration
  */
-export function VideoPlayer({ 
-  videoUrl: initialVideoUrl, 
-  title, 
-  episodeTitle, 
+export function VideoPlayer({
+  videoUrl: initialVideoUrl,
+  title,
+  episodeTitle,
   poster,
   allServers = [],
 }: VideoPlayerProps): ReactElement {
@@ -103,7 +103,7 @@ export function VideoPlayer({
     }
     return currentVideoUrl.startsWith('http');
   }, [currentVideoUrl]);
-  
+
   // Update internal URL or extract direct stream if it's an embed provider
   useEffect(() => {
     if (!initialVideoUrl) return;
@@ -183,7 +183,7 @@ export function VideoPlayer({
     lastTimeRef.current = 0;
     wasPlayingRef.current = false;
   }, [title, episodeTitle]);
-  
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -271,9 +271,9 @@ export function VideoPlayer({
   const getSubtitleUrl = (url: string): string | null => {
     try {
       const urlObj = new URL(url);
-      const sub = urlObj.searchParams.get("sub") || 
-                  urlObj.searchParams.get("caption_1") || 
-                  urlObj.searchParams.get("c1_file");
+      const sub = urlObj.searchParams.get("sub") ||
+        urlObj.searchParams.get("caption_1") ||
+        urlObj.searchParams.get("c1_file");
       return sub;
     } catch {
       return null;
@@ -296,17 +296,17 @@ export function VideoPlayer({
     if (!hasInteracted) setHasInteracted(true);
     if (videoRef.current) {
       if (isPlaying) {
-          videoRef.current.pause();
-          setIsPlaying(false);
+        videoRef.current.pause();
+        setIsPlaying(false);
       } else {
-          try {
-              await videoRef.current.play();
-              setIsPlaying(true);
-          } catch (e: unknown) {
-              if (e instanceof Error && e.name !== 'AbortError') {
-                  console.error("Play error", e);
-              }
+        try {
+          await videoRef.current.play();
+          setIsPlaying(true);
+        } catch (e: unknown) {
+          if (e instanceof Error && e.name !== 'AbortError') {
+            console.error("Play error", e);
           }
+        }
       }
     }
   };
@@ -410,7 +410,7 @@ export function VideoPlayer({
       try {
         await containerRef.current?.requestFullscreen();
         if (window.screen && (window.screen as any).orientation && (window.screen as any).orientation.lock) {
-          await (window.screen as any).orientation.lock("landscape").catch(() => {});
+          await (window.screen as any).orientation.lock("landscape").catch(() => { });
         }
       } catch (err) {
         console.error("Error enabling fullscreen:", err);
@@ -420,7 +420,7 @@ export function VideoPlayer({
         if (window.screen && (window.screen as any).orientation && (window.screen as any).orientation.unlock) {
           (window.screen as any).orientation.unlock();
         }
-      } catch {}
+      } catch { }
       await document.exitFullscreen();
     }
   };
@@ -520,18 +520,18 @@ export function VideoPlayer({
 
   const getReferer = (target: string) => {
     if (target.includes("owocdn") || target.includes("animepahe") || target.includes("kwik.cx") || target.includes("sakana.streampeaker.org")) {
-        return "https://kwik.cx/";
+      return "https://kwik.cx/";
     }
     if (target.includes("kaas") || target.includes("kickassanime")) {
-        return "https://kaas.to/";
+      return "https://kaas.to/";
     }
     if (target.includes("tech20hub") || target.includes("animekai")) {
-        return "https://animekai.to/";
+      return "https://animekai.to/";
     }
     if (target.includes("animeunity")) return "https://www.animeunity.tv/";
     if (target.includes("animesama")) return "https://anime-sama.me/";
     if (target.includes("streampeaker.org")) {
-        return "https://animepahe.com/";
+      return "https://animepahe.com/";
     }
     if (target.includes("vibeplayer.site")) return "https://vibeplayer.site/";
     if (target.includes("otakuhg.site")) return "https://otakuhg.site/";
@@ -599,7 +599,6 @@ export function VideoPlayer({
     setBuffered(0);
   }, [initialVideoUrl]);
 
-  // Media Session API — sets OS-level media widget metadata (title, artwork, controls)
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
 
@@ -609,10 +608,10 @@ export function VideoPlayer({
       album: 'AniShadow',
       artwork: poster
         ? [
-            { src: poster, sizes: '512x512', type: 'image/jpeg' },
-            { src: poster, sizes: '256x256', type: 'image/jpeg' },
-            { src: poster, sizes: '96x96',  type: 'image/jpeg' },
-          ]
+          { src: poster, sizes: '512x512', type: 'image/jpeg' },
+          { src: poster, sizes: '256x256', type: 'image/jpeg' },
+          { src: poster, sizes: '96x96', type: 'image/jpeg' },
+        ]
         : [],
     });
 
@@ -655,479 +654,476 @@ export function VideoPlayer({
     if (!video) return;
 
     if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
+      hlsRef.current.destroy();
+      hlsRef.current = null;
     }
 
     if (!useNative && Hls.isSupported() && (currentVideoUrl.includes("m3u8") || currentVideoUrl.includes(".m3u8"))) {
-        const hls = new Hls({
-            enableWorker: false, 
-            lowLatencyMode: true,
-            backBufferLength: 30,
-            maxBufferLength: 30,
-            fragLoadingMaxRetry: 50,
-            levelLoadingMaxRetry: 50,
+      const hls = new Hls({
+        enableWorker: false,
+        lowLatencyMode: true,
+        backBufferLength: 30,
+        maxBufferLength: 30,
+        fragLoadingMaxRetry: 50,
+        levelLoadingMaxRetry: 50,
 
-            xhrSetup: (xhr, url) => {
-                if (!url.includes('/api/stream')) {
-                    const referer = getReferer(url);
-                    const proxiedUrl = `/api/stream?url=${encodeURIComponent(url)}${referer ? `&referer=${encodeURIComponent(referer)}` : ""}`;
-                    xhr.open('GET', proxiedUrl, true);
-                }
-            }
-        });
-        
-        video.crossOrigin = "anonymous";
-        hls.loadSource(initialProxiedUrl);
-        hls.attachMedia(video);
-        hlsRef.current = hls;
+        xhrSetup: (xhr, url) => {
+          if (!url.includes('/api/stream')) {
+            const referer = getReferer(url);
+            const proxiedUrl = `/api/stream?url=${encodeURIComponent(url)}${referer ? `&referer=${encodeURIComponent(referer)}` : ""}`;
+            xhr.open('GET', proxiedUrl, true);
+          }
+        }
+      });
 
-        hls.on(Hls.Events.MANIFEST_LOADED, () => {
-            setError(null);
+      video.crossOrigin = "anonymous";
+      hls.loadSource(initialProxiedUrl);
+      hls.attachMedia(video);
+      hlsRef.current = hls;
+
+      hls.on(Hls.Events.MANIFEST_LOADED, () => {
+        setError(null);
+        errorCountRef.current = 0;
+      });
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        const parsedLevels = hls.levels.map((level, idx) => ({
+          id: idx,
+          name: level.name || (level.height ? `${level.height}p` : `Quality ${idx}`),
+        }));
+        setLevels([{ id: -1, name: "Auto" }, ...parsedLevels]);
+
+        if (videoRef.current) {
+          if (lastTimeRef.current > 0) {
+            videoRef.current.currentTime = lastTimeRef.current;
+          }
+          if (wasPlayingRef.current) {
+            videoRef.current.play().then(() => {
+              setIsPlaying(true);
+            }).catch((err) => {
+              console.warn("HLS autoplay failed:", err);
+            });
+          }
+        }
+      });
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.details === 'fragParsingError' || data.details === 'fragLoadError' || data.details === 'bufferAppendError') {
+          errorCountRef.current += 1;
+
+          if (errorCountRef.current <= 30) {
+            hls.recoverMediaError();
+          } else {
+            setUseNative(true);
             errorCountRef.current = 0;
-        });
+          }
+        }
 
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            const parsedLevels = hls.levels.map((level, idx) => ({
-              id: idx,
-              name: level.name || (level.height ? `${level.height}p` : `Quality ${idx}`),
-            }));
-            setLevels([{ id: -1, name: "Auto" }, ...parsedLevels]);
-
-            if (videoRef.current) {
-                if (lastTimeRef.current > 0) {
-                    videoRef.current.currentTime = lastTimeRef.current;
-                }
-                if (wasPlayingRef.current) {
-                    videoRef.current.play().then(() => {
-                        setIsPlaying(true);
-                    }).catch((err) => {
-                        console.warn("HLS autoplay failed:", err);
-                    });
-                }
-            }
-        });
-
-        hls.on(Hls.Events.ERROR, (_event, data) => {
-            if (data.details === 'fragParsingError' || data.details === 'fragLoadError' || data.details === 'bufferAppendError') {
-                 errorCountRef.current += 1;
-                 
-                 if (errorCountRef.current <= 30) {
-                     hls.recoverMediaError();
-                 } else {
-                     setUseNative(true);
-                     errorCountRef.current = 0;
-                 }
-            }
-
-            if (data.fatal) {
-                switch (data.type) {
-                    case Hls.ErrorTypes.NETWORK_ERROR:
-                        hls.startLoad();
-                        break;
-                    case Hls.ErrorTypes.MEDIA_ERROR:
-                        hls.recoverMediaError();
-                        break;
-                    default:
-                        console.error("Unrecoverable Error", data);
-                        setError("Playback failed. Please try a different server.");
-                        hls.destroy();
-                        break;
-                }
-            }
-        });
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hls.recoverMediaError();
+              break;
+            default:
+              console.error("Unrecoverable Error", data);
+              setError("Playback failed. Please try a different server.");
+              hls.destroy();
+              break;
+          }
+        }
+      });
     } else {
-        video.src = initialProxiedUrl;
+      video.src = initialProxiedUrl;
     }
 
     return () => {
-        if (hlsRef.current) {
-            hlsRef.current.destroy();
-            hlsRef.current = null;
-        }
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
     };
   }, [currentVideoUrl, useNative, initialProxiedUrl]);
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className={`relative w-full bg-black rounded-lg overflow-hidden group shadow-2xl transition-all ${isFullscreen ? 'rounded-none' : ''}`}
       onMouseMove={() => {
-          setShowControls(true);
-          scheduleControlsHide();
+        setShowControls(true);
+        scheduleControlsHide();
       }}
       onMouseLeave={() => {
-          if (videoRef.current && !videoRef.current.paused && !isScrubbingRef.current) {
-              setShowControls(false);
-          }
+        if (videoRef.current && !videoRef.current.paused && !isScrubbingRef.current) {
+          setShowControls(false);
+        }
       }}
     >
       {/* Cinematic Thumbnail Preview Overlay */}
       <div className={`relative w-full ${isFullscreen ? 'h-full min-h-screen' : 'aspect-video'}`}>
-      {(isExtracting || isBuffering) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#080808]/80 backdrop-blur-xs z-30 pointer-events-none">
-          <div className="relative w-16 h-16 pointer-events-auto">
-            <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping" />
-            <div className="absolute inset-0 rounded-full border-t-2 border-r-2 border-primary animate-spin" />
+        {(isExtracting || isBuffering) && (
+          <div className="absolute inset-0 flex items-center justify-center bg-[#080808]/80 backdrop-blur-xs z-30 pointer-events-none">
+            <div className="relative w-16 h-16 pointer-events-auto">
+              <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping" />
+              <div className="absolute inset-0 rounded-full border-t-2 border-r-2 border-primary animate-spin" />
+            </div>
           </div>
-        </div>
-      )}
-      {!hasInteracted && !isIframe && (
-        <div 
-          className="absolute inset-0 z-40 bg-[#080808] cursor-pointer group/preview overflow-hidden" 
-          onClick={togglePlay}
-        >
-           {poster && (
-             <img src={poster} alt={title} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover/preview:scale-105 group-hover/preview:opacity-50 transition-all duration-700" />
-           )}
-           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 backdrop-blur-[2px]">
-             <motion.button 
-               className="w-20 h-20 md:w-24 md:h-24 bg-primary/90 group-hover/preview:bg-primary group-hover/preview:scale-110 rounded-full flex items-center justify-center text-white shadow-[0_0_40px_rgba(220,38,38,0.5)] backdrop-blur-sm transition-all pointer-events-none"
-             >
-               <Play className="w-10 h-10 md:w-12 md:h-12 ml-2 fill-current" />
-             </motion.button>
-           </div>
-        </div>
-      )}
+        )}
+        {!hasInteracted && !isIframe && (
+          <div
+            className="absolute inset-0 z-40 bg-[#080808] cursor-pointer group/preview overflow-hidden"
+            onClick={togglePlay}
+          >
+            {poster && (
+              <img src={poster} alt={title} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover/preview:scale-105 group-hover/preview:opacity-50 transition-all duration-700" />
+            )}
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 backdrop-blur-[2px]">
+              <motion.button
+                className="w-20 h-20 md:w-24 md:h-24 bg-primary/90 group-hover/preview:bg-primary group-hover/preview:scale-110 rounded-full flex items-center justify-center text-white shadow-[0_0_40px_rgba(220,38,38,0.5)] backdrop-blur-sm transition-all pointer-events-none"
+              >
+                <Play className="w-10 h-10 md:w-12 md:h-12 ml-2 fill-current" />
+              </motion.button>
+            </div>
+          </div>
+        )}
 
-      {/* Center Play Button Overlay for Paused State */}
-      {!isPlaying && hasInteracted && !isIframe && (
-        <div 
-          className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/40 transition-colors pointer-events-none" 
-        >
-           <motion.button 
-             initial={{ scale: 0.8, opacity: 0 }}
-             animate={{ scale: 1, opacity: 1 }}
-             whileHover={{ scale: 1.1 }}
-             whileTap={{ scale: 0.95 }}
-             onClick={togglePlay}
-             className="w-14 h-14 md:w-16 md:h-16 bg-primary/90 hover:bg-primary rounded-full flex items-center justify-center text-white shadow-[0_0_20px_rgba(220,38,38,0.4)] backdrop-blur-sm transition-all pointer-events-auto cursor-pointer"
-           >
-             <Play className="w-6 h-6 md:w-7 h-7 ml-1 fill-current" />
-           </motion.button>
-        </div>
-      )}
+        {/* Center Play Button Overlay for Paused State */}
+        {!isPlaying && hasInteracted && !isIframe && (
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/40 transition-colors pointer-events-none"
+          >
+            <motion.button
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={togglePlay}
+              className="w-14 h-14 md:w-16 md:h-16 bg-primary/90 hover:bg-primary rounded-full flex items-center justify-center text-white shadow-[0_0_20px_rgba(220,38,38,0.4)] backdrop-blur-sm transition-all pointer-events-auto cursor-pointer"
+            >
+              <Play className="w-6 h-6 md:w-7 h-7 ml-1 fill-current" />
+            </motion.button>
+          </div>
+        )}
 
-      {isIframe ? (
-        <iframe
-          src={currentVideoUrl}
-          className="absolute inset-0 w-full h-full border-0"
-          allowFullScreen
-          allow="autoplay; encrypted-media; picture-in-picture"
-          sandbox="allow-scripts allow-same-origin allow-forms"
-        />
-      ) : (
-        <>
-          <video
-            ref={videoRef}
-            crossOrigin="anonymous"
-            playsInline
-            className="absolute inset-0 w-full h-full object-contain"
-            onTimeUpdate={() => {
+        {isIframe ? (
+          <iframe
+            src={currentVideoUrl}
+            className="absolute inset-0 w-full h-full border-0"
+            allowFullScreen
+            allow="autoplay; encrypted-media; picture-in-picture"
+            sandbox="allow-scripts allow-same-origin allow-forms"
+          />
+        ) : (
+          <>
+            <video
+              ref={videoRef}
+              crossOrigin="anonymous"
+              playsInline
+              className="absolute inset-0 w-full h-full object-contain"
+              onTimeUpdate={() => {
                 const time = videoRef.current?.currentTime || 0;
                 setProgress(time);
                 lastTimeRef.current = time;
                 updateBuffered();
-            }}
-            onProgress={() => {
+              }}
+              onProgress={() => {
                 updateBuffered();
-            }}
-            onLoadedMetadata={() => {
+              }}
+              onLoadedMetadata={() => {
                 setDuration(videoRef.current?.duration || 0);
                 updateBuffered();
                 if (videoRef.current) {
-                    videoRef.current.currentTime = lastTimeRef.current;
-                    if (wasPlayingRef.current) {
-                        videoRef.current.play().then(() => {
-                          setIsPlaying(true);
-                        }).catch(() => {});
-                    }
+                  videoRef.current.currentTime = lastTimeRef.current;
+                  if (wasPlayingRef.current) {
+                    videoRef.current.play().then(() => {
+                      setIsPlaying(true);
+                    }).catch(() => { });
+                  }
                 }
-            }}
-            onClick={handleVideoClick}
-            onPlay={() => {
+              }}
+              onClick={handleVideoClick}
+              onPlay={() => {
                 setIsPlaying(true);
                 if ('mediaSession' in navigator) {
                   navigator.mediaSession.playbackState = 'playing';
                 }
               }}
-            onPause={() => {
+              onPause={() => {
                 setIsPlaying(false);
                 if ('mediaSession' in navigator) {
                   navigator.mediaSession.playbackState = 'paused';
                 }
               }}
-            onWaiting={() => setIsBuffering(true)}
-            onPlaying={() => setIsBuffering(false)}
-            onSeeking={() => setIsBuffering(true)}
-            onSeeked={() => setIsBuffering(false)}
-            onCanPlay={() => setIsBuffering(false)}
-            onLoadStart={() => setIsBuffering(true)}
-          >
-            {proxiedSubtitleUrl && isSubtitlesOn && (
-              <track 
-                src={proxiedSubtitleUrl} 
-                kind="subtitles" 
-                srcLang="en" 
-                label="English" 
-                default 
-              />
-            )}
-          </video>
+              onWaiting={() => setIsBuffering(true)}
+              onPlaying={() => setIsBuffering(false)}
+              onSeeking={() => setIsBuffering(true)}
+              onSeeked={() => setIsBuffering(false)}
+              onCanPlay={() => setIsBuffering(false)}
+              onLoadStart={() => setIsBuffering(true)}
+            >
+              {proxiedSubtitleUrl && isSubtitlesOn && (
+                <track
+                  src={proxiedSubtitleUrl}
+                  kind="subtitles"
+                  srcLang="en"
+                  label="English"
+                  default
+                />
+              )}
+            </video>
 
-          {error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50">
-              <div className="bg-zinc-900/90 p-6 rounded-xl border border-white/10 text-center max-w-sm">
-                <p className="text-white font-medium mb-4">{error}</p>
-                <div className="flex gap-2 justify-center">
-                    <button 
+            {error && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50">
+                <div className="bg-zinc-900/90 p-6 rounded-xl border border-white/10 text-center max-w-sm">
+                  <p className="text-white font-medium mb-4">{error}</p>
+                  <div className="flex gap-2 justify-center">
+                    <button
                       onClick={() => window.location.reload()}
                       className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all font-semibold"
                     >
                       Refresh
                     </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+          </>
+        )}
+
+        {/* Double Tap Skip Animations */}
+        <AnimatePresence>
+          {showSkipOverlay.visible && showSkipOverlay.direction === "backward" && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, x: -20 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.8, x: -20 }}
+              className="absolute left-16 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none"
+            >
+              <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20">
+                <RotateCcw className="w-8 h-8 text-white animate-pulse" />
+              </div>
+              <span className="text-white text-xs font-black uppercase tracking-widest bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm shadow-md">
+                -{showSkipOverlay.count}s
+              </span>
+            </motion.div>
           )}
-        </>
-      )}
+        </AnimatePresence>
 
-      {/* Double Tap Skip Animations */}
-      <AnimatePresence>
-        {showSkipOverlay.visible && showSkipOverlay.direction === "backward" && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, x: -20 }}
-            animate={{ opacity: 1, scale: 1, x: 0 }}
-            exit={{ opacity: 0, scale: 0.8, x: -20 }}
-            className="absolute left-16 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none"
-          >
-            <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20">
-              <RotateCcw className="w-8 h-8 text-white animate-pulse" />
-            </div>
-            <span className="text-white text-xs font-black uppercase tracking-widest bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm shadow-md">
-              -{showSkipOverlay.count}s
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showSkipOverlay.visible && showSkipOverlay.direction === "forward" && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, x: 20 }}
-            animate={{ opacity: 1, scale: 1, x: 0 }}
-            exit={{ opacity: 0, scale: 0.8, x: 20 }}
-            className="absolute right-16 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none"
-          >
-            <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20">
-              <RotateCw className="w-8 h-8 text-white animate-pulse" />
-            </div>
-            <span className="text-white text-xs font-black uppercase tracking-widest bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm shadow-md">
-              +{showSkipOverlay.count}s
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {(showControls || isBuffering || isExtracting) && hasInteracted && !isIframe && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/90 via-transparent to-black/60 p-4 md:p-6 pointer-events-none z-40"
-          >
-            <div className="flex justify-between items-start">
-              <div className="pointer-events-auto">
-                <h2 className="text-white font-bold text-xl md:text-2xl drop-shadow-lg">{title}</h2>
-                <p className="text-white/70 text-sm md:text-base">{episodeTitle}</p>
+        <AnimatePresence>
+          {showSkipOverlay.visible && showSkipOverlay.direction === "forward" && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, x: 20 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.8, x: 20 }}
+              className="absolute right-16 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none"
+            >
+              <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20">
+                <RotateCw className="w-8 h-8 text-white animate-pulse" />
               </div>
-            </div>
+              <span className="text-white text-xs font-black uppercase tracking-widest bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm shadow-md">
+                +{showSkipOverlay.count}s
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-            <div className="flex flex-col gap-4 pointer-events-auto mt-auto">
-              <div className="flex items-center gap-4">
-                <span className="text-white/80 text-xs font-mono">{formatTime(progress)}</span>
-                <div className="flex-1 relative flex items-center h-6">
-                  {hoverTime !== null && duration > 0 && (
-                    <div 
-                      className="absolute bottom-6 bg-zinc-950/95 border border-white/10 rounded-lg overflow-hidden shadow-2xl z-50 pointer-events-none -translate-x-1/2 flex flex-col items-center p-1 w-32 backdrop-blur-xs"
-                      style={{ left: `${hoverPosition}%` }}
-                    >
-                      <div className="w-full aspect-video bg-black rounded-md overflow-hidden relative">
-                        <video
-                          ref={setPreviewVideoElement}
-                          className="w-full h-full object-cover"
-                          muted
-                          playsInline
-                        />
+        <AnimatePresence>
+          {(showControls || isBuffering || isExtracting) && hasInteracted && !isIframe && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/90 via-transparent to-black/60 p-4 md:p-6 pointer-events-none z-40"
+            >
+              <div className="flex justify-between items-start">
+                <div className="pointer-events-auto">
+                  <h2 className="text-white font-bold text-xl md:text-2xl drop-shadow-lg">{title}</h2>
+                  <p className="text-white/70 text-sm md:text-base">{episodeTitle}</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4 pointer-events-auto mt-auto">
+                <div className="flex items-center gap-4">
+                  <span className="text-white/80 text-xs font-mono">{formatTime(progress)}</span>
+                  <div className="flex-1 relative flex items-center h-6">
+                    {hoverTime !== null && duration > 0 && (
+                      <div
+                        className="absolute bottom-6 bg-zinc-950/95 border border-white/10 rounded-lg overflow-hidden shadow-2xl z-50 pointer-events-none -translate-x-1/2 flex flex-col items-center p-1 w-32 backdrop-blur-xs"
+                        style={{ left: `${hoverPosition}%` }}
+                      >
+                        <div className="w-full aspect-video bg-black rounded-md overflow-hidden relative">
+                          <video
+                            ref={setPreviewVideoElement}
+                            className="w-full h-full object-cover"
+                            muted
+                            playsInline
+                          />
+                        </div>
+                        <span className="text-[10px] font-mono text-white/95 mt-1 font-semibold">
+                          {formatTime(hoverTime)}
+                        </span>
                       </div>
-                      <span className="text-[10px] font-mono text-white/95 mt-1 font-semibold">
-                        {formatTime(hoverTime)}
-                      </span>
-                    </div>
-                  )}
-                  <input
-                    type="range"
-                    min={0}
-                    max={duration || 100}
-                    value={progress}
-                    onChange={(e) => {
+                    )}
+                    <input
+                      type="range"
+                      min={0}
+                      max={duration || 100}
+                      value={progress}
+                      onChange={(e) => {
                         if (videoRef.current) videoRef.current.currentTime = Number(e.target.value);
-                    }}
-                    onMouseDown={() => setIsScrubbing(true)}
-                    onTouchStart={() => setIsScrubbing(true)}
-                    onMouseUp={() => {
-                      setIsScrubbing(false);
-                      scheduleControlsHide();
-                    }}
-                    onTouchEnd={() => {
-                      setIsScrubbing(false);
-                      scheduleControlsHide();
-                    }}
-                    onMouseMove={handleProgressBarMouseMove}
-                    onMouseLeave={handleProgressBarMouseLeave}
-                    className="w-full h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 transition-all focus:outline-none"
-                    style={{
-                      background: `linear-gradient(to right, rgb(220, 38, 38) 0%, rgb(220, 38, 38) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) 100%)`
-                    }}
-                  />
+                      }}
+                      onMouseDown={() => setIsScrubbing(true)}
+                      onTouchStart={() => setIsScrubbing(true)}
+                      onMouseUp={() => {
+                        setIsScrubbing(false);
+                        scheduleControlsHide();
+                      }}
+                      onTouchEnd={() => {
+                        setIsScrubbing(false);
+                        scheduleControlsHide();
+                      }}
+                      onMouseMove={handleProgressBarMouseMove}
+                      onMouseLeave={handleProgressBarMouseLeave}
+                      className="w-full h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 transition-all focus:outline-none"
+                      style={{
+                        background: `linear-gradient(to right, rgb(220, 38, 38) 0%, rgb(220, 38, 38) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(120, 120, 120, 0.6) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(120, 120, 120, 0.6) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.1) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.1) 100%)`
+                      }}
+                    />
+                  </div>
+                  <span className="text-white/80 text-xs font-mono">{formatTime(duration)}</span>
                 </div>
-                <span className="text-white/80 text-xs font-mono">{formatTime(duration)}</span>
-              </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 sm:gap-6">
-                  <button onClick={skipBackward} className="text-white hover:text-accent transition-all scale-110 active:scale-95" title="Rewind 10s">
-                    <RotateCcw className="w-5 h-5" />
-                  </button>
-
-                  <button onClick={togglePlay} className="text-white hover:text-accent transition-all scale-110 active:scale-95">
-                    {isPlaying ? <Pause className="w-6 h-6 sm:w-7 h-7" /> : <Play className="w-6 h-6 sm:w-7 h-7 fill-current" />}
-                  </button>
-
-                  <button onClick={skipForward} className="text-white hover:text-accent transition-all scale-110 active:scale-95" title="Forward 10s">
-                    <RotateCw className="w-5 h-5" />
-                  </button>
-
-                  <button onClick={() => {
-                      if (videoRef.current) {
-                          videoRef.current.muted = !isMuted;
-                          setIsMuted(!isMuted);
-                      }
-                  }} className="text-white hover:text-accent transition-all hidden sm:inline-flex">
-                    {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
-                  </button>
-                </div>
-                
-                <div className="flex items-center gap-3 sm:gap-6 relative">
-                  {proxiedSubtitleUrl && (
-                    <button 
-                      onClick={() => setIsSubtitlesOn(!isSubtitlesOn)} 
-                      className={`transition-all ${isSubtitlesOn ? 'text-primary' : 'text-white/60 hover:text-white'}`}
-                      title="Toggle Subtitles"
-                    >
-                      <Subtitles className="w-5 h-5 sm:w-6 sm:h-6" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 sm:gap-6">
+                    <button onClick={skipBackward} className="text-white hover:text-accent transition-all scale-110 active:scale-95" title="Rewind 10s">
+                      <RotateCcw className="w-5 h-5" />
                     </button>
-                  )}
 
-                  {/* Audio Group Switcher (Mic button) */}
-                  {hasBothAudioGroups && (
-                    <div className="relative">
+                    <button onClick={togglePlay} className="text-white hover:text-accent transition-all scale-110 active:scale-95">
+                      {isPlaying ? <Pause className="w-6 h-6 sm:w-7 h-7" /> : <Play className="w-6 h-6 sm:w-7 h-7 fill-current" />}
+                    </button>
+
+                    <button onClick={skipForward} className="text-white hover:text-accent transition-all scale-110 active:scale-95" title="Forward 10s">
+                      <RotateCw className="w-5 h-5" />
+                    </button>
+
+                    <button onClick={() => {
+                      if (videoRef.current) {
+                        videoRef.current.muted = !isMuted;
+                        setIsMuted(!isMuted);
+                      }
+                    }} className="text-white hover:text-accent transition-all hidden sm:inline-flex">
+                      {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-3 sm:gap-6 relative">
+                    {proxiedSubtitleUrl && (
                       <button
-                        onClick={() => { setShowAudioMenu(!showAudioMenu); setShowQualityMenu(false); }}
-                        className={`transition-all flex items-center gap-1 ${activeAudioGroup === 'dub' ? 'text-primary' : 'text-white hover:text-accent'}`}
-                        title="Switch Audio"
+                        onClick={() => setIsSubtitlesOn(!isSubtitlesOn)}
+                        className={`transition-all ${isSubtitlesOn ? 'text-primary' : 'text-white/60 hover:text-white'}`}
+                        title="Toggle Subtitles"
                       >
-                        <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
-                        <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase hidden sm:inline">
-                          {activeAudioGroup === 'dub' ? 'Dub' : 'Sub'}
-                        </span>
+                        <Subtitles className="w-5 h-5 sm:w-6 sm:h-6" />
                       </button>
+                    )}
 
-                      <AnimatePresence>
-                        {showAudioMenu && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 10 }}
-                            className="absolute bottom-10 right-0 bg-[#0c0c0c]/95 border border-white/10 rounded-xl p-2 w-36 flex flex-col gap-1 shadow-2xl backdrop-blur-md z-50 pointer-events-auto"
-                          >
-                            <button
-                              onClick={() => switchAudioGroup('other')}
-                              className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${
-                                activeAudioGroup === 'other'
-                                  ? 'bg-primary text-white'
-                                  : 'text-white/70 hover:bg-white/10 hover:text-white'
-                              }`}
+                    {/* Audio Group Switcher (Mic button) */}
+                    {hasBothAudioGroups && (
+                      <div className="relative">
+                        <button
+                          onClick={() => { setShowAudioMenu(!showAudioMenu); setShowQualityMenu(false); }}
+                          className={`transition-all flex items-center gap-1 ${activeAudioGroup === 'dub' ? 'text-primary' : 'text-white hover:text-accent'}`}
+                          title="Switch Audio"
+                        >
+                          <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
+                          <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase hidden sm:inline">
+                            {activeAudioGroup === 'dub' ? 'Dub' : 'Sub'}
+                          </span>
+                        </button>
+
+                        <AnimatePresence>
+                          {showAudioMenu && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 10 }}
+                              className="absolute bottom-10 right-0 bg-[#0c0c0c]/95 border border-white/10 rounded-xl p-2 w-36 flex flex-col gap-1 shadow-2xl backdrop-blur-md z-50 pointer-events-auto"
                             >
-                              Japanese (Sub)
-                            </button>
-                            <button
-                              onClick={() => switchAudioGroup('dub')}
-                              className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${
-                                activeAudioGroup === 'dub'
-                                  ? 'bg-primary text-white'
-                                  : 'text-white/70 hover:bg-white/10 hover:text-white'
-                              }`}
-                            >
-                              English (Dub)
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  )}
-
-                  {levels.length > 1 && (
-                    <div className="relative">
-                      <button 
-                        onClick={() => { setShowQualityMenu(!showQualityMenu); setShowAudioMenu(false); }} 
-                        className="text-white hover:text-accent transition-all flex items-center gap-1"
-                        title="Quality Settings"
-                      >
-                        <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
-                        <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase">
-                          {levels.find(l => l.id === currentLevel)?.name || "Auto"}
-                        </span>
-                      </button>
-
-                      <AnimatePresence>
-                        {showQualityMenu && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 10 }}
-                            className="absolute bottom-10 right-0 bg-[#0c0c0c]/95 border border-white/10 rounded-xl p-2 w-32 flex flex-col gap-1 shadow-2xl backdrop-blur-md z-50 pointer-events-auto"
-                          >
-                            {levels.map((level) => (
                               <button
-                                key={level.id}
-                                onClick={() => selectQuality(level.id)}
-                                className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${
-                                  currentLevel === level.id 
-                                    ? "bg-primary text-white" 
-                                    : "text-white/70 hover:bg-white/10 hover:text-white"
-                                }`}
+                                onClick={() => switchAudioGroup('other')}
+                                className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${activeAudioGroup === 'other'
+                                    ? 'bg-primary text-white'
+                                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                                  }`}
                               >
-                                {level.name}
+                                Japanese (Sub)
                               </button>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  )}
+                              <button
+                                onClick={() => switchAudioGroup('dub')}
+                                className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${activeAudioGroup === 'dub'
+                                    ? 'bg-primary text-white'
+                                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                                  }`}
+                              >
+                                English (Dub)
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    )}
 
-                  <button onClick={toggleFullscreen} className="text-white hover:text-accent transition-all">
-                    <Maximize className="w-5 h-5 sm:w-6 sm:h-6" />
-                  </button>
+                    {levels.length > 1 && (
+                      <div className="relative">
+                        <button
+                          onClick={() => { setShowQualityMenu(!showQualityMenu); setShowAudioMenu(false); }}
+                          className="text-white hover:text-accent transition-all flex items-center gap-1"
+                          title="Quality Settings"
+                        >
+                          <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
+                          <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase">
+                            {levels.find(l => l.id === currentLevel)?.name || "Auto"}
+                          </span>
+                        </button>
+
+                        <AnimatePresence>
+                          {showQualityMenu && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 10 }}
+                              className="absolute bottom-10 right-0 bg-[#0c0c0c]/95 border border-white/10 rounded-xl p-2 w-32 flex flex-col gap-1 shadow-2xl backdrop-blur-md z-50 pointer-events-auto"
+                            >
+                              {levels.map((level) => (
+                                <button
+                                  key={level.id}
+                                  onClick={() => selectQuality(level.id)}
+                                  className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${currentLevel === level.id
+                                      ? "bg-primary text-white"
+                                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                                    }`}
+                                >
+                                  {level.name}
+                                </button>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    )}
+
+                    <button onClick={toggleFullscreen} className="text-white hover:text-accent transition-all">
+                      <Maximize className="w-5 h-5 sm:w-6 sm:h-6" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
