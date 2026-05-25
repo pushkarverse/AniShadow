@@ -112,7 +112,7 @@ export default async function SearchPage({
         ) : (
           <>
             {searchResults.length > 0 && (
-              <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 gap-y-12 ${currentType === "MANGA" ? "manga-theme" : ""}`}>
+              <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-7 gap-6 gap-y-12 ${currentType === "MANGA" ? "manga-theme" : ""}`}>
                 {searchResults.map((anime) => {
                   const Card = currentType === "MANGA" ? MangaCard : AnimeCard;
                   return (

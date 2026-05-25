@@ -92,17 +92,11 @@ export function AnimeCard({
       }
     };
 
-    const handleScroll = () => {
-        if (showInfo) setShowInfo(false);
-    };
-
     if (showInfo || showStatusMenu) {
       document.addEventListener("mousedown", handleClickOutside);
-      window.addEventListener("scroll", handleScroll);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("scroll", handleScroll);
     };
   }, [showInfo, showStatusMenu]);
 
@@ -205,38 +199,28 @@ export function AnimeCard({
           <AnimatePresence>
             {showInfo && (
               <>
-                {/* Mobile Backdrop Overlay */}
-                {isMobileViewport && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => setShowInfo(false)}
-                    className="fixed inset-0 bg-black/60 z-[9998] backdrop-blur-xs"
-                  />
-                )}
+                {/* Backdrop Overlay (Mobile & Desktop) */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setShowInfo(false)}
+                  className="fixed inset-0 bg-black/60 z-[9998] backdrop-blur-xs"
+                />
                 <motion.div
                   ref={popoverRef}
                   initial={
                     isMobileViewport
                       ? { y: "100%", opacity: 1, scale: 1, x: 0 }
-                      : { opacity: 0, scale: 0.95, x: popoverPos.flipX ? 10 : -10 }
+                      : { x: "100%", opacity: 1, scale: 1, y: 0 }
                   }
-                  animate={
-                    isMobileViewport
-                      ? { y: 0 }
-                      : { opacity: 1, scale: 1, x: 0 }
-                  }
+                  animate={{ x: 0, y: 0 }}
                   exit={
                     isMobileViewport
                       ? { y: "100%" }
-                      : { opacity: 0, scale: 0.95, x: popoverPos.flipX ? 10 : -10 }
+                      : { x: "100%" }
                   }
-                  transition={
-                    isMobileViewport
-                      ? { type: "spring", damping: 25, stiffness: 220 }
-                      : undefined
-                  }
+                  transition={{ type: "spring", damping: 25, stiffness: 220 }}
                   style={
                     isMobileViewport
                       ? { 
@@ -248,16 +232,18 @@ export function AnimeCard({
                         }
                       : { 
                           position: 'fixed',
-                          top: popoverPos.top,
-                          left: popoverPos.left,
-                          width: '320px',
+                          top: 0,
+                          bottom: 0,
+                          right: 0,
+                          width: '400px',
+                          height: '100vh',
                         }
                   }
                   onClick={(e) => e.stopPropagation()}
-                  className={`z-[9999] bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 p-0 shadow-[0_20px_50px_rgba(0,0,0,0.5),var(--shadow-primary)] flex flex-col overflow-hidden ring-1 ring-white/5 ${
+                  className={`z-[9999] bg-[#0a0a0a]/95 backdrop-blur-xl p-0 flex flex-col overflow-hidden ring-1 ring-white/5 ${
                     isMobileViewport 
-                      ? 'rounded-t-3xl max-h-[80vh]' 
-                      : 'rounded-2xl max-h-[85vh]'
+                      ? 'rounded-t-3xl max-h-[80vh] border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]' 
+                      : 'rounded-none h-screen border-l border-white/10 shadow-[-20px_0_50px_rgba(0,0,0,0.5),var(--shadow-primary)]'
                   }`}
                 >
                   {/* Drag handle visible only on mobile bottom sheet */}
