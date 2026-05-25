@@ -190,10 +190,7 @@ export function Navbar() {
             <Search className="w-5 h-5" />
           </button>
 
-          <div className="hidden sm:flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/5">
-            <button suppressHydrationWarning className="px-3 py-1.5 bg-primary text-white text-[10px] font-black rounded-full uppercase tracking-tighter">EN</button>
-            <button suppressHydrationWarning className="px-3 py-1.5 text-white/40 hover:text-white text-[10px] font-black rounded-full uppercase tracking-tighter transition-colors">JP</button>
-          </div>
+
 
           <div className="relative" ref={notificationRef}>
             <button 

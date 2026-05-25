@@ -158,6 +158,16 @@ export function VideoPlayer({
   const [isSubtitlesOn, setIsSubtitlesOn] = useState<boolean>(true);
   const [isBuffering, setIsBuffering] = useState<boolean>(true);
 
+  const [showSkipOverlay, setShowSkipOverlay] = useState<{
+    visible: boolean;
+    direction: "forward" | "backward";
+    count: number;
+  }>({ visible: false, direction: "forward", count: 0 });
+
+  const lastTapRef = useRef<number>(0);
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const skipOverlayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const getSubtitleUrl = (url: string): string | null => {
     try {
       const urlObj = new URL(url);
@@ -222,12 +232,99 @@ export function VideoPlayer({
     setShowQualityMenu(false);
   };
 
+  const triggerDoubleTapSeek = (direction: "forward" | "backward") => {
+    if (videoRef.current) {
+      const skipAmount = direction === "forward" ? 10 : -10;
+      videoRef.current.currentTime = Math.max(0, Math.min(duration, videoRef.current.currentTime + skipAmount));
+    }
+
+    setShowSkipOverlay((prev) => {
+      const nextCount = prev.direction === direction ? prev.count + 10 : 10;
+      return {
+        visible: true,
+        direction,
+        count: nextCount,
+      };
+    });
+
+    if (skipOverlayTimeoutRef.current) clearTimeout(skipOverlayTimeoutRef.current);
+    skipOverlayTimeoutRef.current = setTimeout(() => {
+      setShowSkipOverlay({ visible: false, direction: "forward", count: 0 });
+    }, 800);
+  };
+
+  const handleVideoClick = (e: React.MouseEvent<HTMLElement>) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest("button") ||
+      target.closest("input") ||
+      target.closest("a") ||
+      target.closest("select") ||
+      target.closest("iframe")
+    ) {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const now = Date.now();
+    const DOUBLE_PRESS_DELAY = 300;
+
+    if (now - lastTapRef.current < DOUBLE_PRESS_DELAY) {
+      if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const width = rect.width;
+
+      if (clickX < width * 0.45) {
+        triggerDoubleTapSeek("backward");
+      } else if (clickX > width * 0.55) {
+        triggerDoubleTapSeek("forward");
+      } else {
+        togglePlay();
+      }
+
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+      clickTimeoutRef.current = setTimeout(() => {
+        setShowControls((prev) => !prev);
+      }, DOUBLE_PRESS_DELAY);
+    }
+  };
+
+  const toggleFullscreen = async () => {
+    if (!document.fullscreenElement) {
+      try {
+        await containerRef.current?.requestFullscreen();
+        if (window.screen && (window.screen as any).orientation && (window.screen as any).orientation.lock) {
+          await (window.screen as any).orientation.lock("landscape").catch(() => {});
+        }
+      } catch (err) {
+        console.error("Error enabling fullscreen:", err);
+      }
+    } else {
+      try {
+        if (window.screen && (window.screen as any).orientation && (window.screen as any).orientation.unlock) {
+          (window.screen as any).orientation.unlock();
+        }
+      } catch {}
+      await document.exitFullscreen();
+    }
+  };
+
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+      if (skipOverlayTimeoutRef.current) clearTimeout(skipOverlayTimeoutRef.current);
+    };
   }, []);
 
   // Keyboard Shortcuts Effect
@@ -458,7 +555,7 @@ export function VideoPlayer({
       }}
     >
       {/* Cinematic Thumbnail Preview Overlay */}
-      <div className="relative w-full aspect-video">
+      <div className={`relative w-full ${isFullscreen ? 'h-full min-h-screen' : 'aspect-video'}`}>
       {(isExtracting || isBuffering) && (
         <div className="absolute inset-0 flex items-center justify-center bg-[#080808]/85 backdrop-blur-md z-50">
           <div className="relative w-16 h-16">
@@ -530,7 +627,7 @@ export function VideoPlayer({
                     videoRef.current.currentTime = parseFloat(saved);
                 }
             }}
-            onClick={togglePlay}
+            onClick={handleVideoClick}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
             onWaiting={() => setIsBuffering(true)}
@@ -568,6 +665,43 @@ export function VideoPlayer({
           )}
         </>
       )}
+
+      {/* Double Tap Skip Animations */}
+      <AnimatePresence>
+        {showSkipOverlay.visible && showSkipOverlay.direction === "backward" && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, x: -20 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.8, x: -20 }}
+            className="absolute left-16 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none"
+          >
+            <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20">
+              <RotateCcw className="w-8 h-8 text-white animate-pulse" />
+            </div>
+            <span className="text-white text-xs font-black uppercase tracking-widest bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm shadow-md">
+              -{showSkipOverlay.count}s
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showSkipOverlay.visible && showSkipOverlay.direction === "forward" && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, x: 20 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.8, x: 20 }}
+            className="absolute right-16 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none"
+          >
+            <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20">
+              <RotateCw className="w-8 h-8 text-white animate-pulse" />
+            </div>
+            <span className="text-white text-xs font-black uppercase tracking-widest bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm shadow-md">
+              +{showSkipOverlay.count}s
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showControls && hasInteracted && !isIframe && (
@@ -678,13 +812,7 @@ export function VideoPlayer({
                     </div>
                   )}
 
-                  <button onClick={() => {
-                      if (!isFullscreen) {
-                          containerRef.current?.requestFullscreen();
-                      } else {
-                          document.exitFullscreen();
-                      }
-                  }} className="text-white hover:text-accent transition-all">
+                  <button onClick={toggleFullscreen} className="text-white hover:text-accent transition-all">
                     <Maximize className="w-5 h-5 sm:w-6 h-6" />
                   </button>
                 </div>
