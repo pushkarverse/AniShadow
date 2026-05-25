@@ -232,7 +232,7 @@ export function VideoPlayer({
 
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverPosition, setHoverPosition] = useState<number>(0);
-  const previewVideoRef = useRef<HTMLVideoElement>(null);
+  const [previewVideoElement, setPreviewVideoElement] = useState<HTMLVideoElement | null>(null);
   const previewHlsRef = useRef<Hls | null>(null);
 
   const handleProgressBarMouseMove = (e: React.MouseEvent<HTMLInputElement>) => {
@@ -548,8 +548,7 @@ export function VideoPlayer({
   }, [currentVideoUrl]);
 
   useEffect(() => {
-    const previewVideo = previewVideoRef.current;
-    if (!previewVideo || !currentVideoUrl || hoverTime === null) return;
+    if (!previewVideoElement || !currentVideoUrl) return;
 
     if (previewHlsRef.current) {
       previewHlsRef.current.destroy();
@@ -571,10 +570,10 @@ export function VideoPlayer({
         }
       });
       hls.loadSource(initialProxiedUrl);
-      hls.attachMedia(previewVideo);
+      hls.attachMedia(previewVideoElement);
       previewHlsRef.current = hls;
     } else {
-      previewVideo.src = initialProxiedUrl;
+      previewVideoElement.src = initialProxiedUrl;
     }
 
     return () => {
@@ -583,14 +582,13 @@ export function VideoPlayer({
         previewHlsRef.current = null;
       }
     };
-  }, [hoverTime !== null, currentVideoUrl, useNative, initialProxiedUrl]);
+  }, [previewVideoElement, currentVideoUrl, useNative, initialProxiedUrl]);
 
   useEffect(() => {
-    const previewVideo = previewVideoRef.current;
-    if (previewVideo && hoverTime !== null) {
-      previewVideo.currentTime = hoverTime;
+    if (previewVideoElement && hoverTime !== null) {
+      previewVideoElement.currentTime = hoverTime;
     }
-  }, [hoverTime]);
+  }, [previewVideoElement, hoverTime]);
 
   // Clear levels when switching video sources
   useEffect(() => {
@@ -910,7 +908,7 @@ export function VideoPlayer({
                     >
                       <div className="w-full aspect-video bg-black rounded-md overflow-hidden relative">
                         <video
-                          ref={previewVideoRef}
+                          ref={setPreviewVideoElement}
                           className="w-full h-full object-cover"
                           muted
                           playsInline
