@@ -1,15 +1,24 @@
 "use client";
 
 import { useState, useRef, useEffect, ReactElement, useMemo } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles, Mic } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Hls from "hls.js";
+
+interface ServerEntry {
+  name: string;
+  provider: string;
+  url: string;
+  kind?: "dub" | "other";
+  label?: string;
+}
 
 interface VideoPlayerProps {
   videoUrl: string;
   title: string;
   episodeTitle: string;
   poster?: string;
+  allServers?: ServerEntry[];
 }
 
 function unpackDeanEdwards(html: string): string | null {
@@ -42,9 +51,38 @@ export function VideoPlayer({
   title, 
   episodeTitle, 
   poster,
+  allServers = [],
 }: VideoPlayerProps): ReactElement {
   const [currentVideoUrl, setCurrentVideoUrl] = useState(initialVideoUrl);
   const [isExtracting, setIsExtracting] = useState(false);
+
+  // Audio group switching (Sub/Dub) inside the player
+  const [activeAudioGroup, setActiveAudioGroup] = useState<"other" | "dub">("other");
+  const [showAudioMenu, setShowAudioMenu] = useState(false);
+
+  const groupedServers = useMemo(() => {
+    const dub: ServerEntry[] = [];
+    const other: ServerEntry[] = [];
+    for (const server of allServers) {
+      if (server.kind === "dub") dub.push(server);
+      else other.push(server);
+    }
+    return { dub, other };
+  }, [allServers]);
+
+  const hasBothAudioGroups = groupedServers.dub.length > 0 && groupedServers.other.length > 0;
+
+  const switchAudioGroup = (kind: "other" | "dub") => {
+    setActiveAudioGroup(kind);
+    const nextServer = (kind === "dub" ? groupedServers.dub : groupedServers.other)[0];
+    if (nextServer) {
+      setCurrentVideoUrl(nextServer.url);
+    }
+    setShowAudioMenu(false);
+  };
+
+  // Responsive auto-hide delay
+  const getControlsTimeout = () => typeof window !== 'undefined' && window.innerWidth < 768 ? 6000 : 4000;
 
   const isIframe = useMemo(() => {
     if (!currentVideoUrl) return false;
@@ -137,6 +175,14 @@ export function VideoPlayer({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastTimeRef = useRef<number>(0);
+  const wasPlayingRef = useRef<boolean>(false);
+
+  // Reset playback timestamp when changing episodes
+  useEffect(() => {
+    lastTimeRef.current = 0;
+    wasPlayingRef.current = false;
+  }, [title, episodeTitle]);
   
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -474,6 +520,11 @@ export function VideoPlayer({
 
   useEffect(() => {
     setIsBuffering(true);
+    if (videoRef.current && !videoRef.current.paused) {
+      wasPlayingRef.current = true;
+    } else {
+      wasPlayingRef.current = false;
+    }
   }, [currentVideoUrl]);
 
   useEffect(() => {
@@ -641,13 +692,17 @@ export function VideoPlayer({
             onTimeUpdate={() => {
                 const time = videoRef.current?.currentTime || 0;
                 setProgress(time);
-                if (time > 5) localStorage.setItem(`anis-progress-${title}-${episodeTitle}`, time.toString());
+                lastTimeRef.current = time;
             }}
             onLoadedMetadata={() => {
                 setDuration(videoRef.current?.duration || 0);
-                const saved = localStorage.getItem(`anis-progress-${title}-${episodeTitle}`);
-                if (saved && videoRef.current) {
-                    videoRef.current.currentTime = parseFloat(saved);
+                if (videoRef.current) {
+                    videoRef.current.currentTime = lastTimeRef.current;
+                    if (wasPlayingRef.current) {
+                        videoRef.current.play().then(() => {
+                          setIsPlaying(true);
+                        }).catch(() => {});
+                    }
                 }
             }}
             onClick={handleVideoClick}
@@ -801,18 +856,66 @@ export function VideoPlayer({
                       className={`transition-all ${isSubtitlesOn ? 'text-primary' : 'text-white/60 hover:text-white'}`}
                       title="Toggle Subtitles"
                     >
-                      <Subtitles className="w-5 h-5 sm:w-6 h-6" />
+                      <Subtitles className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
+                  )}
+
+                  {/* Audio Group Switcher (Mic button) */}
+                  {hasBothAudioGroups && (
+                    <div className="relative">
+                      <button
+                        onClick={() => { setShowAudioMenu(!showAudioMenu); setShowQualityMenu(false); }}
+                        className={`transition-all flex items-center gap-1 ${activeAudioGroup === 'dub' ? 'text-primary' : 'text-white hover:text-accent'}`}
+                        title="Switch Audio"
+                      >
+                        <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase hidden sm:inline">
+                          {activeAudioGroup === 'dub' ? 'Dub' : 'Sub'}
+                        </span>
+                      </button>
+
+                      <AnimatePresence>
+                        {showAudioMenu && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="absolute bottom-10 right-0 bg-[#0c0c0c]/95 border border-white/10 rounded-xl p-2 w-36 flex flex-col gap-1 shadow-2xl backdrop-blur-md z-50 pointer-events-auto"
+                          >
+                            <button
+                              onClick={() => switchAudioGroup('other')}
+                              className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${
+                                activeAudioGroup === 'other'
+                                  ? 'bg-primary text-white'
+                                  : 'text-white/70 hover:bg-white/10 hover:text-white'
+                              }`}
+                            >
+                              Japanese (Sub)
+                            </button>
+                            <button
+                              onClick={() => switchAudioGroup('dub')}
+                              className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${
+                                activeAudioGroup === 'dub'
+                                  ? 'bg-primary text-white'
+                                  : 'text-white/70 hover:bg-white/10 hover:text-white'
+                              }`}
+                            >
+                              English (Dub)
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   )}
 
                   {levels.length > 1 && (
                     <div className="relative">
                       <button 
-                        onClick={() => setShowQualityMenu(!showQualityMenu)} 
+                        onClick={() => { setShowQualityMenu(!showQualityMenu); setShowAudioMenu(false); }} 
                         className="text-white hover:text-accent transition-all flex items-center gap-1"
                         title="Quality Settings"
                       >
-                        <Settings className="w-5 h-5 sm:w-6 h-6" />
+                        <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
                         <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase">
                           {levels.find(l => l.id === currentLevel)?.name || "Auto"}
                         </span>
@@ -846,7 +949,7 @@ export function VideoPlayer({
                   )}
 
                   <button onClick={toggleFullscreen} className="text-white hover:text-accent transition-all">
-                    <Maximize className="w-5 h-5 sm:w-6 h-6" />
+                    <Maximize className="w-5 h-5 sm:w-6 sm:h-6" />
                   </button>
                 </div>
               </div>
