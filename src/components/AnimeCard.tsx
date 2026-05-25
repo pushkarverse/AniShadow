@@ -199,7 +199,7 @@ export function AnimeCard({
           <AnimatePresence>
             {showInfo && (
               <>
-                {/* Backdrop Overlay (Mobile & Desktop) */}
+                {/* Backdrop Overlay */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -240,10 +240,10 @@ export function AnimeCard({
                         }
                   }
                   onClick={(e) => e.stopPropagation()}
-                  className={`z-[9999] bg-[#0a0a0a]/95 backdrop-blur-xl p-0 flex flex-col overflow-hidden ring-1 ring-white/5 ${
+                  className={`z-[9999] bg-[#0a0a0a]/95 backdrop-blur-xl border-white/10 p-0 shadow-[-20px_0_50px_rgba(0,0,0,0.5),var(--shadow-primary)] flex flex-col overflow-hidden ring-1 ring-white/5 ${
                     isMobileViewport 
-                      ? 'rounded-t-3xl max-h-[80vh] border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]' 
-                      : 'rounded-none h-screen border-l border-white/10 shadow-[-20px_0_50px_rgba(0,0,0,0.5),var(--shadow-primary)]'
+                      ? 'rounded-t-3xl max-h-[80vh] border-t' 
+                      : 'border-l h-screen'
                   }`}
                 >
                   {/* Drag handle visible only on mobile bottom sheet */}

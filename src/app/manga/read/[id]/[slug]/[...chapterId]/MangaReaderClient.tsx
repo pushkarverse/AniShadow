@@ -927,26 +927,26 @@ export function MangaReaderClient({
         </div>
       )}
 
-      {/* Desktop Edge Hover Zones */}
+      {/* Desktop Edge Navigation Hover Areas */}
       {readingMode !== 'vertical' && !isMobile && (
         <>
           {/* Left Hover Zone */}
           <div 
             onClick={(e) => { e.stopPropagation(); handlePrevPage(); }}
-            className="fixed left-0 top-16 bottom-20 w-[15vw] max-w-[200px] z-40 flex items-center justify-start pl-6 group/prevcol cursor-pointer pointer-events-auto"
+            className="fixed left-0 top-20 bottom-24 w-[15vw] max-w-[220px] z-40 flex items-center justify-start pl-8 group/prevcol cursor-pointer pointer-events-auto"
           >
             <div className="w-12 h-12 rounded-full bg-black/60 border border-white/10 text-white flex items-center justify-center opacity-0 group-hover/prevcol:opacity-100 transition-all duration-300 transform -translate-x-2 group-hover/prevcol:translate-x-0 backdrop-blur-sm shadow-2xl">
-              <ChevronLeft className="w-6 h-6" />
+              <ChevronLeft className="w-5 h-5" />
             </div>
           </div>
 
           {/* Right Hover Zone */}
           <div 
             onClick={(e) => { e.stopPropagation(); handleNextPage(); }}
-            className="fixed right-0 top-16 bottom-20 w-[15vw] max-w-[200px] z-40 flex items-center justify-center pr-6 group/nextcol pointer-events-auto"
+            className="fixed right-0 top-20 bottom-24 w-[15vw] max-w-[220px] z-40 flex items-center justify-center pr-8 group/nextcol cursor-pointer pointer-events-auto"
           >
             <div className="w-12 h-12 rounded-full bg-black/60 border border-white/10 text-white flex items-center justify-center opacity-0 group-hover/nextcol:opacity-100 transition-all duration-300 transform translate-x-2 group-hover/nextcol:translate-x-0 backdrop-blur-sm shadow-2xl">
-              <ChevronRight className="w-6 h-6" />
+              <ChevronRight className="w-5 h-5" />
             </div>
           </div>
         </>

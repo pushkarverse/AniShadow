@@ -1,24 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect, ReactElement, useMemo } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles, Mic } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Hls from "hls.js";
-
-interface ServerEntry {
-  name: string;
-  provider: string;
-  url: string;
-  kind?: "dub" | "other";
-  label?: string;
-}
 
 interface VideoPlayerProps {
   videoUrl: string;
   title: string;
   episodeTitle: string;
   poster?: string;
-  allServers?: ServerEntry[];
 }
 
 function unpackDeanEdwards(html: string): string | null {
@@ -51,49 +42,9 @@ export function VideoPlayer({
   title, 
   episodeTitle, 
   poster,
-  allServers = [],
 }: VideoPlayerProps): ReactElement {
-  const [sourceUrl, setSourceUrl] = useState(initialVideoUrl);
   const [currentVideoUrl, setCurrentVideoUrl] = useState(initialVideoUrl);
   const [isExtracting, setIsExtracting] = useState(false);
-
-  // Audio group switching (Sub/Dub) inside the player
-  const [activeAudioGroup, setActiveAudioGroup] = useState<"other" | "dub">("other");
-  const [showAudioMenu, setShowAudioMenu] = useState(false);
-  const shouldRestartFromBeginningRef = useRef(false);
-
-  useEffect(() => {
-    setSourceUrl(initialVideoUrl);
-  }, [initialVideoUrl]);
-
-  const groupedServers = useMemo(() => {
-    const dub: ServerEntry[] = [];
-    const other: ServerEntry[] = [];
-    for (const server of allServers) {
-      if (server.kind === "dub") dub.push(server);
-      else other.push(server);
-    }
-    return { dub, other };
-  }, [allServers]);
-
-  const hasBothAudioGroups = groupedServers.dub.length > 0 && groupedServers.other.length > 0;
-
-  const switchAudioGroup = (kind: "other" | "dub") => {
-    setActiveAudioGroup(kind);
-    shouldRestartFromBeginningRef.current = true;
-    setIsPlaying(false);
-    setProgress(0);
-    setDuration(0);
-    setHasInteracted(true);
-    const nextServer = (kind === "dub" ? groupedServers.dub : groupedServers.other)[0];
-    if (nextServer) {
-      setSourceUrl(nextServer.url);
-    }
-    setShowAudioMenu(false);
-  };
-
-  // Responsive auto-hide delay
-  const getControlsTimeout = () => typeof window !== 'undefined' && window.innerWidth < 768 ? 6000 : 4000;
 
   const isIframe = useMemo(() => {
     if (!currentVideoUrl) return false;
@@ -117,17 +68,15 @@ export function VideoPlayer({
   
   // Update internal URL or extract direct stream if it's an embed provider
   useEffect(() => {
-    if (!sourceUrl) return;
+    if (!initialVideoUrl) return;
 
-    const urlLower = sourceUrl.toLowerCase();
+    const urlLower = initialVideoUrl.toLowerCase();
     const isVibe = urlLower.includes("vibeplayer.site");
     const isOtakuHg = urlLower.includes("otakuhg.site");
     const isOtakuVid = urlLower.includes("otakuvid.online");
 
-    setIsBuffering(true);
-
     if (!isVibe && !isOtakuHg && !isOtakuVid) {
-      setCurrentVideoUrl(sourceUrl);
+      setCurrentVideoUrl(initialVideoUrl);
       setIsExtracting(false);
       return;
     }
@@ -137,11 +86,11 @@ export function VideoPlayer({
 
     const extract = async () => {
       try {
-        const proxyUrl = `/api/stream?url=${encodeURIComponent(sourceUrl)}`;
+        const proxyUrl = `/api/stream?url=${encodeURIComponent(initialVideoUrl)}`;
         const res = await fetch(proxyUrl);
         if (!res.ok) {
           if (active) {
-            setCurrentVideoUrl(sourceUrl);
+            setCurrentVideoUrl(initialVideoUrl);
             setIsExtracting(false);
           }
           return;
@@ -168,11 +117,11 @@ export function VideoPlayer({
         if (m3u8Url) {
           setCurrentVideoUrl(m3u8Url);
         } else {
-          setCurrentVideoUrl(sourceUrl);
+          setCurrentVideoUrl(initialVideoUrl);
         }
       } catch (err) {
         console.error("Client-side extraction error:", err);
-        if (active) setCurrentVideoUrl(sourceUrl);
+        if (active) setCurrentVideoUrl(initialVideoUrl);
       } finally {
         if (active) setIsExtracting(false);
       }
@@ -183,7 +132,7 @@ export function VideoPlayer({
     return () => {
       active = false;
     };
-  }, [sourceUrl]);
+  }, [initialVideoUrl]);
 
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -209,6 +158,23 @@ export function VideoPlayer({
   const [isSubtitlesOn, setIsSubtitlesOn] = useState<boolean>(true);
   const [isBuffering, setIsBuffering] = useState<boolean>(true);
 
+  const [isScrubbing, _setIsScrubbing] = useState<boolean>(false);
+  const isScrubbingRef = useRef<boolean>(false);
+  const setIsScrubbing = (val: boolean) => {
+    isScrubbingRef.current = val;
+    _setIsScrubbing(val);
+  };
+
+  const scheduleControlsHide = () => {
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    const delay = typeof window !== 'undefined' && window.innerWidth < 768 ? 6000 : 4000;
+    controlsTimeoutRef.current = setTimeout(() => {
+      if (videoRef.current && !videoRef.current.paused && !isScrubbingRef.current) {
+        setShowControls(false);
+      }
+    }, delay);
+  };
+
   const [showSkipOverlay, setShowSkipOverlay] = useState<{
     visible: boolean;
     direction: "forward" | "backward";
@@ -232,10 +198,10 @@ export function VideoPlayer({
   };
 
   const proxiedSubtitleUrl = useMemo(() => {
-    const sub = getSubtitleUrl(sourceUrl);
+    const sub = getSubtitleUrl(initialVideoUrl);
     if (!sub) return "";
     return `/api/stream?url=${encodeURIComponent(sub)}`;
-  }, [sourceUrl]);
+  }, [initialVideoUrl]);
 
   const formatTime = (time: number) => {
     const mins = Math.floor(time / 60);
@@ -342,7 +308,13 @@ export function VideoPlayer({
       lastTapRef.current = now;
       clickTimeoutRef.current = setTimeout(() => {
         if (window.innerWidth < 768) {
-          setShowControls((prev) => !prev);
+          setShowControls((prev) => {
+            const next = !prev;
+            if (next) {
+              scheduleControlsHide();
+            }
+            return next;
+          });
         } else {
           togglePlay();
         }
@@ -386,10 +358,7 @@ export function VideoPlayer({
   useEffect(() => {
     const showControlsTemporarily = () => {
       setShowControls(true);
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-      controlsTimeoutRef.current = setTimeout(() => {
-          if (isPlaying) setShowControls(false);
-      }, getControlsTimeout());
+      scheduleControlsHide();
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -500,7 +469,12 @@ export function VideoPlayer({
     setLevels([]);
     setCurrentLevel(-1);
     setShowQualityMenu(false);
-  }, [sourceUrl]);
+    setIsBuffering(true);
+  }, [initialVideoUrl]);
+
+  useEffect(() => {
+    setIsBuffering(true);
+  }, [currentVideoUrl]);
 
   useEffect(() => {
     if (!currentVideoUrl) return;
@@ -595,13 +569,12 @@ export function VideoPlayer({
       className={`relative w-full bg-black rounded-lg overflow-hidden group shadow-2xl transition-all ${isFullscreen ? 'rounded-none' : ''}`}
       onMouseMove={() => {
           setShowControls(true);
-          if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-          controlsTimeoutRef.current = setTimeout(() => {
-              if (isPlaying) setShowControls(false);
-          }, getControlsTimeout());
+          scheduleControlsHide();
       }}
       onMouseLeave={() => {
-          if (isPlaying) setShowControls(false);
+          if (videoRef.current && !videoRef.current.paused && !isScrubbingRef.current) {
+              setShowControls(false);
+          }
       }}
     >
       {/* Cinematic Thumbnail Preview Overlay */}
@@ -657,10 +630,6 @@ export function VideoPlayer({
           allowFullScreen
           allow="autoplay; encrypted-media; picture-in-picture"
           sandbox="allow-scripts allow-same-origin allow-forms"
-          onLoad={() => {
-            setIsBuffering(false);
-            setIsExtracting(false);
-          }}
         />
       ) : (
         <>
@@ -672,12 +641,13 @@ export function VideoPlayer({
             onTimeUpdate={() => {
                 const time = videoRef.current?.currentTime || 0;
                 setProgress(time);
+                if (time > 5) localStorage.setItem(`anis-progress-${title}-${episodeTitle}`, time.toString());
             }}
             onLoadedMetadata={() => {
                 setDuration(videoRef.current?.duration || 0);
-                if (shouldRestartFromBeginningRef.current && videoRef.current) {
-                  videoRef.current.currentTime = 0;
-                  shouldRestartFromBeginningRef.current = false;
+                const saved = localStorage.getItem(`anis-progress-${title}-${episodeTitle}`);
+                if (saved && videoRef.current) {
+                    videoRef.current.currentTime = parseFloat(saved);
                 }
             }}
             onClick={handleVideoClick}
@@ -782,6 +752,16 @@ export function VideoPlayer({
                   onChange={(e) => {
                       if (videoRef.current) videoRef.current.currentTime = Number(e.target.value);
                   }}
+                  onMouseDown={() => setIsScrubbing(true)}
+                  onTouchStart={() => setIsScrubbing(true)}
+                  onMouseUp={() => {
+                    setIsScrubbing(false);
+                    scheduleControlsHide();
+                  }}
+                  onTouchEnd={() => {
+                    setIsScrubbing(false);
+                    scheduleControlsHide();
+                  }}
                   className="flex-1 h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 transition-all focus:outline-none"
                   style={{
                     background: `linear-gradient(to right, rgb(220, 38, 38) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.2) ${(duration ? (progress / duration) * 100 : 0)}%)`
@@ -821,66 +801,18 @@ export function VideoPlayer({
                       className={`transition-all ${isSubtitlesOn ? 'text-primary' : 'text-white/60 hover:text-white'}`}
                       title="Toggle Subtitles"
                     >
-                      <Subtitles className="w-5 h-5 sm:w-6 sm:h-6" />
+                      <Subtitles className="w-5 h-5 sm:w-6 h-6" />
                     </button>
-                  )}
-
-                  {/* Audio Group Switcher (Mic button) */}
-                  {hasBothAudioGroups && (
-                    <div className="relative">
-                      <button
-                        onClick={() => { setShowAudioMenu(!showAudioMenu); setShowQualityMenu(false); }}
-                        className={`transition-all flex items-center gap-1 ${activeAudioGroup === 'dub' ? 'text-primary' : 'text-white hover:text-accent'}`}
-                        title="Switch Audio"
-                      >
-                        <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
-                        <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase hidden sm:inline">
-                          {activeAudioGroup === 'dub' ? 'Dub' : 'Sub'}
-                        </span>
-                      </button>
-
-                      <AnimatePresence>
-                        {showAudioMenu && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 10 }}
-                            className="absolute bottom-10 right-0 bg-[#0c0c0c]/95 border border-white/10 rounded-xl p-2 w-36 flex flex-col gap-1 shadow-2xl backdrop-blur-md z-50 pointer-events-auto"
-                          >
-                            <button
-                              onClick={() => switchAudioGroup('other')}
-                              className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${
-                                activeAudioGroup === 'other'
-                                  ? 'bg-primary text-white'
-                                  : 'text-white/70 hover:bg-white/10 hover:text-white'
-                              }`}
-                            >
-                              Japanese (Sub)
-                            </button>
-                            <button
-                              onClick={() => switchAudioGroup('dub')}
-                              className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${
-                                activeAudioGroup === 'dub'
-                                  ? 'bg-primary text-white'
-                                  : 'text-white/70 hover:bg-white/10 hover:text-white'
-                              }`}
-                            >
-                              English (Dub)
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
                   )}
 
                   {levels.length > 1 && (
                     <div className="relative">
                       <button 
-                        onClick={() => { setShowQualityMenu(!showQualityMenu); setShowAudioMenu(false); }} 
+                        onClick={() => setShowQualityMenu(!showQualityMenu)} 
                         className="text-white hover:text-accent transition-all flex items-center gap-1"
                         title="Quality Settings"
                       >
-                        <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <Settings className="w-5 h-5 sm:w-6 h-6" />
                         <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase">
                           {levels.find(l => l.id === currentLevel)?.name || "Auto"}
                         </span>
@@ -914,7 +846,7 @@ export function VideoPlayer({
                   )}
 
                   <button onClick={toggleFullscreen} className="text-white hover:text-accent transition-all">
-                    <Maximize className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <Maximize className="w-5 h-5 sm:w-6 h-6" />
                   </button>
                 </div>
               </div>

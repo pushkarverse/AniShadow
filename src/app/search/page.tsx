@@ -55,26 +55,26 @@ export default async function SearchPage({
     <div className="min-h-screen bg-background text-foreground flex flex-col pb-20">
       <Navbar />
 
-        <main className="flex-1 container mx-auto px-6 md:px-12 pt-24 md:pt-28">
-        <div className="flex flex-col gap-4 mb-8 md:mb-10">
-          <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter italic flex items-center gap-3 md:gap-4">
-            <SearchIcon className="w-8 h-8 md:w-12 md:h-12 text-primary" />
+      <main className="flex-1 container mx-auto px-6 md:px-12 pt-32">
+        <div className="flex flex-col gap-6 mb-12">
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter italic flex items-center gap-4">
+                <SearchIcon className="w-10 h-10 md:w-16 md:h-16 text-primary" />
                 Discovery
             </h1>
-          <div className="h-1 w-24 md:w-28 bg-primary rounded-full shadow-lg shadow-primary/20" />
-          <p className="text-foreground/60 max-w-2xl leading-relaxed text-sm md:text-base italic">
+            <div className="h-1.5 w-32 bg-primary rounded-full shadow-lg shadow-primary/20" />
+            <p className="text-foreground/60 max-w-2xl leading-relaxed text-lg italic">
                 {query ? `Refining results for "${query}"` : "Explore our vast library of premium anime content."}
             </p>
         </div>
 
-        <div className="max-w-4xl">
-          <form action="/search" method="GET" className="mb-4 relative group">
+        <div className="max-w-5xl">
+          <form action="/search" method="GET" className="mb-6 relative group">
               <input 
                   type="text" 
                   name="q"
                   defaultValue={query}
                   placeholder="Type anything to search..."
-              className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 md:px-8 py-4 md:py-5 text-base md:text-lg focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-2xl shadow-black/40 group-hover:border-white/20"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-8 py-6 text-xl md:text-2xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-2xl shadow-black/40 group-hover:border-white/20"
               />
               
               {/* Keep hidden filter inputs to maintain state on search */}
@@ -86,7 +86,7 @@ export default async function SearchPage({
 
               <button 
                   type="submit" 
-                  className="absolute right-3 top-3 bottom-3 bg-primary text-white px-5 md:px-8 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] md:text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                  className="absolute right-4 top-4 bottom-4 bg-primary text-white px-8 rounded-xl font-black uppercase tracking-[0.25em] text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
               >
                   Find
               </button>
@@ -112,7 +112,7 @@ export default async function SearchPage({
         ) : (
           <>
             {searchResults.length > 0 && (
-              <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-7 gap-6 gap-y-12 ${currentType === "MANGA" ? "manga-theme" : ""}`}>
+              <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 gap-y-12 ${currentType === "MANGA" ? "manga-theme" : ""}`}>
                 {searchResults.map((anime) => {
                   const Card = currentType === "MANGA" ? MangaCard : AnimeCard;
                   return (

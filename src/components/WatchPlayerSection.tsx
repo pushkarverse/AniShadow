@@ -29,29 +29,95 @@ export function WatchPlayerSection({
   allServers = []
 }: WatchPlayerSectionProps) {
   const [currentVideoUrl, setCurrentVideoUrl] = useState(videoUrl);
+  const [selectedServer, setSelectedServer] = useState(allServers[0]?.name || "Primary");
+  const [activeServerGroup, setActiveServerGroup] = useState<"dub" | "other">("other");
 
   const groupedServers = useMemo(() => {
     const dub: ServerEntry[] = [];
     const other: ServerEntry[] = [];
+
     for (const server of allServers) {
-      if (server.kind === "dub") dub.push(server);
-      else other.push(server);
+      if (server.kind === "dub") {
+        dub.push(server);
+      } else {
+        other.push(server);
+      }
     }
-    return { dub, other };
+
+    return {
+      dub,
+      other
+    };
   }, [allServers]);
+
+  const activeGroupServers = activeServerGroup === "dub" ? groupedServers.dub : groupedServers.other;
+
+  const activeServerLabel = activeServerGroup === "dub" ? "English Dub" : "Sub";
 
   useEffect(() => {
     setCurrentVideoUrl(videoUrl);
 
     const preferredGroup = groupedServers.other.length > 0 ? "other" : "dub";
+    setActiveServerGroup(preferredGroup);
+
     const preferredServer = (preferredGroup === "other" ? groupedServers.other : groupedServers.dub)[0] || allServers[0];
     if (preferredServer) {
+      setSelectedServer(preferredServer.name);
       setCurrentVideoUrl(preferredServer.url);
     }
   }, [videoUrl, groupedServers.dub, groupedServers.other, allServers]);
 
+  const switchGroup = (kind: "dub" | "other") => {
+    setActiveServerGroup(kind);
+    const nextServer = (kind === "dub" ? groupedServers.dub : groupedServers.other)[0];
+    if (!nextServer) return;
+    setSelectedServer(nextServer.name);
+    setCurrentVideoUrl(nextServer.url);
+  };
+
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/5 bg-black/80 px-4 py-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] font-black uppercase tracking-[0.25em] text-white/30 mr-1">
+            Switch Audio
+          </span>
+          <button
+            onClick={() => switchGroup("other")}
+            disabled={groupedServers.other.length === 0}
+            suppressHydrationWarning={true}
+            className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest border transition-all ${
+              activeServerGroup === "other"
+                ? "bg-primary/15 border-primary text-primary"
+                : "bg-white/5 border-white/10 text-white/35 hover:text-white"
+            } ${groupedServers.other.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
+          >
+            Sub
+          </button>
+          <button
+            onClick={() => switchGroup("dub")}
+            disabled={groupedServers.dub.length === 0}
+            suppressHydrationWarning={true}
+            className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest border transition-all ${
+              activeServerGroup === "dub"
+                ? "bg-primary/15 border-primary text-primary"
+                : "bg-white/5 border-white/10 text-white/35 hover:text-white"
+            } ${groupedServers.dub.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
+          >
+            Dub
+          </button>
+        </div>
+        <button
+          disabled={activeGroupServers.length === 0}
+          suppressHydrationWarning={true}
+          className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-all ${
+            activeGroupServers.length > 0 ? "bg-white/5 border-white/10 text-white/40 hover:text-white" : "bg-white/5 border-white/10 text-white/20"
+          } ${activeGroupServers.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
+        >
+          {activeServerLabel}
+        </button>
+      </div>
+
       <div className="w-full rounded-3xl overflow-hidden bg-black border border-white/5 shadow-2xl relative group/player">
         {currentVideoUrl ? (
           <PlayerWrapper
@@ -59,7 +125,6 @@ export function WatchPlayerSection({
             title={title}
             episodeTitle={episodeTitle}
             poster={poster}
-            allServers={allServers}
           />
         ) : (
           <div className="aspect-video relative flex items-center justify-center bg-[#080808] overflow-hidden">
@@ -80,6 +145,35 @@ export function WatchPlayerSection({
           </div>
         )}
       </div>
+
+      {activeGroupServers.length > 1 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/5 bg-black/80 px-4 py-3">
+          <span className="text-[10px] font-black uppercase tracking-[0.25em] text-white/30 mr-1 shrink-0">
+            Select Server
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {activeGroupServers.map((server) => {
+              const isSelected = selectedServer === server.name;
+              return (
+                <button
+                  key={server.name + "-" + server.url}
+                  onClick={() => {
+                    setSelectedServer(server.name);
+                    setCurrentVideoUrl(server.url);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all ${
+                    isSelected
+                      ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                      : "bg-white/5 border-white/10 text-white/45 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  {server.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <h1 className="text-[clamp(1.5rem,4vw,2.5rem)] font-black tracking-tighter leading-none text-white">{title}</h1>

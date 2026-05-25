@@ -14,20 +14,11 @@ const VideoPlayer = dynamic(() => import("./VideoPlayer").then((mod) => mod.Vide
   )
 });
 
-interface ServerEntry {
-  name: string;
-  provider: string;
-  url: string;
-  kind?: "dub" | "other";
-  label?: string;
-}
-
 interface PlayerWrapperProps {
   videoUrl: string;
   title: string;
   episodeTitle: string;
   poster?: string;
-  allServers?: ServerEntry[];
 }
 
 export function PlayerWrapper(props: PlayerWrapperProps) {
