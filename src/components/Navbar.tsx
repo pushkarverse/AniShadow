@@ -83,20 +83,16 @@ export function Navbar() {
             <Menu className="w-6 h-6" />
           </button>
           
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="relative w-8 h-8 md:w-9 md:h-9 shrink-0 overflow-hidden rounded-lg bg-white/5 border border-white/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+          <Link href="/" className="flex items-center group">
+            <div className="relative w-36 h-8 md:w-44 md:h-10 shrink-0 transition-transform duration-300 group-hover:scale-105">
               <Image
                 src="/logo.png"
-                alt="AniShadow"
+                alt="AniShadow Logo"
                 fill
                 priority
-                sizes="(max-width: 768px) 32px, 36px"
-                className="object-contain"
+                sizes="(max-width: 768px) 144px, 176px"
+                className="object-contain object-left"
               />
-            </div>
-            <div className="flex items-center scale-90 md:scale-100 origin-left">
-              <span className="text-2xl font-black italic text-primary tracking-tighter">{isMangaRoute ? "MANGA" : "ANI"}</span>
-              <span className="text-2xl font-black italic text-white tracking-tighter">SHADOW</span>
             </div>
           </Link>
 
@@ -278,21 +274,15 @@ export function Navbar() {
               className="fixed inset-y-0 left-0 w-72 bg-card border-r border-white/5 z-[70] p-6 shadow-2xl"
             >
               <div className="flex items-center justify-between mb-10">
-                <div className="flex items-center gap-2">
-                  <div className="relative w-7 h-7 shrink-0 overflow-hidden rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-                    <Image
-                      src="/logo.png"
-                      alt="AniShadow"
-                      fill
-                      priority
-                      sizes="28px"
-                      className="object-contain"
-                    />
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-xl font-black italic text-primary">{isMangaRoute ? "MANGA" : "ANI"}</span>
-                    <span className="text-xl font-black italic text-white">SHADOW</span>
-                  </div>
+                <div className="relative w-28 h-8 shrink-0">
+                  <Image
+                    src="/logo.png"
+                    alt="AniShadow Logo"
+                    fill
+                    priority
+                    sizes="112px"
+                    className="object-contain object-left"
+                  />
                 </div>
                 <button 
                   onClick={() => setIsMobileMenuOpen(false)}
