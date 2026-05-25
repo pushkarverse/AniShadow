@@ -258,6 +258,124 @@ export function VideoPlayer({
     }, delay);
   };
 
+  // Media Session API integration
+  useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
+
+    try {
+      const origin = window.location.origin;
+      const defaultIcon = `${origin}/icon.png`;
+      const artworkUrl = poster ? (poster.startsWith("http") ? poster : `${origin}${poster.startsWith("/") ? "" : "/"}${poster}`) : defaultIcon;
+
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: episodeTitle || "Episode",
+        artist: title || "AniShadow",
+        album: "AniShadow",
+        artwork: [
+          {
+            src: artworkUrl,
+            sizes: "512x512",
+            type: artworkUrl.endsWith(".png") ? "image/png" : "image/jpeg",
+          },
+        ],
+      });
+    } catch (err) {
+      console.warn("Failed to set Media Session metadata:", err);
+    }
+  }, [title, episodeTitle, poster]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
+    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+  }, [isPlaying]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (typeof window === "undefined" || !("mediaSession" in navigator) || !video) return;
+
+    const updatePositionState = () => {
+      if ("setPositionState" in navigator.mediaSession) {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: video.duration || 0,
+            playbackRate: video.playbackRate || 1,
+            position: video.currentTime || 0,
+          });
+        } catch (e) {
+          console.warn("Failed to set position state:", e);
+        }
+      }
+    };
+
+    video.addEventListener("timeupdate", updatePositionState);
+    video.addEventListener("durationchange", updatePositionState);
+    video.addEventListener("ratechange", updatePositionState);
+
+    return () => {
+      video.removeEventListener("timeupdate", updatePositionState);
+      video.removeEventListener("durationchange", updatePositionState);
+      video.removeEventListener("ratechange", updatePositionState);
+    };
+  }, [isPlaying, duration]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (typeof window === "undefined" || !("mediaSession" in navigator) || !video) return;
+
+    const playHandler = async () => {
+      try {
+        await video.play();
+        setIsPlaying(true);
+      } catch (err) {
+        console.error("MediaSession play error:", err);
+      }
+    };
+
+    const pauseHandler = () => {
+      video.pause();
+      setIsPlaying(false);
+    };
+
+    const seekBackwardHandler = () => {
+      video.currentTime = Math.max(0, video.currentTime - 10);
+    };
+
+    const seekForwardHandler = () => {
+      video.currentTime = Math.min(video.duration || duration, video.currentTime + 10);
+    };
+
+    const seekToHandler = (details: any) => {
+      if (details.seekTime !== undefined) {
+        if (details.fastSeek && "fastSeek" in video) {
+          (video as any).fastSeek(details.seekTime);
+        } else {
+          video.currentTime = details.seekTime;
+        }
+      }
+    };
+
+    navigator.mediaSession.setActionHandler("play", playHandler);
+    navigator.mediaSession.setActionHandler("pause", pauseHandler);
+    navigator.mediaSession.setActionHandler("seekbackward", seekBackwardHandler);
+    navigator.mediaSession.setActionHandler("seekforward", seekForwardHandler);
+    
+    try {
+      navigator.mediaSession.setActionHandler("seekto", seekToHandler);
+    } catch {
+      // seekto is not supported on all browsers
+    }
+
+    return () => {
+      navigator.mediaSession.setActionHandler("play", null);
+      navigator.mediaSession.setActionHandler("pause", null);
+      navigator.mediaSession.setActionHandler("seekbackward", null);
+      navigator.mediaSession.setActionHandler("seekforward", null);
+      try {
+        navigator.mediaSession.setActionHandler("seekto", null);
+      } catch {}
+    };
+  }, [currentVideoUrl, duration]);
+
   const [showSkipOverlay, setShowSkipOverlay] = useState<{
     visible: boolean;
     direction: "forward" | "backward";
