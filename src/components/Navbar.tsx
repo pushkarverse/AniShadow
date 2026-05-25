@@ -12,6 +12,7 @@ export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -45,6 +46,7 @@ export function Navbar() {
       const typeParam = isMangaRoute ? "&type=MANGA" : "";
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}${typeParam}`);
       setIsFilterOpen(false);
+      setIsMobileSearchOpen(false);
     }
   };
 
@@ -174,7 +176,21 @@ export function Navbar() {
             </button>
           </div>
 
-          <div className="flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/5">
+          {/* Mobile Search Toggle */}
+          <button
+            onClick={() => {
+              setIsMobileSearchOpen(!isMobileSearchOpen);
+              setIsMobileMenuOpen(false);
+            }}
+            className={`p-2.5 rounded-full transition-all md:hidden relative ${
+              isMobileSearchOpen ? "text-primary bg-white/5" : "text-white/60 hover:text-white"
+            }`}
+            title="Search"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+
+          <div className="hidden sm:flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/5">
             <button suppressHydrationWarning className="px-3 py-1.5 bg-primary text-white text-[10px] font-black rounded-full uppercase tracking-tighter">EN</button>
             <button suppressHydrationWarning className="px-3 py-1.5 text-white/40 hover:text-white text-[10px] font-black rounded-full uppercase tracking-tighter transition-colors">JP</button>
           </div>
@@ -295,6 +311,64 @@ export function Navbar() {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Search Bar Slide Down */}
+      <AnimatePresence>
+        {isMobileSearchOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="md:hidden border-t border-white/5 bg-[#0a0a0a] px-4 py-3 relative z-40 overflow-hidden"
+          >
+            <form onSubmit={handleSearch} className="relative w-full flex gap-2">
+              <div className="relative flex-1 group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/40 group-focus-within:text-primary transition-colors">
+                  <Search className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  placeholder={isMangaRoute ? "Search manga..." : "Search anime..."}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  suppressHydrationWarning
+                  className="w-full h-11 bg-white/5 border border-white/10 rounded-full pl-11 pr-4 text-sm focus:bg-white/10 focus:border-primary/50 focus:ring-0 transition-all outline-none"
+                />
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                suppressHydrationWarning
+                className={`h-11 px-4 rounded-full flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-all border ${
+                  isFilterOpen 
+                    ? "bg-primary text-white border-primary" 
+                    : "bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border-white/5"
+                }`}
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+              </button>
+            </form>
+
+            {/* Mobile Filter Dropdown */}
+            <AnimatePresence>
+              {isFilterOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="mt-3 w-full z-50 pointer-events-auto"
+                >
+                  <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl shadow-2xl p-2 max-h-[60vh] overflow-y-auto no-scrollbar">
+                    <Suspense fallback={<div className="p-4 text-xs font-bold text-white/20 animate-pulse">Loading filters...</div>}>
+                      <SearchFilters />
+                    </Suspense>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
         )}
       </AnimatePresence>
     </header>

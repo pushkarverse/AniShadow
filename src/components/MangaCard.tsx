@@ -58,6 +58,7 @@ export const MangaCard = ({
   const [isInLibrary, setIsInLibrary] = useState(false);
   const [isLibraryLoading, setIsLibraryLoading] = useState(false);
   const [statusMenuPos, setStatusMenuPos] = useState({ top: 0, left: 0 });
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   
   const statusMenuRef = useRef<HTMLDivElement>(null);
   const statusButtonRef = useRef<HTMLButtonElement>(null);
@@ -77,6 +78,13 @@ export const MangaCard = ({
       const exists = watchlist.some((item: { mangaId: string }) => item.mangaId === id);
       setIsInLibrary(exists);
     }
+
+    const handleResize = () => {
+      setIsMobileViewport(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [id]);
 
   useEffect(() => {
@@ -194,6 +202,11 @@ export const MangaCard = ({
               e.stopPropagation();
               
               if (!showInfo) {
+                if (isMobileViewport) {
+                  fetchInfo();
+                  setShowInfo(true);
+                  return;
+                }
                 const rect = triggerRef.current?.getBoundingClientRect();
                 if (rect) {
                   const windowWidth = window.innerWidth;
@@ -222,7 +235,7 @@ export const MangaCard = ({
                 setShowInfo(false);
               }
             }}
-            className="p-2 rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg border border-accent/40 opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 hover:scale-100"
+            className="p-2 rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg border border-accent/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 scale-90 hover:scale-100"
           >
             <Info className="w-4 h-4" />
           </button>
@@ -232,32 +245,81 @@ export const MangaCard = ({
         {isMounted && createPortal(
           <AnimatePresence>
             {showInfo && (
-              <motion.div
-                ref={popoverRef}
-                initial={{ opacity: 0, scale: 0.95, x: popoverPos.flipX ? 10 : -10 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.95, x: popoverPos.flipX ? 10 : -10 }}
-                style={{ 
-                  position: 'fixed',
-                  top: popoverPos.top,
-                  left: popoverPos.left,
-                  width: '320px',
-                }}
-                onClick={(e) => e.stopPropagation()}
-                className="z-[9999] bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-0 shadow-[0_20px_50px_rgba(0,0,0,0.5),var(--shadow-primary)] max-h-[85vh] flex flex-col overflow-hidden ring-1 ring-white/5 manga-theme"
-              >
-                {/* Header - Fixed */}
-                <div className="flex justify-between items-start p-6 pb-4 shrink-0 bg-gradient-to-b from-white/[0.02] to-transparent">
-                  <div className="flex flex-col gap-1">
-                    <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
-                       <div className="w-1 h-3 bg-primary rounded-full" />
-                       Manga Preview
-                    </h4>
+              <>
+                {/* Mobile Backdrop Overlay */}
+                {isMobileViewport && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setShowInfo(false)}
+                    className="fixed inset-0 bg-black/60 z-[9998] backdrop-blur-xs"
+                  />
+                )}
+                <motion.div
+                  ref={popoverRef}
+                  initial={
+                    isMobileViewport
+                      ? { y: "100%", opacity: 1, scale: 1, x: 0 }
+                      : { opacity: 0, scale: 0.95, x: popoverPos.flipX ? 10 : -10 }
+                  }
+                  animate={
+                    isMobileViewport
+                      ? { y: 0 }
+                      : { opacity: 1, scale: 1, x: 0 }
+                  }
+                  exit={
+                    isMobileViewport
+                      ? { y: "100%" }
+                      : { opacity: 0, scale: 0.95, x: popoverPos.flipX ? 10 : -10 }
+                  }
+                  transition={
+                    isMobileViewport
+                      ? { type: "spring", damping: 25, stiffness: 220 }
+                      : undefined
+                  }
+                  style={
+                    isMobileViewport
+                      ? { 
+                          position: 'fixed',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          width: '100%',
+                        }
+                      : { 
+                          position: 'fixed',
+                          top: popoverPos.top,
+                          left: popoverPos.left,
+                          width: '320px',
+                        }
+                  }
+                  onClick={(e) => e.stopPropagation()}
+                  className={`z-[9999] bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 p-0 shadow-[0_20px_50px_rgba(0,0,0,0.5),var(--shadow-primary)] flex flex-col overflow-hidden ring-1 ring-white/5 manga-theme ${
+                    isMobileViewport 
+                      ? 'rounded-t-3xl max-h-[80vh]' 
+                      : 'rounded-2xl max-h-[85vh]'
+                  }`}
+                >
+                  {/* Drag handle visible only on mobile bottom sheet */}
+                  {isMobileViewport && (
+                    <div className="w-12 h-1 bg-white/20 rounded-full mx-auto my-3 shrink-0" />
+                  )}
+
+                  {/* Header - Fixed */}
+                  <div className={`flex justify-between items-start pb-4 shrink-0 bg-gradient-to-b from-white/[0.02] to-transparent ${
+                    isMobileViewport ? 'px-6 pt-1' : 'p-6'
+                  }`}>
+                    <div className="flex flex-col gap-1">
+                      <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
+                         <div className="w-1 h-3 bg-primary rounded-full" />
+                         Manga Preview
+                      </h4>
+                    </div>
+                    <button onClick={() => setShowInfo(false)} className="p-1 rounded-full hover:bg-white/5 text-white/30 hover:text-white transition-all">
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button onClick={() => setShowInfo(false)} className="p-1 rounded-full hover:bg-white/5 text-white/30 hover:text-white transition-all">
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
 
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar space-y-6">
@@ -389,7 +451,8 @@ export const MangaCard = ({
                   </div>
                 </div>
               </motion.div>
-            )}
+            </>
+          )}
           </AnimatePresence>,
           document.body
         )}

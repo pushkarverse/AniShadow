@@ -516,6 +516,7 @@ export function VideoPlayer({
           <video
             ref={videoRef}
             crossOrigin="anonymous"
+            playsInline
             className="absolute inset-0 w-full h-full object-contain"
             onTimeUpdate={() => {
                 const time = videoRef.current?.currentTime || 0;
@@ -574,7 +575,7 @@ export function VideoPlayer({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/90 via-transparent to-black/60 p-6 pointer-events-none"
+            className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/90 via-transparent to-black/60 p-4 md:p-6 pointer-events-none"
           >
             <div className="flex justify-between items-start">
               <div className="pointer-events-auto">
@@ -603,13 +604,13 @@ export function VideoPlayer({
               </div>
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-3 sm:gap-6">
                   <button onClick={skipBackward} className="text-white hover:text-accent transition-all scale-110 active:scale-95" title="Rewind 10s">
                     <RotateCcw className="w-5 h-5" />
                   </button>
 
                   <button onClick={togglePlay} className="text-white hover:text-accent transition-all scale-110 active:scale-95">
-                    {isPlaying ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7 fill-current" />}
+                    {isPlaying ? <Pause className="w-6 h-6 sm:w-7 h-7" /> : <Play className="w-6 h-6 sm:w-7 h-7 fill-current" />}
                   </button>
 
                   <button onClick={skipForward} className="text-white hover:text-accent transition-all scale-110 active:scale-95" title="Forward 10s">
@@ -621,19 +622,19 @@ export function VideoPlayer({
                           videoRef.current.muted = !isMuted;
                           setIsMuted(!isMuted);
                       }
-                  }} className="text-white hover:text-accent transition-all">
+                  }} className="text-white hover:text-accent transition-all hidden sm:inline-flex">
                     {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
                   </button>
                 </div>
                 
-                <div className="flex items-center gap-6 relative">
+                <div className="flex items-center gap-3 sm:gap-6 relative">
                   {proxiedSubtitleUrl && (
                     <button 
                       onClick={() => setIsSubtitlesOn(!isSubtitlesOn)} 
                       className={`transition-all ${isSubtitlesOn ? 'text-primary' : 'text-white/60 hover:text-white'}`}
                       title="Toggle Subtitles"
                     >
-                      <Subtitles className="w-6 h-6" />
+                      <Subtitles className="w-5 h-5 sm:w-6 h-6" />
                     </button>
                   )}
 
@@ -644,7 +645,7 @@ export function VideoPlayer({
                         className="text-white hover:text-accent transition-all flex items-center gap-1"
                         title="Quality Settings"
                       >
-                        <Settings className="w-6 h-6" />
+                        <Settings className="w-5 h-5 sm:w-6 h-6" />
                         <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase">
                           {levels.find(l => l.id === currentLevel)?.name || "Auto"}
                         </span>
@@ -684,7 +685,7 @@ export function VideoPlayer({
                           document.exitFullscreen();
                       }
                   }} className="text-white hover:text-accent transition-all">
-                    <Maximize className="w-6 h-6" />
+                    <Maximize className="w-5 h-5 sm:w-6 h-6" />
                   </button>
                 </div>
               </div>
