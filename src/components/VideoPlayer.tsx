@@ -290,7 +290,11 @@ export function VideoPlayer({
     } else {
       lastTapRef.current = now;
       clickTimeoutRef.current = setTimeout(() => {
-        setShowControls((prev) => !prev);
+        if (window.innerWidth < 768) {
+          setShowControls((prev) => !prev);
+        } else {
+          togglePlay();
+        }
       }, DOUBLE_PRESS_DELAY);
     }
   };
@@ -557,8 +561,8 @@ export function VideoPlayer({
       {/* Cinematic Thumbnail Preview Overlay */}
       <div className={`relative w-full ${isFullscreen ? 'h-full min-h-screen' : 'aspect-video'}`}>
       {(isExtracting || isBuffering) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#080808]/85 backdrop-blur-md z-50">
-          <div className="relative w-16 h-16">
+        <div className="absolute inset-0 flex items-center justify-center bg-[#080808]/80 backdrop-blur-xs z-30 pointer-events-none">
+          <div className="relative w-16 h-16 pointer-events-auto">
             <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping" />
             <div className="absolute inset-0 rounded-full border-t-2 border-r-2 border-primary animate-spin" />
           </div>
@@ -582,20 +586,20 @@ export function VideoPlayer({
         </div>
       )}
 
-      {/* Big Center Play Button Overlay for Paused State */}
+      {/* Center Play Button Overlay for Paused State */}
       {!isPlaying && hasInteracted && !isIframe && (
         <div 
-          className="absolute inset-0 flex flex-col items-center justify-center z-30 bg-black/40 hover:bg-black/20 transition-colors cursor-pointer group/playbtn" 
-          onClick={togglePlay}
+          className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/40 transition-colors pointer-events-none" 
         >
            <motion.button 
              initial={{ scale: 0.8, opacity: 0 }}
              animate={{ scale: 1, opacity: 1 }}
              whileHover={{ scale: 1.1 }}
              whileTap={{ scale: 0.95 }}
-             className="w-20 h-20 md:w-24 md:h-24 bg-primary/90 group-hover/playbtn:bg-primary rounded-full flex items-center justify-center text-white shadow-[0_0_40px_rgba(220,38,38,0.5)] backdrop-blur-sm transition-all pointer-events-none"
+             onClick={togglePlay}
+             className="w-14 h-14 md:w-16 md:h-16 bg-primary/90 hover:bg-primary rounded-full flex items-center justify-center text-white shadow-[0_0_20px_rgba(220,38,38,0.4)] backdrop-blur-sm transition-all pointer-events-auto cursor-pointer"
            >
-             <Play className="w-10 h-10 md:w-12 md:h-12 ml-2 fill-current" />
+             <Play className="w-6 h-6 md:w-7 h-7 ml-1 fill-current" />
            </motion.button>
         </div>
       )}
@@ -704,12 +708,12 @@ export function VideoPlayer({
       </AnimatePresence>
 
       <AnimatePresence>
-        {showControls && hasInteracted && !isIframe && (
+        {(showControls || isBuffering || isExtracting) && hasInteracted && !isIframe && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/90 via-transparent to-black/60 p-4 md:p-6 pointer-events-none"
+            className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/90 via-transparent to-black/60 p-4 md:p-6 pointer-events-none z-40"
           >
             <div className="flex justify-between items-start">
               <div className="pointer-events-auto">
