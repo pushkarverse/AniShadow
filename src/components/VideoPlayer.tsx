@@ -541,6 +541,7 @@ export function VideoPlayer({
   useEffect(() => {
     setIsBuffering(true);
     setBuffered(0);
+    setIsPlaying(false); // Reset playing state on source switch to avoid UI/state desync
     if (videoRef.current && !videoRef.current.paused) {
       wasPlayingRef.current = true;
     } else {
@@ -593,6 +594,19 @@ export function VideoPlayer({
               name: level.name || (level.height ? `${level.height}p` : `Quality ${idx}`),
             }));
             setLevels([{ id: -1, name: "Auto" }, ...parsedLevels]);
+
+            if (videoRef.current) {
+                if (lastTimeRef.current > 0) {
+                    videoRef.current.currentTime = lastTimeRef.current;
+                }
+                if (wasPlayingRef.current) {
+                    videoRef.current.play().then(() => {
+                        setIsPlaying(true);
+                    }).catch((err) => {
+                        console.warn("HLS autoplay failed:", err);
+                    });
+                }
+            }
         });
 
         hls.on(Hls.Events.ERROR, (_event, data) => {
