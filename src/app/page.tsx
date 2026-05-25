@@ -25,6 +25,7 @@ export default async function Home() {
     rating: anime.rating ? (Number(anime.rating) / 10).toFixed(1) : "8.5",
     releaseDate: anime.releaseDate || "2024",
     type: anime.type,
+    slug: anime.slug,
     subEpisodes: anime.subEpisodes,
     dubEpisodes: anime.dubEpisodes,
   }));
@@ -61,6 +62,7 @@ export default async function Home() {
                     key={anime.id} 
                     id={anime.id} 
                     title={getAnimeTitle(anime.title)} 
+                    slug={anime.slug}
                     image={anime.image && anime.image !== "" ? anime.image : "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop"} 
                     rating={anime.rating ? Number(anime.rating) / 10 : undefined}
                     episodeNumber={anime.episodeNumber || anime.episodes}

@@ -9,6 +9,7 @@ import React, { useState } from "react";
 
 interface CommunityWatchClientProps {
   id: string;
+  slug: string;
   episodeNumber: number;
   anime: {
     title: string | { english?: string; romaji?: string; native?: string };
@@ -29,7 +30,7 @@ const mockMessages = [
   { id: 4, user: "GojoSatoru", text: "Domain Expansion! 🤞", time: "12:05", color: "text-purple-400" },
 ];
 
-export default function CommunityWatchClient({ id, episodeNumber, anime, streamData }: CommunityWatchClientProps) {
+export default function CommunityWatchClient({ id, slug, episodeNumber, anime, streamData }: CommunityWatchClientProps) {
   const titleString = typeof anime.title === 'string' ? anime.title : anime.title?.english || anime.title?.romaji || "";
   const currentEpisode = anime.episodes?.find(e => e.number === episodeNumber);
   const episodeTitle = currentEpisode?.title || `Episode ${episodeNumber}`;
@@ -125,7 +126,7 @@ export default function CommunityWatchClient({ id, episodeNumber, anime, streamD
                   {anime.episodes?.map((episode: { id: string; number: number; title?: string }) => (
                     <Link
                       key={episode.id}
-                      href={`/community/watch/${id}?ep=${episode.number}`}
+                      href={`/community/watch/${id}/${slug}?ep=${episode.number}`}
                       className={`group relative aspect-video rounded-2xl overflow-hidden border transition-all duration-500 ${
                         episode.number === episodeNumber 
                           ? "border-amber-500 bg-amber-500/5 ring-4 ring-amber-500/10" 

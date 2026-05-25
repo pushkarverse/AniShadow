@@ -18,7 +18,15 @@ export function Navbar() {
   const [isShuffling, setIsShuffling] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
 
-  const isMangaRoute = pathname?.startsWith('/manga');
+  const [isMangaRoute, setIsMangaRoute] = useState(pathname?.startsWith('/manga') || false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const isMangaPath = window.location.pathname.startsWith('/manga');
+    const params = new URLSearchParams(window.location.search);
+    const isMangaSearch = window.location.pathname.startsWith('/search') && params.get('type') === 'MANGA';
+    setIsMangaRoute(isMangaPath || isMangaSearch);
+  });
 
   // Close notifications when clicking outside
   useEffect(() => {
@@ -34,7 +42,8 @@ export function Navbar() {
   const handleSearch = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      const typeParam = isMangaRoute ? "&type=MANGA" : "";
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}${typeParam}`);
       setIsFilterOpen(false);
     }
   };
@@ -43,10 +52,10 @@ export function Navbar() {
     setIsShuffling(true);
     try {
       const res = await fetch("/api/random");
-      if (res.ok) {
-        const data = await res.json();
-        router.push(`/watch/${data.id}`);
-      }
+        if (res.ok) {
+          const data = await res.json();
+          router.push(`/watch/${data.id}/${data.slug || 'anime'}`);
+        }
     } catch (error) {
       console.error("Failed to fetch random anime:", error);
     } finally {

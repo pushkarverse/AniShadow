@@ -61,7 +61,15 @@ export async function GET(req: NextRequest) {
   if (!url) return new NextResponse("Missing URL", { status: 400 });
 
   try {
-    const referer = manualReferer || (url.includes("owocdn") ? "https://kwik.cx/" : url.includes("kaas") ? "https://kaas.to/" : url.includes("tech20hub") ? "https://animekai.to/" : new URL(url).origin);
+    const referer = manualReferer || (
+      url.includes("owocdn") ? "https://kwik.cx/" : 
+      url.includes("kaas") ? "https://kaas.to/" : 
+      url.includes("tech20hub") ? "https://animekai.to/" : 
+      url.includes("comick") ? "https://comick.art/" : 
+      url.includes("mangadex") ? "https://mangadex.org/" : 
+      url.includes("mangareader") ? "https://mangareader.to/" : 
+      new URL(url).origin
+    );
     
     const headers: Record<string, string> = {
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",

@@ -6,6 +6,11 @@ export async function GET() {
       Page (page: $page, perPage: $perPage) {
         media (type: ANIME, sort: POPULARITY_DESC) {
           id
+          title {
+            english
+            romaji
+            native
+          }
         }
       }
     }`;
@@ -24,7 +29,9 @@ export async function GET() {
         
         if (results.length > 0) {
             const randomAnime = results[Math.floor(Math.random() * results.length)];
-            return NextResponse.json({ id: randomAnime.id });
+            const title = randomAnime.title.english || randomAnime.title.romaji || randomAnime.title.native;
+            const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            return NextResponse.json({ id: randomAnime.id, slug });
         }
         
         return NextResponse.json({ error: 'No anime found' }, { status: 404 });

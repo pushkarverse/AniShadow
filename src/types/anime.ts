@@ -17,6 +17,7 @@ export interface Episode {
 export interface AnimeDetails {
   id: string;
   title: string | AnimeTitle;
+  slug?: string;
   image?: string;
   cover?: string;
   description?: string;
@@ -33,6 +34,7 @@ export interface AnimeDetails {
 export interface AnimeResult {
   id: string;
   title: string | AnimeTitle;
+  slug?: string;
   image?: string;
   type?: string;
   rating?: number;
@@ -42,6 +44,7 @@ export interface AnimeResult {
 export interface HeroResult {
     id: string;
     title: { romaji?: string; english?: string; native?: string };
+    slug?: string;
     image: string;
     cover: string;
     description: string;

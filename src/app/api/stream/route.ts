@@ -31,7 +31,7 @@ function rewriteM3u8(content: string, originalUrl: string, referer?: string): st
 
         // 2. Handle Key and Map lines (Quoted URIs)
         if (line.startsWith("#EXT-X-KEY") || line.startsWith("#EXT-X-MAP")) {
-            let processedLine = line.replace(/URI=(?:["']([^"']+)["']|([^,\s]+))/g, (match, quotedUrl, unquotedUrl) => {
+            const processedLine = line.replace(/URI=(?:["']([^"']+)["']|([^,\s]+))/g, (match, quotedUrl, unquotedUrl) => {
                 const relUrl = quotedUrl || unquotedUrl;
                 try {
                     const absolute = new URL(relUrl, baseUrl).href;
@@ -140,21 +140,45 @@ export async function GET(req: NextRequest) {
   if (!url) return new NextResponse("Missing URL", { status: 400 });
 
   try {
-    const defaultReferer = manualReferer || (url.includes("owocdn") ? "https://kwik.cx/" : url.includes("kaas") ? "https://kaas.to/" : url.includes("uwucdn") ? "https://megacloud.tv/" : new URL(url).origin);
+    const defaultReferer = manualReferer || (
+        (url.includes("owocdn") || url.includes("kwik.cx") || url.includes("animepahe") || url.includes("streampeaker.org")) ? "https://kwik.cx/" : 
+        url.includes("kaas") ? "https://kaas.to/" : 
+        url.includes("uwucdn") ? "https://megacloud.tv/" : 
+        url.includes("animeunity") ? "https://www.animeunity.tv/" :
+        url.includes("animesama") ? "https://anime-sama.me/" :
+        new URL(url).origin
+    );
     
     const referersToTry = [defaultReferer];
     if (url.includes("uwucdn") || url.includes("megacloud")) {
+        referersToTry.push("https://megacloud.tv"); // First priority
+        referersToTry.push("https://rabbitstream.net");
+        referersToTry.push("https://megacloud.tv/");
         referersToTry.push("https://rabbitstream.net/");
         referersToTry.push("https://hianime.to/");
-        referersToTry.push("https://zoro.to/");
+        referersToTry.push("https://megacloud.top/");
         referersToTry.push("");
     } else {
         referersToTry.push("");
     }
+    
+    // Some CDNs DON'T like Origin if it's the exact same as Referer in a proxy context
+    const isUwU = url.includes("uwucdn") || url.includes("megacloud");
+
+    const forwarded = req.headers.get("x-forwarded-for");
+    const clientIp = forwarded ? forwarded.split(',')[0] : "1.1.1.1";
+    const clientUA = req.headers.get("user-agent") || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
     const headers: Record<string, string> = {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "X-Forwarded-For": "1.1.1.1",
+      "User-Agent": clientUA,
+      "X-Forwarded-For": clientIp,
+      "Sec-Fetch-Mode": "cors",
+      "Sec-Fetch-Site": "cross-site",
+      "Sec-Fetch-Dest": "empty",
+      "Accept": "*/*",
+      "Accept-Encoding": "identity",
+      "Connection": "keep-alive",
+      "Cache-Control": "no-cache"
     };
 
     const range = req.headers.get("range");
@@ -169,13 +193,24 @@ export async function GET(req: NextRequest) {
             delete headers["Origin"];
         } else {
             headers["Referer"] = ref;
-            headers["Origin"] = new URL(ref).origin;
+            if (isUwU) {
+                delete headers["Origin"]; // MegaCloud anti-bot hates Origin in proxy!
+            } else {
+                try {
+                    headers["Origin"] = new URL(ref).origin;
+                } catch {
+                    headers["Origin"] = ref;
+                }
+            }
         }
 
         response = await fetch(url, { method, headers });
         if (response.ok || response.status === 206) {
+            console.log(`[Proxy] Success: ${url.substring(0, 50)}... with referer: ${ref || 'None'}`);
             finalReferer = ref;
             break;
+        } else {
+            console.warn(`[Proxy] Failed: ${url.substring(0, 50)}... Status: ${response.status} with referer: ${ref || 'None'}`);
         }
     }
 

@@ -5,12 +5,12 @@ import CommunityWatchClient from "./CommunityWatchClient";
 export const dynamic = "force-dynamic";
 
 interface CommunityWatchPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; slug: string }>;
   searchParams: Promise<{ ep?: string }>;
 }
 
 export default async function CommunityWatchPage({ params, searchParams }: CommunityWatchPageProps) {
-  const { id } = await params;
+  const { id, slug } = await params;
   const { ep = "1" } = await searchParams;
   const episodeNumber = parseInt(ep);
   
@@ -54,6 +54,7 @@ export default async function CommunityWatchPage({ params, searchParams }: Commu
   return (
     <CommunityWatchClient 
       id={id}
+      slug={slug}
       episodeNumber={episodeNumber}
       anime={anime}
       streamData={streamData}

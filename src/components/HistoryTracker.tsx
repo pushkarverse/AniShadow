@@ -9,9 +9,10 @@ interface HistoryTrackerProps {
   episodeNumber: number;
   displayEpisodeNumber: number;
   episodeTitle?: string;
+  slug?: string;
 }
 
-export function HistoryTracker({ animeId, title, image, episodeNumber, displayEpisodeNumber, episodeTitle }: HistoryTrackerProps) {
+export function HistoryTracker({ animeId, title, image, episodeNumber, displayEpisodeNumber, episodeTitle, slug }: HistoryTrackerProps) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
@@ -24,6 +25,7 @@ export function HistoryTracker({ animeId, title, image, episodeNumber, displayEp
       episodeNumber,
       displayEpisodeNumber,
       episodeTitle,
+      slug,
       watchedAt: new Date().toISOString(),
     };
 
@@ -31,7 +33,7 @@ export function HistoryTracker({ animeId, title, image, episodeNumber, displayEp
     const filtered = history.filter((item: { animeId: string }) => item.animeId !== animeId);
     const updated = [newEntry, ...filtered].slice(0, 50); // Keep last 50
     localStorage.setItem("anishadow-history", JSON.stringify(updated));
-  }, [animeId, title, image, episodeNumber, displayEpisodeNumber, episodeTitle]);
+  }, [animeId, title, image, episodeNumber, displayEpisodeNumber, episodeTitle, slug]);
 
   return null;
 }

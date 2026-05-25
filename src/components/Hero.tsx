@@ -5,10 +5,12 @@ import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
+import { slugify } from "@/lib/anime-utils";
 
 export interface HeroItem {
   id: string;
   title: string;
+  slug?: string;
   description: string;
   image: string;
   genres: string[];
@@ -173,7 +175,7 @@ export function Hero({ items = [] }: HeroProps) {
                 className="flex items-center gap-4"
               >
                 <Link 
-                  href={`/watch/${currentItem.id}?ep=1`} 
+                  href={`/watch/${currentItem.id}/${currentItem.slug || slugify(currentItem.title)}?ep=1`} 
                   className="flex items-center justify-center h-12 md:h-14 px-8 md:px-12 bg-primary hover:bg-accent text-white font-black rounded-xl transition-all shadow-lg shadow-primary/20 active:scale-95 text-xs md:text-sm uppercase tracking-widest"
                 >
                   Watch Now

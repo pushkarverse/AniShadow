@@ -9,10 +9,12 @@ import { createPortal } from "react-dom";
 
 import { IAnimeInfo } from "@consumet/extensions";
 import { RoomModal } from "./RoomModal";
+import { slugify } from "@/lib/anime-utils";
 
 interface AnimeCardProps {
   id: string;
   title: string;
+  slug?: string;
   image: string;
   episodeNumber?: number;
   rating?: number;
@@ -33,6 +35,7 @@ function getDisplayTitle(title: string | { english?: string; romaji?: string; us
 export function AnimeCard({ 
   id, 
   title, 
+  slug,
   image, 
   episodeNumber, 
   rating,
@@ -109,8 +112,9 @@ export function AnimeCard({
   };
 
   const isManga = type === 'MANGA' || (infoData?.type === 'MANGA');
-  const detailsUrl = href || `/anime/${id}`;
-  const actionUrl = href || (isManga ? `/anime/${id}` : `/watch/${id}?ep=1`);
+  const animeSlug = slug || slugify(title);
+  const detailsUrl = href || `/anime/${id}/${animeSlug}`;
+  const actionUrl = href || (isManga ? `/anime/${id}/${animeSlug}` : `/watch/${id}/${animeSlug}?ep=1`);
 
   return (
     <div className="group relative flex flex-col gap-3">
@@ -363,6 +367,7 @@ export function AnimeCard({
         onClose={() => setIsRoomModalOpen(false)} 
         animeId={id}
         animeTitle={title} 
+        slug={animeSlug}
       />
     </div>
   );

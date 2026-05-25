@@ -4,17 +4,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { getAnimeDetails, getStreamingLinks } from "@/lib/consumet";
-import { PlayerWrapper } from "@/components/PlayerWrapper";
+import { slugify, getAnimeTitle } from "@/lib/anime-utils";
+import { WatchPlayerSection } from "@/components/WatchPlayerSection";
 
 export const dynamic = "force-dynamic";
 
 interface WatchPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; slug: string }>;
   searchParams: Promise<{ ep?: string }>;
 }
 
 export default async function WatchPage({ params, searchParams }: WatchPageProps) {
-  const { id } = await params;
+  const { id, slug } = await params;
   const { ep = "1" } = await searchParams;
   const episodeNumber = parseInt(ep);
 
@@ -37,12 +38,11 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
     }
 
     // Correctly extract the title string from the ITitle object or string
-    const titleString = typeof anime.title === 'string' 
-        ? anime.title 
-        : (anime.title.english || anime.title.romaji || anime.title.native || "Unknown Anime");
+    const titleString = getAnimeTitle(anime.title);
+    const animeSlug = slugify(titleString);
 
-    // Fetch streaming links with the title string
-    const streamData = await getStreamingLinks(id, episodeNumber, episodeNumber, titleString);
+    // Fetch streaming links with the full title object (English, Romaji, Native)
+    const streamData = await getStreamingLinks(id, episodeNumber, episodeNumber, anime.title);
 
     const currentEpisode = anime.episodes?.find(e => e.number === episodeNumber) || anime.episodes?.[0];
     const episodeTitle = currentEpisode?.title || `Episode ${episodeNumber}`;
@@ -64,40 +64,19 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Left Column: Player & Info */}
             <div className="flex-1 flex flex-col gap-6">
-              <Link href={`/anime/${id}`} className="inline-flex items-center gap-2 text-white/40 hover:text-primary transition-all mb-4 group font-black uppercase tracking-widest text-[10px]">
+              <Link href={`/anime/${id}/${animeSlug}`} className="inline-flex items-center gap-2 text-white/40 hover:text-primary transition-all mb-4 group font-black uppercase tracking-widest text-[10px]">
                 <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                 <span>Back to Series</span>
               </Link>
 
-              <div className="w-full aspect-video rounded-3xl overflow-hidden bg-black border border-white/5 shadow-2xl relative group/player">
-                {videoUrl ? (
-                  <PlayerWrapper 
-                    videoUrl={videoUrl} 
-                    title={titleString}
-                    episodeTitle={episodeTitle}
-                    poster={anime.cover || anime.image || ""}
-                  />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-primary/40 bg-[#080808] gap-4">
-                    <p className="text-xl font-black uppercase tracking-[0.2em]">Source Throttled</p>
-                    <p className="text-xs text-white/20 font-medium">Try refreshing or check other episodes.</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <h1 className="text-[clamp(1.5rem,4vw,2.5rem)] font-black tracking-tighter leading-none text-white">{titleString}</h1>
-                <p className="text-lg text-primary font-black uppercase tracking-widest opacity-80">
-                  {episodeTitle}
-                </p>
-              </div>
-
-              <div className="p-8 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-md">
-                <div 
-                  className="text-white/60 leading-relaxed italic line-clamp-3 font-medium [&>i]:font-serif [&>i]:text-white/90 [&>br]:hidden"
-                  dangerouslySetInnerHTML={{ __html: anime.description || 'No description available.' }} 
-                />
-              </div>
+              <WatchPlayerSection
+                videoUrl={videoUrl || ""}
+                title={titleString}
+                episodeTitle={episodeTitle}
+                poster={anime.cover || anime.image || ""}
+                description={anime.description || "No description available."}
+                allServers={streamData?.allServers}
+              />
             </div>
 
             {/* Right Column: Episode List */}
@@ -107,7 +86,7 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
                 {anime.episodes?.map((episode) => (
                   <Link
                     key={episode.id}
-                    href={`/watch/${id}?ep=${episode.number}`}
+                    href={`/watch/${id}/${animeSlug}?ep=${episode.number}`}
                     className={`flex items-center gap-4 p-3 rounded-2xl transition-all border ${
                       episode.number === episodeNumber 
                         ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" 

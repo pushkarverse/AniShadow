@@ -9,14 +9,15 @@ interface RoomModalProps {
   onClose: () => void;
   animeId: string;
   animeTitle: string;
+  slug?: string;
 }
 
-export function RoomModal({ isOpen, onClose, animeId, animeTitle }: RoomModalProps) {
+export function RoomModal({ isOpen, onClose, animeId, animeTitle, slug }: RoomModalProps) {
   const router = useRouter();
 
   const handleCreateRoom = () => {
     // Navigate to the specialized community watch page
-    router.push(`/community/watch/${animeId}?ep=1`);
+    router.push(`/community/watch/${animeId}/${slug || "live-watch-party"}?ep=1`);
     onClose();
   };
 

@@ -10,8 +10,11 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "AniShadow | Premium Anime Streaming",
-  description: "Immersive, premium anime streaming experience.",
+  title: {
+    default: "AniShadow",
+    template: "AniShadow | %s"
+  },
+  description: "Immersive, premium anime and manga experience.",
 };
 
 export default function RootLayout({

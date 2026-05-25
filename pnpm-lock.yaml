@@ -17,6 +17,9 @@ importers:
       '@consumet/extensions':
         specifier: ^1.8.8
         version: 1.8.8
+      cheerio:
+        specifier: ^1.2.0
+        version: 1.2.0
       clsx:
         specifier: ^2.1.1
         version: 2.1.1

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Info, Star, FolderOpen, ChevronDown, Check, X, BookOpen } from "lucide-react";
+import { Info, Star, FolderOpen, ChevronDown, Check, X, BookOpen, BookmarkPlus, BookmarkCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
@@ -11,11 +11,12 @@ import { IAnimeInfo } from "@consumet/extensions";
 import { RoomModal } from "./RoomModal";
 
 import { getMangaDetails } from "@/lib/consumet";
-import { getMangaFormat } from "@/lib/anime-utils";
+import { getMangaFormat, slugify } from "@/lib/anime-utils";
 
 interface MangaCardProps {
   id: string;
   title: string;
+  slug?: string;
   image: string;
   rating?: number;
   type?: string;
@@ -37,6 +38,7 @@ function getDisplayTitle(title: string | { english?: string; romaji?: string; us
 export const MangaCard = ({
   id,
   title,
+  slug,
   image,
   rating,
   type = "MANGA",
@@ -53,8 +55,12 @@ export const MangaCard = ({
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string | null>(null);
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0, flipX: false, flipY: false });
+  const [isInLibrary, setIsInLibrary] = useState(false);
+  const [isLibraryLoading, setIsLibraryLoading] = useState(false);
+  const [statusMenuPos, setStatusMenuPos] = useState({ top: 0, left: 0 });
   
   const statusMenuRef = useRef<HTMLDivElement>(null);
+  const statusButtonRef = useRef<HTMLButtonElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const [isMounted, setIsMounted] = useState(false);
@@ -62,20 +68,29 @@ export const MangaCard = ({
 
   useEffect(() => {
     setIsMounted(true);
-    const savedStatus = localStorage.getItem(`manga-status-${id}`);
+    const savedStatus = localStorage.getItem(`mangashadow-status-${id}`);
     if (savedStatus) setCurrentStatus(savedStatus);
+
+    const savedWatchlist = localStorage.getItem("mangashadow-watchlist");
+    if (savedWatchlist) {
+      const watchlist = JSON.parse(savedWatchlist);
+      const exists = watchlist.some((item: { mangaId: string }) => item.mangaId === id);
+      setIsInLibrary(exists);
+    }
   }, [id]);
 
   useEffect(() => {
     if (currentStatus) {
-      localStorage.setItem(`manga-status-${id}`, currentStatus);
+      localStorage.setItem(`mangashadow-status-${id}`, currentStatus);
     }
   }, [currentStatus, id]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (statusMenuRef.current && !statusMenuRef.current.contains(event.target as Node)) {
-        setShowStatusMenu(false);
+        if (!statusButtonRef.current || !statusButtonRef.current.contains(event.target as Node)) {
+          setShowStatusMenu(false);
+        }
       }
       if (popoverRef.current && !popoverRef.current.contains(event.target as Node) && 
           triggerRef.current && !triggerRef.current.contains(event.target as Node)) {
@@ -84,7 +99,8 @@ export const MangaCard = ({
     };
 
     const handleScroll = () => {
-        if (showInfo) setShowInfo(false);
+      if (showInfo) setShowInfo(false);
+      if (showStatusMenu) setShowStatusMenu(false);
     };
 
     if (showInfo || showStatusMenu) {
@@ -110,8 +126,33 @@ export const MangaCard = ({
     }
   };
 
-  const detailsUrl = href || `/manga/${id}`;
-  const actionUrl = href || `/manga/${id}`;
+  const mangaSlug = slug || slugify(title);
+  const detailsUrl = href || `/manga/${id}/${mangaSlug}`;
+  const actionUrl = href || `/manga/${id}/${mangaSlug}`;
+
+  const toggleLibrary = () => {
+    setIsLibraryLoading(true);
+    const saved = localStorage.getItem("mangashadow-watchlist");
+    const watchlist = saved ? JSON.parse(saved) : [];
+
+    if (isInLibrary) {
+      const updated = watchlist.filter((item: { mangaId: string }) => item.mangaId !== id);
+      localStorage.setItem("mangashadow-watchlist", JSON.stringify(updated));
+      setIsInLibrary(false);
+    } else {
+      const newItem = {
+        mangaId: id,
+        title,
+        slug: mangaSlug,
+        image,
+        addedAt: new Date().toISOString()
+      };
+      const updated = [...watchlist, newItem];
+      localStorage.setItem("mangashadow-watchlist", JSON.stringify(updated));
+      setIsInLibrary(true);
+    }
+    setIsLibraryLoading(false);
+  };
 
   return (
     <div className="group relative flex flex-col gap-3 manga-theme">
@@ -259,22 +300,39 @@ export const MangaCard = ({
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="relative" ref={statusMenuRef}>
-                            <button onClick={() => setShowStatusMenu(!showStatusMenu)} className={`p-2.5 rounded-xl border transition-all flex items-center gap-1 ${currentStatus ? 'bg-primary text-white border-primary/40' : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10 hover:text-white'}`}>
+                            <button
+                              type="button"
+                              ref={statusButtonRef}
+                              onClick={() => {
+                                const nextOpen = !showStatusMenu;
+                                if (nextOpen && statusButtonRef.current) {
+                                  const rect = statusButtonRef.current.getBoundingClientRect();
+                                  const windowWidth = window.innerWidth;
+                                  const windowHeight = window.innerHeight;
+                                  const menuWidth = 176;
+                                  const menuHeight = 220;
+
+                                  let left = rect.left;
+                                  let top = rect.bottom + 8;
+
+                                  if (left + menuWidth > windowWidth - 10) {
+                                    left = windowWidth - menuWidth - 10;
+                                  }
+
+                                  if (top + menuHeight > windowHeight - 10) {
+                                    top = rect.top - menuHeight - 8;
+                                  }
+
+                                  setStatusMenuPos({ top, left });
+                                }
+                                setShowStatusMenu(nextOpen);
+                              }}
+                              className={`px-3 py-2 rounded-xl border transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-wider ${currentStatus ? 'bg-primary text-white border-primary/40' : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10 hover:text-white'}`}
+                            >
                               <FolderOpen className="w-4 h-4" />
+                              <span>{currentStatus || "Status"}</span>
                               <ChevronDown className={`w-3 h-3 transition-transform ${showStatusMenu ? 'rotate-180' : ''}`} />
                             </button>
-                            <AnimatePresence>
-                              {showStatusMenu && (
-                                <motion.div initial={{ opacity: 0, scale: 0.9, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: -10 }} className="absolute left-0 bottom-full mb-3 w-44 bg-[#121212] border border-white/10 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-50 p-1.5">
-                                  {statusOptions.map((status) => (
-                                    <button key={status} onClick={() => { setCurrentStatus(status); setShowStatusMenu(false); }} className="w-full px-3 py-2 text-left text-[11px] font-bold rounded-lg hover:bg-white/5 transition-all flex items-center justify-between group/opt">
-                                      <span className={currentStatus === status ? 'text-primary' : 'text-white/50 group-hover/opt:text-white'}>{status}</span>
-                                      {currentStatus === status && <Check className="w-3 h-3 text-primary" />}
-                                    </button>
-                                  ))}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
                           </div>
                         </div>
                       </div>
@@ -306,10 +364,60 @@ export const MangaCard = ({
 
                 {/* Footer Link - Fixed */}
                 <div className="p-6 pt-0 shrink-0">
-                  <Link href={detailsUrl} className="flex items-center justify-center w-full py-3 bg-primary text-white hover:bg-primary/90 rounded-xl text-sm font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">
+                  <div className="flex items-center gap-3">
+                    <Link href={detailsUrl} className="flex-1 flex items-center justify-center py-3 bg-primary text-white hover:bg-primary/90 rounded-xl text-sm font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">
                     Start Reading
-                  </Link>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={toggleLibrary}
+                      disabled={isLibraryLoading}
+                      className={`px-3 py-3 rounded-xl border transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-wider ${isInLibrary ? 'bg-white/5 border-white/10 text-white/50' : 'bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:text-white'}`}
+                    >
+                      {isInLibrary ? (
+                        <>
+                          <BookmarkCheck className="w-4 h-4 text-primary" />
+                          <span>Library</span>
+                        </>
+                      ) : (
+                        <>
+                          <BookmarkPlus className="w-4 h-4" />
+                          <span>Library</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
+        {isMounted && createPortal(
+          <AnimatePresence>
+            {showStatusMenu && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                style={{
+                  position: "fixed",
+                  top: statusMenuPos.top,
+                  left: statusMenuPos.left,
+                  width: "176px"
+                }}
+                className="bg-[#121212] border border-white/10 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-[10000] p-1.5"
+              >
+                {statusOptions.map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => { setCurrentStatus(status); setShowStatusMenu(false); }}
+                    className="w-full px-3 py-2 text-left text-[11px] font-bold rounded-lg hover:bg-white/5 transition-all flex items-center justify-between group/opt"
+                  >
+                    <span className={currentStatus === status ? 'text-primary' : 'text-white/50 group-hover/opt:text-white'}>{status}</span>
+                    {currentStatus === status && <Check className="w-3 h-3 text-primary" />}
+                  </button>
+                ))}
               </motion.div>
             )}
           </AnimatePresence>,
@@ -338,6 +446,7 @@ export const MangaCard = ({
         onClose={() => setIsRoomModalOpen(false)} 
         animeId={id}
         animeTitle={title} 
+        slug={mangaSlug}
       />
     </div>
   );

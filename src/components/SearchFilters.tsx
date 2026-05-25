@@ -60,7 +60,11 @@ export function SearchFilters() {
   };
 
   const clearFilters = () => {
-    router.push(`/search${currentQuery ? `?q=${encodeURIComponent(currentQuery)}` : ""}`);
+    const params = new URLSearchParams();
+    if (currentQuery) params.set("q", currentQuery);
+    if (currentType) params.set("type", currentType);
+    const queryString = params.toString();
+    router.push(`/search${queryString ? `?${queryString}` : ""}`);
   };
 
   const activeFilterCount = currentGenres.length + (currentStatus ? 1 : 0) + (currentFormat ? 1 : 0) + (currentSeason ? 1 : 0);

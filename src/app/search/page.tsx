@@ -82,6 +82,7 @@ export default async function SearchPage({
               {status && <input type="hidden" name="status" value={status} />}
               {season && <input type="hidden" name="season" value={season} />}
               {format && <input type="hidden" name="format" value={format} />}
+              <input type="hidden" name="type" value={currentType} />
 
               <button 
                   type="submit" 
@@ -122,7 +123,7 @@ export default async function SearchPage({
                       image={anime.image && anime.image !== "" ? anime.image : "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop"}
                       rating={anime.rating ? anime.rating / 10 : undefined}
                       type={currentType}
-                      href={currentType === "MANGA" ? `/manga/${anime.id}` : undefined}
+                      slug={anime.slug}
                       {...(currentType === "MANGA" ? { 
                         chapterNumber: (anime as any).episodeNumber,
                         countryOfOrigin: (anime as any).countryOfOrigin,

@@ -12,6 +12,7 @@
     "@auth/core": "^0.34.3",
     "@auth/mongodb-adapter": "^3.11.1",
     "@consumet/extensions": "^1.8.8",
+    "cheerio": "^1.2.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
     "got-scraping": "^4.2.1",

@@ -1,21 +1,19 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, FolderOpen, ChevronDown, Check, BookmarkPlus, BookmarkCheck } from "lucide-react";
+import { FolderOpen, ChevronDown, Check, BookmarkPlus, BookmarkCheck, Share2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { RoomModal } from "./RoomModal";
 
-interface AnimeActionsProps {
-  animeId: string;
+interface MangaActionsProps {
+  mangaId: string;
   title: string;
-  image: string;
   slug: string;
+  image: string;
 }
 
-const statusOptions = ["Watching", "On-Hold", "Planning", "Completed", "Dropped"];
+const statusOptions = ["Reading", "On-Hold", "Planning", "Completed", "Dropped"];
 
-export function AnimeActions({ animeId, title, image, slug }: AnimeActionsProps) {
-  const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
+export function MangaActions({ mangaId, title, slug, image }: MangaActionsProps) {
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string | null>(null);
   const [isAdded, setIsAdded] = useState(false);
@@ -24,20 +22,18 @@ export function AnimeActions({ animeId, title, image, slug }: AnimeActionsProps)
   
   const statusMenuRef = useRef<HTMLDivElement>(null);
 
-  // Effect to set mounted state once on client-side
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Effect to load status and watchlist from localStorage
   useEffect(() => {
-    const savedStatus = localStorage.getItem(`anime-status-${animeId}`);
+    const savedStatus = localStorage.getItem(`mangashadow-status-${mangaId}`);
     if (savedStatus) setCurrentStatus(savedStatus);
     
-    const savedWatchlist = localStorage.getItem("anishadow-watchlist");
+    const savedWatchlist = localStorage.getItem("mangashadow-watchlist");
     if (savedWatchlist) {
       const watchlist = JSON.parse(savedWatchlist);
-      const exists = watchlist.some((item: { animeId: string }) => item.animeId === animeId);
+      const exists = watchlist.some((item: { mangaId: string }) => item.mangaId === mangaId);
       setIsAdded(exists);
     }
 
@@ -48,33 +44,33 @@ export function AnimeActions({ animeId, title, image, slug }: AnimeActionsProps)
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [animeId]);
+  }, [mangaId]);
 
   const handleStatusChange = (status: string) => {
     setCurrentStatus(status);
-    localStorage.setItem(`anime-status-${animeId}`, status);
+    localStorage.setItem(`mangashadow-status-${mangaId}`, status);
     setShowStatusMenu(false);
   };
 
   const toggleWatchlist = () => {
     setIsLoading(true);
-    const saved = localStorage.getItem("anishadow-watchlist");
+    const saved = localStorage.getItem("mangashadow-watchlist");
     const watchlist = saved ? JSON.parse(saved) : [];
     
     if (isAdded) {
-      const updated = watchlist.filter((item: { animeId: string }) => item.animeId !== animeId);
-      localStorage.setItem("anishadow-watchlist", JSON.stringify(updated));
+      const updated = watchlist.filter((item: { mangaId: string }) => item.mangaId !== mangaId);
+      localStorage.setItem("mangashadow-watchlist", JSON.stringify(updated));
       setIsAdded(false);
     } else {
       const newItem = { 
-        animeId, 
+        mangaId, 
         title, 
-        image, 
         slug,
+        image, 
         addedAt: new Date().toISOString() 
       };
       const updated = [...watchlist, newItem];
-      localStorage.setItem("anishadow-watchlist", JSON.stringify(updated));
+      localStorage.setItem("mangashadow-watchlist", JSON.stringify(updated));
       setIsAdded(true);
     }
     setIsLoading(false);
@@ -84,7 +80,6 @@ export function AnimeActions({ animeId, title, image, slug }: AnimeActionsProps)
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      {/* Watchlist Button */}
       <button 
         onClick={toggleWatchlist}
         disabled={isLoading}
@@ -98,30 +93,20 @@ export function AnimeActions({ animeId, title, image, slug }: AnimeActionsProps)
         {isAdded ? (
           <>
             <BookmarkCheck className="w-4 h-4 text-primary" />
-            <span>In List</span>
+            <span>In Library</span>
           </>
         ) : (
           <>
             <BookmarkPlus className="w-4 h-4" />
-            <span>Watchlist</span>
+            <span>Add to Library</span>
           </>
         )}
       </button>
 
-      {/* Community / Watch Party Button */}
-      <div className="group relative">
-        <button 
-          onClick={() => setIsRoomModalOpen(true)}
-          className="p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all text-white/40 hover:text-white group/btn flex items-center justify-center"
-        >
-          <Users className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
-        </button>
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+12px)] px-3 py-1.5 bg-[#0a0d14] border border-white/10 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap shadow-2xl scale-90 group-hover:scale-100 origin-bottom">
-          Watch Party
-        </div>
-      </div>
+      <button className="p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all text-white/40 hover:text-white group flex items-center justify-center">
+        <Share2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+      </button>
 
-      {/* Status / Folder Button */}
       <div className="relative" ref={statusMenuRef}>
         <button 
           onClick={() => setShowStatusMenu(!showStatusMenu)}
@@ -159,14 +144,6 @@ export function AnimeActions({ animeId, title, image, slug }: AnimeActionsProps)
           )}
         </AnimatePresence>
       </div>
-
-      <RoomModal 
-        isOpen={isRoomModalOpen} 
-        onClose={() => setIsRoomModalOpen(false)} 
-        animeId={animeId}
-        animeTitle={title} 
-        slug={slug}
-      />
     </div>
   );
 }

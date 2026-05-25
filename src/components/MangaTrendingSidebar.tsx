@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { getAnimeTitle, getMangaFormat } from "@/lib/anime-utils";
+import { getAnimeTitle, getMangaFormat, slugify } from "@/lib/anime-utils";
 
 interface MangaTrendingSidebarProps {
   initialData: any[];
@@ -22,32 +22,36 @@ export function MangaTrendingSidebar({ initialData }: MangaTrendingSidebarProps)
       </div>
       
       <div className="flex flex-col bg-[#0a0a0a]/50 rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden backdrop-blur-sm">
-        {trendingManga.length > 0 ? trendingManga.slice(0, 10).map((manga: any, idx: number) => (
-          <Link href={`/manga/${manga.id}`} key={`manga-side-${manga.id}`} className={`flex gap-4 items-center group hover:bg-white/5 p-4 transition-colors ${idx !== 0 ? 'border-t border-white/5' : ''}`}>
-            <div className={`w-8 text-center text-xl font-black ${idx < 3 ? 'text-primary' : 'text-white/20 group-hover:text-white/60'} transition-colors italic`}>
-              {(idx + 1).toString().padStart(2, '0')}
-            </div>
-            <div className="w-[50px] h-[75px] rounded-lg overflow-hidden relative shadow-lg shrink-0">
-              <Image unoptimized fill sizes="50px" src={manga.image || ""} alt={getAnimeTitle(manga.title)} className="object-cover group-hover:scale-110 transition-transform duration-500" />
-            </div>
-            <div className="flex flex-col flex-1 min-w-0 pr-2">
-              <h4 className="text-xs font-bold text-white group-hover:text-primary transition-colors line-clamp-2 leading-snug mb-1">{getAnimeTitle(manga.title)}</h4>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[8px] text-white/40 font-black bg-white/5 py-0.5 px-1.5 rounded uppercase tracking-wider">{getMangaFormat(manga.countryOfOrigin)}</span>
-                {manga.chapters && (
-                  <span className="flex items-center text-[8px] text-primary font-black py-0.5 px-1.5 rounded uppercase tracking-wider bg-primary/10 border border-primary/20">
-                    CH {manga.chapters}
-                  </span>
-                )}
-                {manga.rating && (
-                  <span className="flex items-center text-[8px] text-white/60 font-black py-0.5 px-1.5 rounded uppercase tracking-wider bg-white/5">
-                    {Number(manga.rating / 10).toFixed(1)}
-                  </span>
-                )}
+        {trendingManga.length > 0 ? trendingManga.slice(0, 10).map((manga: any, idx: number) => {
+          const title = getAnimeTitle(manga.title);
+          const slug = manga.slug || slugify(title);
+          return (
+            <Link href={`/manga/${manga.id}/${slug}`} key={`manga-side-${manga.id}`} className={`flex gap-4 items-center group hover:bg-white/5 p-4 transition-colors ${idx !== 0 ? 'border-t border-white/5' : ''}`}>
+              <div className={`w-8 text-center text-xl font-black ${idx < 3 ? 'text-primary' : 'text-white/20 group-hover:text-white/60'} transition-colors italic`}>
+                {(idx + 1).toString().padStart(2, '0')}
               </div>
-            </div>
-          </Link>
-        )) : (
+              <div className="w-[50px] h-[75px] rounded-lg overflow-hidden relative shadow-lg shrink-0">
+                <Image unoptimized fill sizes="50px" src={manga.image || ""} alt={title} className="object-cover group-hover:scale-110 transition-transform duration-500" />
+              </div>
+              <div className="flex flex-col flex-1 min-w-0 pr-2">
+                <h4 className="text-xs font-bold text-white group-hover:text-primary transition-colors line-clamp-2 leading-snug mb-1">{title}</h4>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[8px] text-white/40 font-black bg-white/5 py-0.5 px-1.5 rounded uppercase tracking-wider">{getMangaFormat(manga.countryOfOrigin)}</span>
+                  {manga.chapters && (
+                    <span className="flex items-center text-[8px] text-primary font-black py-0.5 px-1.5 rounded uppercase tracking-wider bg-primary/10 border border-primary/20">
+                      CH {manga.chapters}
+                    </span>
+                  )}
+                  {manga.rating && (
+                    <span className="flex items-center text-[8px] text-white/60 font-black py-0.5 px-1.5 rounded uppercase tracking-wider bg-white/5">
+                      {Number(manga.rating / 10).toFixed(1)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </Link>
+          );
+        }) : (
           <p className="py-20 text-center text-white/20 font-medium italic">
             Manga ranking not available.
           </p>
