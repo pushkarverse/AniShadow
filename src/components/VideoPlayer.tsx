@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, ReactElement, useMemo } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles, Mic } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles, Mic, Gauge } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Hls from "hls.js";
 
@@ -220,8 +220,17 @@ export function VideoPlayer({
   const [levels, setLevels] = useState<{ id: number; name: string }[]>([]);
   const [currentLevel, setCurrentLevel] = useState<number>(-1);
   const [showQualityMenu, setShowQualityMenu] = useState<boolean>(false);
-  const [isSubtitlesOn, setIsSubtitlesOn] = useState<boolean>(true);
+  const [isSubtitlesOn, setIsSubtitlesOn] = useState<boolean>(false);
   const [isBuffering, setIsBuffering] = useState<boolean>(true);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [showSpeedMenu, setShowSpeedMenu] = useState<boolean>(false);
+
+  // Sync playback speed when video URL or component changes
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = playbackSpeed;
+    }
+  }, [currentVideoUrl, playbackSpeed]);
 
   const [isScrubbing, _setIsScrubbing] = useState<boolean>(false);
   const isScrubbingRef = useRef<boolean>(false);
@@ -835,6 +844,7 @@ export function VideoPlayer({
                 setDuration(videoRef.current?.duration || 0);
                 updateBuffered();
                 if (videoRef.current) {
+                  videoRef.current.playbackRate = playbackSpeed;
                   videoRef.current.currentTime = lastTimeRef.current;
                   if (wasPlayingRef.current) {
                     videoRef.current.play().then(() => {
@@ -986,7 +996,7 @@ export function VideoPlayer({
                       }}
                       onMouseMove={handleProgressBarMouseMove}
                       onMouseLeave={handleProgressBarMouseLeave}
-                      className="w-full h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 transition-all focus:outline-none"
+                      className="w-full h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 transition-all focus:outline-none [&::-webkit-slider-runnable-track]:bg-transparent [&::-moz-range-track]:bg-transparent"
                       style={{
                         background: `linear-gradient(to right, rgb(220, 38, 38) 0%, rgb(220, 38, 38) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) 100%)`
                       }}
@@ -1034,7 +1044,7 @@ export function VideoPlayer({
                     {hasBothAudioGroups && (
                       <div className="relative">
                         <button
-                          onClick={() => { setShowAudioMenu(!showAudioMenu); setShowQualityMenu(false); }}
+                          onClick={() => { setShowAudioMenu(!showAudioMenu); setShowQualityMenu(false); setShowSpeedMenu(false); }}
                           className={`transition-all flex items-center gap-1 ${activeAudioGroup === 'dub' ? 'text-primary' : 'text-white hover:text-accent'}`}
                           title="Switch Audio"
                         >
@@ -1076,10 +1086,59 @@ export function VideoPlayer({
                       </div>
                     )}
 
+                    {/* Playback Speed settings */}
+                    <div className="relative">
+                      <button
+                        onClick={() => {
+                          setShowSpeedMenu(!showSpeedMenu);
+                          setShowQualityMenu(false);
+                          setShowAudioMenu(false);
+                        }}
+                        className="text-white hover:text-accent transition-all flex items-center gap-1"
+                        title="Playback Speed"
+                      >
+                        <Gauge className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase">
+                          {playbackSpeed === 1 ? "1x" : `${playbackSpeed}x`}
+                        </span>
+                      </button>
+
+                      <AnimatePresence>
+                        {showSpeedMenu && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="absolute bottom-10 right-0 bg-[#0c0c0c]/95 border border-white/10 rounded-xl p-2 w-24 flex flex-col gap-1 shadow-2xl backdrop-blur-md z-50 pointer-events-auto"
+                          >
+                            {[0.75, 1, 1.25, 1.5, 2].map((speed) => (
+                              <button
+                                key={speed}
+                                onClick={() => {
+                                  if (videoRef.current) {
+                                    videoRef.current.playbackRate = speed;
+                                  }
+                                  setPlaybackSpeed(speed);
+                                  setShowSpeedMenu(false);
+                                }}
+                                className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${
+                                  playbackSpeed === speed
+                                    ? "bg-primary text-white"
+                                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                                }`}
+                              >
+                                {speed === 1 ? "Normal" : `${speed}x`}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
                     {levels.length > 1 && (
                       <div className="relative">
                         <button
-                          onClick={() => { setShowQualityMenu(!showQualityMenu); setShowAudioMenu(false); }}
+                          onClick={() => { setShowQualityMenu(!showQualityMenu); setShowAudioMenu(false); setShowSpeedMenu(false); }}
                           className="text-white hover:text-accent transition-all flex items-center gap-1"
                           title="Quality Settings"
                         >
