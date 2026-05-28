@@ -1790,6 +1790,7 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20) =>
             episode
           }
           averageScore
+          countryOfOrigin
         }
       }
     }`;
@@ -1809,6 +1810,7 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20) =>
       image: m.coverImage?.large,
       type: m.type,
       rating: m.averageScore,
+      countryOfOrigin: m.countryOfOrigin,
       episodeNumber: getReleasedAnimeEpisodesCount(m),
       subEpisodes: getReleasedAnimeEpisodesCount(m)
     })) || [];

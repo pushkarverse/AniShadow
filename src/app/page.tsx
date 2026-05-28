@@ -3,6 +3,7 @@ import { Hero, type HeroItem } from "@/components/Hero";
 import { AnimeCard } from "@/components/AnimeCard";
 import { TrendingSidebar } from "@/components/TrendingSidebar";
 import { AnimeLibrarySection } from "@/components/AnimeLibrarySection";
+import { LatestSection } from "@/components/LatestSection";
 import Link from "next/link";
 import { getTrendingAnime, getPopularAnime, getOngoingAnime } from "@/lib/consumet";
 import { getAnimeTitle } from "@/lib/anime-utils";
@@ -52,38 +53,7 @@ export default async function Home() {
           
           {/* Left Column: Popular Anime */}
           <div className="flex-1 min-w-0">
-            <section className="mb-12 md:mb-24">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white relative inline-block uppercase">
-                  Latest
-                  <div className="absolute -bottom-2 left-0 w-8 h-1 bg-primary rounded-full" />
-                </h2>
-                <Link href="/latest" className="text-[10px] font-black text-white/40 hover:text-primary transition-all uppercase tracking-[0.2em] bg-white/5 px-4 py-2 rounded-lg border border-white/5">
-                  View All
-                </Link>
-              </div>
-              
-              <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
-                {ongoingAnime.length > 0 ? ongoingAnime.slice(0, 15).map((anime: any) => (
-                  <AnimeCard 
-                    key={anime.id} 
-                    id={anime.id} 
-                    title={getAnimeTitle(anime.title)} 
-                    slug={anime.slug}
-                    image={anime.image && anime.image !== "" ? anime.image : "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop"} 
-                    rating={anime.rating ? Number(anime.rating) / 10 : undefined}
-                    episodeNumber={anime.episodeNumber || anime.episodes}
-                    subEpisodes={anime.subEpisodes}
-                    dubEpisodes={anime.dubEpisodes}
-                    type={anime.type || "TV"}
-                  />
-                )) : (
-                  <p className="col-span-full py-20 text-center text-white/20 font-medium italic bg-white/5 rounded-3xl border border-white/5 w-full">
-                    Temporarily unavailable due to high traffic. Please try again in a few moments.
-                  </p>
-                )}
-              </div>
-            </section>
+            <LatestSection initialItems={ongoingAnime} />
             <section className="mb-12 md:mb-24">
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white relative inline-block uppercase">
