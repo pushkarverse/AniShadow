@@ -1795,8 +1795,8 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
   if (country) {
     const mediaIdsQuery = `
       query ($country: CountryCode) {
-        Page (page: 1, perPage: 250) {
-          media (type: ANIME, status: RELEASING, countryOfOrigin: $country, isAdult: false) {
+        Page (page: 1, perPage: 450) {
+          media (type: ANIME, countryOfOrigin: $country, isAdult: false, status_in: [RELEASING, FINISHED], sort: [UPDATED_AT_DESC]) {
             id
           }
         }
@@ -1887,7 +1887,8 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
           countryOfOrigin: m.countryOfOrigin,
           episodeNumber: s.episode,
           subEpisodes: s.episode,
-          duration: m.duration ? `${m.duration}m` : "24m"
+          duration: m.duration ? `${m.duration}m` : "24m",
+          airingAt: s.airingAt
         };
       });
 
@@ -1900,6 +1901,9 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
         uniqueList.push(item);
       }
     }
+
+    // Sort uniqueList by airingAt descending to guarantee release date & time sorting
+    uniqueList.sort((a: any, b: any) => b.airingAt - a.airingAt);
 
     const results = uniqueList.slice(0, perPage);
     const hasNextPage = pageInfo?.hasNextPage || uniqueList.length > perPage;
