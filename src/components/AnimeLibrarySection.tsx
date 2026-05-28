@@ -127,11 +127,11 @@ export function AnimeLibrarySection() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="group relative shrink-0 w-[155px] sm:w-[180px] snap-start md:w-full"
+                className="group relative flex flex-col gap-3 shrink-0 w-[155px] sm:w-[180px] snap-start md:w-full"
               >
                 {/* Card */}
-                <Link href={watchUrl} className="block">
-                  <div className="relative aspect-[2/3] w-full overflow-hidden rounded-2xl bg-[#121212] border border-white/5 shadow-2xl transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-primary/20 group-hover:-translate-y-1">
+                <Link href={watchUrl} className="block w-full">
+                  <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-[#121212] border border-white/5 shadow-2xl transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-primary/20 group-hover:-translate-y-1">
                     <Image
                       src={item.image || "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop"}
                       alt={item.title}
@@ -146,11 +146,9 @@ export function AnimeLibrarySection() {
 
                     {/* Progress Badge */}
                     <div className="absolute bottom-3 left-3 right-3 z-10">
-                      <div className="flex items-center gap-1.5 px-3 py-2 bg-primary/90 backdrop-blur-md rounded-xl border border-white/10 shadow-lg shadow-primary/20">
-                        <Play className="w-3 h-3 text-white fill-current shrink-0" />
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest truncate">
-                          Ep {item.displayEpisodeNumber}
-                        </span>
+                      <div className="flex items-center justify-center px-2 py-1.5 bg-black/60 backdrop-blur-md rounded border border-white/10 text-[9px] font-black text-white/80 shadow-lg">
+                        <Play className="w-2.5 h-2.5 text-white/40 fill-current shrink-0 mr-1" />
+                        <span>EP {item.displayEpisodeNumber}</span>
                       </div>
                     </div>
 
@@ -170,12 +168,20 @@ export function AnimeLibrarySection() {
                   <X className="w-3 h-3 text-white/70 hover:text-red-300" />
                 </button>
 
-                {/* Title */}
-                <Link href={`/anime/${item.animeId}/${item.slug || "anime"}`} className="block mt-3 px-1">
-                  <h4 className="text-[11px] font-black text-white/85 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                    {item.title}
-                  </h4>
-                </Link>
+                {/* Title & Metadata */}
+                <div className="flex flex-col gap-0.5 px-1">
+                  <Link href={`/anime/${item.animeId}/${item.slug || "anime"}`} className="group/title block">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                      <h3 className="text-xs sm:text-sm font-bold text-white/90 truncate leading-tight group-hover/title:text-primary transition-colors">
+                        {item.title}
+                      </h3>
+                    </div>
+                  </Link>
+                  <span className="text-[10px] text-white/40 font-semibold uppercase tracking-wider pl-3">
+                    Episode {item.displayEpisodeNumber}
+                  </span>
+                </div>
               </motion.div>
             );
           })}
