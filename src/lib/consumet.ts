@@ -1775,11 +1775,9 @@ export async function getMangaChapterPages(chapterId: string) {
 }
 
 export const getOngoingAnime = async (page?: number, perPage?: number) => {
-  const anilist = getAnilist();
-  if (!anilist) return null;
   try {
     // Fetch trending anime as a fallback for ongoing
-    const data = await anilist.fetchTrending(page, perPage);
+    const data = await getTrendingAnime(page, perPage);
     return data;
   } catch (error) {
     console.error("Failed to fetch ongoing anime:", error);
