@@ -14,7 +14,7 @@ export default async function TrendingPage({
 }) {
   const { page } = await searchParams;
   const currentPage = parseInt(page || "1");
-  const trendingData = await getTrendingAnime(currentPage, 20);
+  const trendingData = await getTrendingAnime(currentPage, 24);
   const trendingAnime = trendingData?.results || [];
   const hasNextPage = trendingData?.hasNextPage || false;
 

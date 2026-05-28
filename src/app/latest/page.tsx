@@ -25,7 +25,7 @@ export default async function LatestPage({
     country = "CN";
   }
 
-  const ongoingData = await getOngoingAnime(currentPage, 20, country);
+  const ongoingData = await getOngoingAnime(currentPage, 24, country);
   const ongoingAnime = ongoingData?.results || [];
   const hasNextPage = ongoingData?.hasNextPage || false;
 

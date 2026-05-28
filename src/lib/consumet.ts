@@ -615,7 +615,7 @@ export async function getTrendingAnime(page: number = 1, perPage: number = 20, p
 export async function getSeasonalAnime(season: string, year: number, page: number = 1) {
   const query = `
     query ($season: MediaSeason, $seasonYear: Int, $page: Int) {
-      Page (page: $page, perPage: 20) {
+      Page (page: $page, perPage: 24) {
         pageInfo { hasNextPage }
         media (season: $season, seasonYear: $seasonYear, type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
           id
@@ -683,7 +683,7 @@ export async function advancedSearchAnime({
 }) {
   const gqlQuery = `
     query ($page: Int, $search: String, $genres: [String], $tags: [String], $status: MediaStatus, $season: MediaSeason, $seasonYear: Int, $format: MediaFormat, $sort: [MediaSort], $type: MediaType) {
-      Page (page: $page, perPage: 20) {
+      Page (page: $page, perPage: 24) {
         pageInfo { total hasNextPage }
         media (search: $search, genre_in: $genres, tag_in: $tags, status: $status, season: $season, seasonYear: $seasonYear, format: $format, type: $type, sort: $sort, isAdult: false) {
           id
@@ -1848,52 +1848,44 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
   `;
 
   try {
-    const fetchPage = async (p: number) => {
-      const response = await fetch('https://graphql.anilist.co', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-          query: schedulesQuery,
-          variables: {
-            page: p,
-            perPage: 50,
-            airingAt_lesser: now,
-            mediaId_in: mediaIds
-          }
-        }),
-        cache: 'no-store'
-      });
-      const data = await response.json();
-      return data?.data?.Page?.airingSchedules || [];
-    };
-    const startSchedPage = (page - 1) * 3 + 1;
-    const schedulePages = await Promise.all([
-      fetchPage(startSchedPage),
-      fetchPage(startSchedPage + 1),
-      fetchPage(startSchedPage + 2)
-    ]);
-    const schedules = schedulePages.flat();
+    const response = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        query: schedulesQuery,
+        variables: {
+          page,
+          perPage: perPage * 3, // Fetch more to filter and deduplicate
+          airingAt_lesser: now,
+          mediaId_in: mediaIds
+        }
+      }),
+      cache: 'no-store'
+    });
+    const data = await response.json();
+    const pageInfo = data?.data?.Page?.pageInfo;
+    const schedules = data?.data?.Page?.airingSchedules || [];
 
     const mapped = schedules
       .filter((s: any) => s.media && s.media.isAdult === false)
       .map((s: any) => {
-        const m = s.media;
-        return {
-          id: m.id.toString(),
-          title: m.title,
-          slug: slugify(getAnimeTitle(m.title)),
-          image: m.coverImage?.large,
-          cover: m.bannerImage || m.coverImage?.large,
-          description: m.description || "",
-          genres: m.genres || [],
-          type: m.format || m.type || "TV",
-          rating: m.averageScore || 0,
-          countryOfOrigin: m.countryOfOrigin,
-          episodeNumber: s.episode,
-          subEpisodes: s.episode,
-          duration: m.duration ? `${m.duration}m` : "24m"
-        };
-      });
+      const m = s.media;
+      return {
+        id: m.id.toString(),
+        title: m.title,
+        slug: slugify(getAnimeTitle(m.title)),
+        image: m.coverImage?.large,
+        cover: m.bannerImage || m.coverImage?.large,
+        description: m.description || "",
+        genres: m.genres || [],
+        type: m.format || m.type || "TV",
+        rating: m.averageScore || 0,
+        countryOfOrigin: m.countryOfOrigin,
+        episodeNumber: s.episode,
+        subEpisodes: s.episode,
+        duration: m.duration ? `${m.duration}m` : "24m"
+      };
+    });
 
     // Deduplicate ongoing releases to keep only the latest episode entry for each unique anime
     const seen = new Set<string>();
@@ -1909,7 +1901,7 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
     }
 
     const enrichedResults = await enrichAnimeResultsWithSubDub(results);
-    return { results: enrichedResults, hasNextPage: results.length >= perPage };
+    return { results: enrichedResults, hasNextPage: pageInfo?.hasNextPage || false };
   } catch (error) {
     console.error("Failed to fetch airing schedules:", error);
     return { results: [], hasNextPage: false };

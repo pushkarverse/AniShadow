@@ -14,7 +14,7 @@ export default async function PopularPage({
 }) {
   const { page } = await searchParams;
   const currentPage = parseInt(page || "1");
-  const popularData = await getPopularAnime(currentPage, 20);
+  const popularData = await getPopularAnime(currentPage, 24);
   const popularAnime = popularData?.results || [];
   const hasNextPage = popularData?.hasNextPage || false;
 
