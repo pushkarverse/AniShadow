@@ -585,7 +585,8 @@ export async function getTrendingAnime(page: number = 1, perPage: number = 20, p
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ query: query, variables: { page, perPage, season, seasonYear } })
+      body: JSON.stringify({ query: query, variables: { page, perPage, season, seasonYear } }),
+      cache: 'no-store'
     });
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;
@@ -635,7 +636,8 @@ export async function getSeasonalAnime(season: string, year: number, page: numbe
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ query, variables: { season, seasonYear: year, page } })
+      body: JSON.stringify({ query, variables: { season, seasonYear: year, page } }),
+      cache: 'no-store'
     });
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;
@@ -861,7 +863,8 @@ export async function getPopularAnime(page: number = 1, perPage: number = 20) {
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ query, variables: { page, perPage } })
+      body: JSON.stringify({ query, variables: { page, perPage } }),
+      cache: 'no-store'
     });
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;
@@ -1803,8 +1806,7 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
       const response = await fetch('https://graphql.anilist.co', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ query: mediaIdsQuery, variables: { country } }),
-        cache: 'no-store'
+        body: JSON.stringify({ query: mediaIdsQuery, variables: { country } })
       });
       const data = await response.json();
       mediaIds = data?.data?.Page?.media?.map((m: any) => m.id) || [];
@@ -1856,8 +1858,7 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
           airingAt_lesser: now,
           mediaId_in: mediaIds
         }
-      }),
-      cache: 'no-store'
+      })
     });
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;
