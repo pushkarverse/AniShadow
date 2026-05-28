@@ -19,7 +19,7 @@ export default async function Home() {
   const ongoingAnime = ongoingData?.results || [];
 
   // Use the top 5 trending anime as carousel features
-  const featuredAnime: HeroItem[] = trendingAnime.slice(0, 5).map((anime: HeroResult) => ({
+  const featuredAnime: HeroItem[] = trendingAnime.slice(0, 10).map((anime: HeroResult) => ({
     id: anime.id,
     title: getAnimeTitle(anime.title),
     description: anime.description?.replace(/<[^>]*>?/gm, '') || "Discover a premium, ad-free streaming experience with the latest trending and legendary anime.",
