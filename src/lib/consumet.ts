@@ -1778,8 +1778,8 @@ export const getOngoingAnime = async (page?: number, perPage?: number) => {
   const anilist = getAnilist();
   if (!anilist) return null;
   try {
-    // Fetch airing schedule which contains ongoing anime
-    const data = await anilist.fetchAiringSchedule(page, perPage);
+    // Fetch trending anime as a fallback for ongoing
+    const data = await anilist.fetchTrending(page, perPage);
     return data;
   } catch (error) {
     console.error("Failed to fetch ongoing anime:", error);
