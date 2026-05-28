@@ -193,9 +193,9 @@ export function Hero({ items = [] }: HeroProps) {
         </motion.div>
       </AnimatePresence>
 
-      {/* Mid-Right Page Controls (Reanime style) */}
+      {/* Top-Right Page Controls */}
       {items.length > 1 && (
-        <div className="absolute right-6 md:right-10 top-1/2 -translate-y-1/2 z-20 flex items-center gap-2 select-none">
+        <div className="absolute right-6 top-6 z-20 flex items-center gap-2 select-none">
           <button 
             onClick={prevSlide}
             suppressHydrationWarning
