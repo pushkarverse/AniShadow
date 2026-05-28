@@ -183,13 +183,13 @@ export function Navbar() {
             </button>
           </div>
 
-          {/* Mobile Search Toggle */}
+          {/* Mobile Search Toggle - Hidden on mobile in favor of bottom tab bar search option */}
           <button
             onClick={() => {
               setIsMobileSearchOpen(!isMobileSearchOpen);
               setIsMobileMenuOpen(false);
             }}
-            className={`p-2.5 rounded-full transition-all md:hidden relative ${
+            className={`p-2.5 rounded-full transition-all hidden relative ${
               isMobileSearchOpen ? "text-primary bg-white/5" : "text-white/60 hover:text-white"
             }`}
             title="Search"

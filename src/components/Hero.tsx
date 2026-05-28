@@ -70,7 +70,7 @@ export function Hero({ items = [] }: HeroProps) {
   };
 
   return (
-    <div className="relative w-full aspect-[4/3] md:aspect-[2/1] xl:aspect-[21/9] min-h-[500px] lg:min-h-[600px] overflow-hidden rounded-none group bg-[#080808]">
+    <div className="relative w-full aspect-[4/3] md:aspect-[2/1] xl:aspect-[21/9] min-h-[320px] sm:min-h-[400px] md:min-h-[500px] lg:min-h-[600px] overflow-hidden rounded-none group bg-[#080808]">
       <AnimatePresence initial={false} custom={direction}>
         <motion.div
           key={currentIndex}
