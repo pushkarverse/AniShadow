@@ -9,18 +9,26 @@ import { getAnimeTitle } from "@/lib/anime-utils";
 import type { HeroResult } from "@/types/anime";
 import type { IAnimeResult } from "@consumet/extensions";
 
+function shuffleArray<T>(items: T[]): T[] {
+  const shuffled = [...items];
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export default async function Home() {
   const trendingData = await getTrendingAnime();
   const popularData = await getPopularAnime();
   const ongoingData = await getOngoingAnime();
 
-  const trendingAnime = trendingData?.results || [];
+  const trendingAnime = shuffleArray(trendingData?.results || []);
   const popularAnime = popularData?.results || [];
   const ongoingAnime = ongoingData?.results || [];
 
-  // Mix trending results so the hero does not mirror the sidebar order
-  const mixedTrending = [...trendingAnime].sort(() => Math.random() - 0.5);
-  const featuredAnime: HeroItem[] = mixedTrending.slice(0, 5).map((anime: HeroResult) => ({
+  // Use the same randomized catalog order for the hero
+  const featuredAnime: HeroItem[] = trendingAnime.slice(0, 5).map((anime: HeroResult) => ({
     id: anime.id,
     title: getAnimeTitle(anime.title),
     description: anime.description?.replace(/<[^>]*>?/gm, '') || "Discover a premium, ad-free streaming experience with the latest trending and legendary anime.",
