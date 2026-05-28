@@ -11,13 +11,19 @@ import type { HeroResult } from "@/types/anime";
 import type { IAnimeResult } from "@consumet/extensions";
 
 export default async function Home() {
-  const trendingData = await getTrendingAnime();
-  const popularData = await getPopularAnime();
-  const ongoingData = await getOngoingAnime();
+  const [trendingData, popularData, ongoingData, ongoingDataJP, ongoingDataCN] = await Promise.all([
+    getTrendingAnime(),
+    getPopularAnime(),
+    getOngoingAnime(1, 24),
+    getOngoingAnime(1, 24, "JP"),
+    getOngoingAnime(1, 24, "CN")
+  ]);
 
   const trendingAnime = trendingData?.results || [];
   const popularAnime = popularData?.results || [];
   const ongoingAnime = ongoingData?.results || [];
+  const ongoingAnimeJP = ongoingDataJP?.results || [];
+  const ongoingAnimeCN = ongoingDataCN?.results || [];
 
   // Use the top 5 trending anime as carousel features
   const featuredAnime: HeroItem[] = trendingAnime.slice(0, 10).map((anime: HeroResult) => ({
@@ -53,7 +59,11 @@ export default async function Home() {
           
           {/* Left Column: Popular Anime */}
           <div className="flex-1 min-w-0">
-            <LatestSection initialItems={ongoingAnime} />
+            <LatestSection 
+              initialItems={ongoingAnime} 
+              japaneseItems={ongoingAnimeJP} 
+              chineseItems={ongoingAnimeCN} 
+            />
             <section className="mb-12 md:mb-24">
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white relative inline-block uppercase">

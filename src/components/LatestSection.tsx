@@ -7,22 +7,25 @@ import Link from "next/link";
 
 interface LatestSectionProps {
   initialItems: any[];
+  japaneseItems?: any[];
+  chineseItems?: any[];
 }
 
 type FilterTab = "all" | "japanese" | "chinese";
 
-export function LatestSection({ initialItems = [] }: LatestSectionProps) {
+export function LatestSection({ 
+  initialItems = [], 
+  japaneseItems = [], 
+  chineseItems = [] 
+}: LatestSectionProps) {
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
 
-  const filteredItems = initialItems.filter((anime) => {
-    if (activeTab === "japanese") {
-      return anime.countryOfOrigin === "JP";
-    }
-    if (activeTab === "chinese") {
-      return anime.countryOfOrigin === "CN";
-    }
-    return true; // "all"
-  });
+  const filteredItems = 
+    activeTab === "japanese"
+      ? (japaneseItems.length > 0 ? japaneseItems : initialItems.filter((anime) => anime.countryOfOrigin === "JP"))
+      : activeTab === "chinese"
+      ? (chineseItems.length > 0 ? chineseItems : initialItems.filter((anime) => anime.countryOfOrigin === "CN"))
+      : initialItems;
 
   return (
     <section className="mb-12 md:mb-24">
@@ -70,7 +73,7 @@ export function LatestSection({ initialItems = [] }: LatestSectionProps) {
         </div>
 
         <Link 
-          href="/latest" 
+          href={activeTab === "all" ? "/latest" : `/latest?filter=${activeTab}`} 
           className="text-[10px] font-black text-white/40 hover:text-primary transition-all uppercase tracking-[0.2em] bg-white/5 px-4 py-2 rounded-lg border border-white/5 self-start sm:self-center"
         >
           View All

@@ -530,7 +530,7 @@ export async function searchAnime(query: string, page: number = 1) {
 }
 
 
-export async function getTrendingAnime(page: number = 1, perPage: number = 20, period: string = "NOW", country?: string): Promise<{ results: HeroResult[], hasNextPage: boolean }> {
+export async function getTrendingAnime(page: number = 1, perPage: number = 20, period: string = "NOW"): Promise<{ results: HeroResult[], hasNextPage: boolean }> {
   let sort = "[TRENDING_DESC, POPULARITY_DESC]";
   let statusIn = "[RELEASING]";
   let season: string | undefined = undefined;
@@ -559,10 +559,10 @@ export async function getTrendingAnime(page: number = 1, perPage: number = 20, p
   }
 
   const query = `
-    query ($page: Int, $perPage: Int, $season: MediaSeason, $seasonYear: Int, $country: CountryCode) {
+    query ($page: Int, $perPage: Int, $season: MediaSeason, $seasonYear: Int) {
       Page (page: $page, perPage: $perPage) {
         pageInfo { hasNextPage }
-        media (type: ANIME, sort: ${sort}, status_in: ${statusIn}, season: $season, seasonYear: $seasonYear, countryOfOrigin: $country, isAdult: false) {
+        media (type: ANIME, sort: ${sort}, status_in: ${statusIn}, season: $season, seasonYear: $seasonYear, isAdult: false) {
           id
           title { romaji english native }
           coverImage { large }
@@ -585,7 +585,7 @@ export async function getTrendingAnime(page: number = 1, perPage: number = 20, p
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ query: query, variables: { page, perPage, season, seasonYear, country } }),
+      body: JSON.stringify({ query: query, variables: { page, perPage, season, seasonYear } }),
       cache: 'no-store'
     });
     const data = await response.json();
@@ -836,12 +836,12 @@ export async function getMediaByGenre(genres: string[], type: 'ANIME' | 'MANGA' 
   }
 }
 
-export async function getPopularAnime(page: number = 1, perPage: number = 20, country?: string) {
+export async function getPopularAnime(page: number = 1, perPage: number = 20) {
   const query = `
-    query ($page: Int, $perPage: Int, $country: CountryCode) {
+    query ($page: Int, $perPage: Int) {
       Page (page: $page, perPage: $perPage) {
         pageInfo { hasNextPage }
-        media (type: ANIME, sort: [POPULARITY_DESC], countryOfOrigin: $country, isAdult: false) {
+        media (type: ANIME, sort: [POPULARITY_DESC], isAdult: false) {
           id
           title { romaji english native }
           coverImage { large }
@@ -863,7 +863,7 @@ export async function getPopularAnime(page: number = 1, perPage: number = 20, co
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ query, variables: { page, perPage, country } }),
+      body: JSON.stringify({ query, variables: { page, perPage } }),
       cache: 'no-store'
     });
     const data = await response.json();
@@ -1793,24 +1793,33 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
   let mediaIds: number[] | undefined = undefined;
 
   if (country) {
-    const mediaIdsQuery = `
-      query ($country: CountryCode) {
-        Page (page: 1, perPage: 450) {
-          media (type: ANIME, countryOfOrigin: $country, isAdult: false, status_in: [RELEASING, FINISHED], sort: [UPDATED_AT_DESC]) {
-            id
+    const fetchMediaPage = async (p: number) => {
+      const mediaIdsQuery = `
+        query ($country: CountryCode, $page: Int) {
+          Page (page: $page, perPage: 50) {
+            media (type: ANIME, status: RELEASING, countryOfOrigin: $country, isAdult: false) {
+              id
+            }
           }
         }
+      `;
+      try {
+        const response = await fetch('https://graphql.anilist.co', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ query: mediaIdsQuery, variables: { country, page: p } })
+        });
+        const data = await response.json();
+        return data?.data?.Page?.media?.map((m: any) => m.id) || [];
+      } catch (e) {
+        console.error(`Failed to fetch media page ${p} for country ${country}:`, e);
+        return [];
       }
-    `;
+    };
+
     try {
-      const response = await fetch('https://graphql.anilist.co', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ query: mediaIdsQuery, variables: { country } }),
-        cache: 'no-store'
-      });
-      const data = await response.json();
-      mediaIds = data?.data?.Page?.media?.map((m: any) => m.id) || [];
+      const pages = await Promise.all([fetchMediaPage(1), fetchMediaPage(2), fetchMediaPage(3)]);
+      mediaIds = pages.flat();
       if (mediaIds && mediaIds.length === 0) {
         return { results: [], hasNextPage: false };
       }
@@ -1820,13 +1829,9 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
     }
   }
 
-  // Fetch airing schedules dynamically based on the current page to support clean pagination
   const schedulesQuery = `
     query ($page: Int, $perPage: Int, $airingAt_lesser: Int, $mediaId_in: [Int]) {
       Page (page: $page, perPage: $perPage) {
-        pageInfo {
-          hasNextPage
-        }
         airingSchedules (airingAt_lesser: $airingAt_lesser, sort: [TIME_DESC], mediaId_in: $mediaId_in) {
           episode
           airingAt
@@ -1852,23 +1857,37 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
   `;
 
   try {
-    const response = await fetch('https://graphql.anilist.co', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({
-        query: schedulesQuery,
-        variables: {
-          page,
-          perPage: 96, // Fetch a large batch to ensure we can get 24 unique ones after filtering/deduplication
-          airingAt_lesser: now,
-          mediaId_in: mediaIds
-        }
-      }),
-      cache: 'no-store'
-    });
-    const data = await response.json();
-    const pageInfo = data?.data?.Page?.pageInfo;
-    const schedules = data?.data?.Page?.airingSchedules || [];
+    const fetchSchedulePage = async (p: number) => {
+      try {
+        const response = await fetch('https://graphql.anilist.co', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            query: schedulesQuery,
+            variables: {
+              page: p,
+              perPage: 50,
+              airingAt_lesser: now,
+              mediaId_in: mediaIds
+            }
+          }),
+          cache: 'no-store'
+        });
+        const data = await response.json();
+        return data?.data?.Page?.airingSchedules || [];
+      } catch (e) {
+        console.error(`Failed to fetch schedules page ${p}:`, e);
+        return [];
+      }
+    };
+
+    const pages = await Promise.all([
+      fetchSchedulePage(1),
+      fetchSchedulePage(2),
+      fetchSchedulePage(3),
+      fetchSchedulePage(4)
+    ]);
+    const schedules = pages.flat();
 
     const mapped = schedules
       .filter((s: any) => s.media && s.media.isAdult === false)
@@ -1887,12 +1906,10 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
           countryOfOrigin: m.countryOfOrigin,
           episodeNumber: s.episode,
           subEpisodes: s.episode,
-          duration: m.duration ? `${m.duration}m` : "24m",
-          airingAt: s.airingAt
+          duration: m.duration ? `${m.duration}m` : "24m"
         };
       });
 
-    // Deduplicate the entire pool FIRST to get a unique list of anime series
     const seen = new Set<string>();
     const uniqueList = [];
     for (const item of mapped) {
@@ -1902,11 +1919,10 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
       }
     }
 
-    // Sort uniqueList by airingAt descending to guarantee release date & time sorting
-    uniqueList.sort((a: any, b: any) => b.airingAt - a.airingAt);
-
-    const results = uniqueList.slice(0, perPage);
-    const hasNextPage = pageInfo?.hasNextPage || uniqueList.length > perPage;
+    const startIndex = (page - 1) * perPage;
+    const endIndex = page * perPage;
+    const results = uniqueList.slice(startIndex, endIndex);
+    const hasNextPage = uniqueList.length > endIndex;
 
     const enrichedResults = await enrichAnimeResultsWithSubDub(results);
     return { results: enrichedResults, hasNextPage };
