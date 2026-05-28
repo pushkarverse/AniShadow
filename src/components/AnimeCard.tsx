@@ -22,6 +22,7 @@ interface AnimeCardProps {
   href?: string;
   subEpisodes?: number | string;
   dubEpisodes?: number | string;
+  variant?: "default" | "search";
 }
 
 const statusOptions = ["Watching", "On-Hold", "Planning", "Completed", "Dropped"];
@@ -42,7 +43,8 @@ export function AnimeCard({
   type, 
   href,
   subEpisodes,
-  dubEpisodes 
+  dubEpisodes,
+  variant = "default"
 }: AnimeCardProps) {
   const [showInfo, setShowInfo] = useState(false);
   const [infoData, setInfoData] = useState<IAnimeInfo | null>(null);
@@ -119,7 +121,7 @@ export function AnimeCard({
   const actionUrl = href || (isManga ? `/anime/${id}/${animeSlug}` : `/watch/${id}/${animeSlug}?ep=1`);
 
   return (
-    <div className="group relative flex flex-col gap-3 w-[155px] sm:w-[180px] shrink-0 md:w-full">
+    <div className={variant === "search" ? "group relative flex flex-col gap-2 w-full" : "group relative flex flex-col gap-3 w-[155px] sm:w-[180px] shrink-0 md:w-full"}>
       {/* Image Container */}
       <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-[#121212] border border-white/5 shadow-2xl transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-primary/20 group-hover:-translate-y-1">
         <Link href={actionUrl} className="block w-full h-full relative">
@@ -129,6 +131,7 @@ export function AnimeCard({
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
             className="object-cover transition-all duration-700 group-hover:scale-105"
+            unoptimized
           />
           
           {/* Enhanced Overlays */}
@@ -136,17 +139,29 @@ export function AnimeCard({
         </Link>
 
         {/* Status Badges Overlay */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1.5 z-10 pointer-events-none">
-          <div className="flex items-center gap-1">
-            {rating && (
-              <span className="px-1.5 py-0.5 text-[9px] font-black tracking-widest rounded bg-black/60 text-primary backdrop-blur-md border border-white/10 uppercase">
-                {Number(rating).toFixed(1)}
-              </span>
-            )}
+        {variant === "search" ? (
+          <div className="absolute top-2 left-2 flex items-center gap-1 select-none pointer-events-none">
+            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black text-yellow-400">
+              <span>★</span>
+              <span className="text-white font-bold">{rating ? Number(rating).toFixed(1) : "8.5"}</span>
+            </div>
+            <div className="px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black text-white/60">
+              {rating && rating > 8.0 ? "R-17+" : "PG-13"}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="absolute top-2 left-2 flex flex-col gap-1.5 z-10 pointer-events-none">
+            <div className="flex items-center gap-1">
+              {rating && (
+                <span className="px-1.5 py-0.5 text-[9px] font-black tracking-widest rounded bg-black/60 text-primary backdrop-blur-md border border-white/10 uppercase">
+                  {Number(rating).toFixed(1)}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
-        {/* Info Button (Top Right) */}
+        {/* Info/Watchlist '+' Button (Top Right) */}
         <div className="absolute top-2 right-2 z-20">
           <button 
             ref={triggerRef}
@@ -188,9 +203,16 @@ export function AnimeCard({
                 setShowInfo(false);
               }
             }}
-            className="p-2 rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg border border-accent/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 scale-90 hover:scale-100"
+            className={variant === "search"
+              ? "w-7 h-7 flex items-center justify-center rounded-full bg-black/60 hover:bg-primary text-white border border-white/15 transition-all shadow-lg active:scale-90 cursor-pointer"
+              : "p-2 rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg border border-accent/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 scale-90 hover:scale-100"
+            }
           >
-            <Info className="w-4 h-4" />
+            {variant === "search" ? (
+              <span className="text-lg font-light leading-none">+</span>
+            ) : (
+              <Info className="w-4 h-4" />
+            )}
           </button>
         </div>
 
@@ -373,43 +395,41 @@ export function AnimeCard({
       </div>
 
       {/* Metadata Section Above Title */}
-      <div className="flex items-center gap-2 px-1 mt-1 mb-1 shadow-sm">
-        {isManga ? (
-          <>
-            {episodeNumber && (
-              <span className="text-[10px] font-black tracking-[0.15em] text-primary uppercase bg-primary/10 px-1.5 py-0.5 rounded-md border border-primary/20">
-                CH {episodeNumber}
-              </span>
-            )}
-            <span className="px-1.5 py-0.5 text-[8px] font-black tracking-widest rounded bg-primary/20 text-primary border border-primary/20 uppercase">MANGA</span>
-          </>
-        ) : (
-          <div className="flex items-center gap-1.5">
-            {/* SUB (CC) Capsule */}
-            {Number(displaySub) > 0 && (
-              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-red-500/10 border border-red-500/20">
-                <span className="text-[8px] font-black text-red-500 uppercase tracking-tighter">CC</span>
-                <span className="text-[9px] font-bold text-white/80">{displaySub}</span>
-              </div>
-            )}
-            
-            {/* DUB (MIC) Capsule */}
-            {Number(displayDub) > 0 && (
-              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                <span className="text-[8px] font-black text-amber-500 uppercase tracking-tighter">MIC</span>
-                <span className="text-[9px] font-bold text-white/80">{displayDub}</span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      {variant === "search" ? (
+        <div className="flex flex-col gap-0.5 px-1">
+          <Link href={actionUrl} className="group/title block">
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/80 shrink-0" />
+              <h3 className="text-xs sm:text-sm font-bold text-white/95 truncate leading-tight group-hover/title:text-primary transition-colors">
+                {title}
+              </h3>
+            </div>
+          </Link>
+          <span className="text-[10px] text-white/40 font-semibold uppercase tracking-wider pl-3">
+            {type || "TV"} &bull; 24m
+          </span>
+        </div>
+      ) : (
+        <>
+          {isManga && (
+            <div className="flex items-center gap-2 px-1 mt-1 mb-1 shadow-sm">
+              {episodeNumber && (
+                <span className="text-[10px] font-black tracking-[0.15em] text-primary uppercase bg-primary/10 px-1.5 py-0.5 rounded-md border border-primary/20">
+                  CH {episodeNumber}
+                </span>
+              )}
+              <span className="px-1.5 py-0.5 text-[8px] font-black tracking-widest rounded bg-primary/20 text-primary border border-primary/20 uppercase">MANGA</span>
+            </div>
+          )}
 
-      {/* Title Below Image */}
-      <Link href={actionUrl} className="group/title block px-1 mt-0.5">
-        <h3 className="text-sm font-black text-white/90 line-clamp-2 leading-[1.2] group-hover/title:text-primary group-hover/title:drop-shadow-[var(--shadow-primary)] transition-all mb-1">
-          {title}
-        </h3>
-      </Link>
+          {/* Title Below Image */}
+          <Link href={actionUrl} className="group/title block px-1 mt-0.5">
+            <h3 className="text-sm font-black text-white/90 line-clamp-2 leading-[1.2] group-hover/title:text-primary group-hover/title:drop-shadow-[var(--shadow-primary)] transition-all mb-1">
+              {title}
+            </h3>
+          </Link>
+        </>
+      )}
 
       <RoomModal 
         isOpen={isRoomModalOpen} 

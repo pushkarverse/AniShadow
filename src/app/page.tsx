@@ -22,6 +22,7 @@ export default async function Home() {
     title: getAnimeTitle(anime.title),
     description: anime.description?.replace(/<[^>]*>?/gm, '') || "Discover a premium, ad-free streaming experience with the latest trending and legendary anime.",
     image: anime.cover || anime.image || "https://images.unsplash.com/photo-1578632292335-df3abbb0d586?q=80&w=2000&auto=format&fit=crop",
+    poster: anime.image || anime.cover || "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop",
     genres: anime.genres || ["Action", "Adventure"],
     rating: anime.rating ? (Number(anime.rating) / 10).toFixed(1) : "8.5",
     releaseDate: anime.releaseDate || "2024",

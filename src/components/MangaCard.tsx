@@ -25,6 +25,7 @@ interface MangaCardProps {
   status?: string;
   countryOfOrigin?: string;
   href?: string;
+  variant?: "default" | "search";
 }
 
 const statusOptions = ["Reading", "On-Hold", "Planning", "Completed", "Dropped"];
@@ -46,7 +47,8 @@ export const MangaCard = ({
   chapterNumber,
   status,
   countryOfOrigin,
-  href
+  href,
+  variant = "default"
 }: MangaCardProps) => {
   const format = getMangaFormat(countryOfOrigin);
   const [showInfo, setShowInfo] = useState(false);
@@ -156,7 +158,7 @@ export const MangaCard = ({
   };
 
   return (
-    <div className="group relative flex flex-col gap-3 manga-theme w-[155px] sm:w-[180px] shrink-0 md:w-full">
+    <div className={variant === "search" ? "group relative flex flex-col gap-2 w-full manga-theme" : "group relative flex flex-col gap-3 manga-theme w-[155px] sm:w-[180px] shrink-0 md:w-full"}>
       {/* Image Container */}
       <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-[#121212] border border-white/5 shadow-2xl transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-primary/20 group-hover:-translate-y-1">
         <Link href={actionUrl} className="block w-full h-full relative">
@@ -166,6 +168,7 @@ export const MangaCard = ({
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
             className="object-cover transition-all duration-700 group-hover:scale-105"
+            unoptimized
           />
           
           {/* Enhanced Overlays */}
@@ -173,18 +176,30 @@ export const MangaCard = ({
         </Link>
 
         {/* Status Badges Overlay */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1.5 z-10 pointer-events-none">
-          <div className="flex items-center gap-1">
-            {rating && (
-              <span className="px-1.5 py-0.5 text-[9px] font-black tracking-widest rounded bg-black/60 text-primary backdrop-blur-md border border-white/10 uppercase">
-                {Number(rating).toFixed(1)}
-              </span>
-            )}
-            <span className="px-1.5 py-0.5 text-[9px] font-black tracking-widest rounded bg-primary text-white backdrop-blur-md border border-white/10 uppercase">
-              {format}
-            </span>
+        {variant === "search" ? (
+          <div className="absolute top-2 left-2 flex items-center gap-1 select-none pointer-events-none">
+            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black text-yellow-400">
+              <span>★</span>
+              <span className="text-white font-bold">{rating ? Number(rating).toFixed(1) : "8.5"}</span>
+            </div>
+            <div className="px-1.5 py-0.5 rounded bg-[#ff6600]/25 backdrop-blur-md border border-[#ff6600]/30 text-[9px] font-black text-orange-400 uppercase">
+              {format || "MANGA"}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="absolute top-2 left-2 flex flex-col gap-1.5 z-10 pointer-events-none">
+            <div className="flex items-center gap-1">
+              {rating && (
+                <span className="px-1.5 py-0.5 text-[9px] font-black tracking-widest rounded bg-black/60 text-primary backdrop-blur-md border border-white/10 uppercase">
+                  {Number(rating).toFixed(1)}
+                </span>
+              )}
+              <span className="px-1.5 py-0.5 text-[9px] font-black tracking-widest rounded bg-primary text-white backdrop-blur-md border border-white/10 uppercase">
+                {format}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Info Button (Top Right) */}
         <div className="absolute top-2 right-2 z-20">
@@ -228,11 +243,30 @@ export const MangaCard = ({
                 setShowInfo(false);
               }
             }}
-            className="p-2 rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg border border-accent/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 scale-90 hover:scale-100"
+            className={variant === "search"
+              ? "w-7 h-7 flex items-center justify-center rounded-full bg-black/60 hover:bg-primary text-white border border-white/15 transition-all shadow-lg active:scale-90 cursor-pointer"
+              : "p-2 rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg border border-accent/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 scale-90 hover:scale-100"
+            }
           >
-            <Info className="w-4 h-4" />
+            {variant === "search" ? (
+              <span className="text-lg font-light leading-none">+</span>
+            ) : (
+              <Info className="w-4 h-4" />
+            )}
           </button>
         </div>
+
+        {/* Bottom Chapters overlay for Search Variant */}
+        {variant === "search" && (
+          <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center z-10 pointer-events-none select-none">
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-sm border border-white/5 text-[9px] font-bold text-white/90">
+              <span className="flex items-center gap-0.5 text-white/60">
+                <span>CH</span>
+                <span>{chapters || chapterNumber || "?"}</span>
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Quick Info Popover */}
         {isMounted && createPortal(
@@ -474,20 +508,38 @@ export const MangaCard = ({
       </div>
 
       {/* Metadata Section Above Title */}
-      <div className="flex items-center gap-2 px-1 mt-1 mb-1 shadow-sm">
-        {(chapterNumber || chapters) ? (
-          <span className="text-[10px] font-black tracking-[0.15em] text-primary uppercase">
-             CH {chapterNumber || chapters}
+      {variant === "search" ? (
+        <div className="flex flex-col gap-0.5 px-1">
+          <Link href={actionUrl} className="group/title block">
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/80 shrink-0" />
+              <h3 className="text-xs sm:text-sm font-bold text-white/95 truncate leading-tight group-hover/title:text-primary transition-colors">
+                {title}
+              </h3>
+            </div>
+          </Link>
+          <span className="text-[10px] text-white/40 font-semibold uppercase tracking-wider pl-3">
+            {type || "MANGA"} &bull; chs
           </span>
-        ) : null}
-      </div>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-2 px-1 mt-1 mb-1 shadow-sm">
+            {(chapterNumber || chapters) ? (
+              <span className="text-[10px] font-black tracking-[0.15em] text-primary uppercase">
+                 CH {chapterNumber || chapters}
+              </span>
+            ) : null}
+          </div>
 
-      {/* Title Below Image */}
-      <Link href={actionUrl} className="group/title block px-1 mt-0.5">
-        <h3 className="text-sm font-black text-white/90 line-clamp-2 leading-[1.2] group-hover/title:text-primary group-hover/title:drop-shadow-[var(--shadow-primary)] transition-all mb-1 uppercase italic">
-          {title}
-        </h3>
-      </Link>
+          {/* Title Below Image */}
+          <Link href={actionUrl} className="group/title block px-1 mt-0.5">
+            <h3 className="text-sm font-black text-white/90 line-clamp-2 leading-[1.2] group-hover/title:text-primary group-hover/title:drop-shadow-[var(--shadow-primary)] transition-all mb-1 uppercase italic">
+              {title}
+            </h3>
+          </Link>
+        </>
+      )}
 
       <RoomModal 
         isOpen={isRoomModalOpen} 

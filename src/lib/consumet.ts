@@ -682,6 +682,7 @@ export async function advancedSearchAnime({
   query: search,
   page = 1,
   genres,
+  tags,
   status,
   season,
   year,
@@ -692,6 +693,7 @@ export async function advancedSearchAnime({
   query?: string;
   page?: number;
   genres?: string[];
+  tags?: string[];
   status?: string;
   season?: string;
   year?: number;
@@ -700,10 +702,10 @@ export async function advancedSearchAnime({
   type?: "ANIME" | "MANGA";
 }) {
   const gqlQuery = `
-    query ($page: Int, $search: String, $genres: [String], $status: MediaStatus, $season: MediaSeason, $seasonYear: Int, $format: MediaFormat, $sort: [MediaSort], $type: MediaType) {
+    query ($page: Int, $search: String, $genres: [String], $tags: [String], $status: MediaStatus, $season: MediaSeason, $seasonYear: Int, $format: MediaFormat, $sort: [MediaSort], $type: MediaType) {
       Page (page: $page, perPage: 20) {
-        pageInfo { hasNextPage }
-        media (search: $search, genre_in: $genres, status: $status, season: $season, seasonYear: $seasonYear, format: $format, type: $type, sort: $sort) {
+        pageInfo { total hasNextPage }
+        media (search: $search, genre_in: $genres, tag_in: $tags, status: $status, season: $season, seasonYear: $seasonYear, format: $format, type: $type, sort: $sort) {
           id
           title { romaji english native }
           coverImage { large }
@@ -731,6 +733,7 @@ export async function advancedSearchAnime({
             search: searchQuery || undefined,
             page,
             genres: genres?.length ? genres : undefined,
+            tags: tags?.length ? tags : undefined,
             status: status || undefined,
             season: season || undefined,
             seasonYear: year || undefined,
@@ -754,9 +757,9 @@ export async function advancedSearchAnime({
         countryOfOrigin: m.countryOfOrigin
       })) || [];
       results = await enrichAnimeResultsWithSubDub(results);
-      return { results, hasNextPage: pageInfo?.hasNextPage || false };
+      return { results, hasNextPage: pageInfo?.hasNextPage || false, total: pageInfo?.total || 0 };
     } catch {
-      return { results: [], hasNextPage: false };
+      return { results: [], hasNextPage: false, total: 0 };
     }
   };
 
