@@ -1792,6 +1792,7 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
   const now = Math.floor(Date.now() / 1000);
   let mediaIds: number[] | undefined = undefined;
 
+  // If a country filter is selected, fetch the ongoing media IDs first.
   if (country) {
     const mediaIdsQuery = `
       query ($country: CountryCode) {
@@ -1806,7 +1807,8 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
       const response = await fetch('https://graphql.anilist.co', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ query: mediaIdsQuery, variables: { country } })
+        body: JSON.stringify({ query: mediaIdsQuery, variables: { country } }),
+        cache: 'no-store'
       });
       const data = await response.json();
       mediaIds = data?.data?.Page?.media?.map((m: any) => m.id) || [];
@@ -1819,10 +1821,10 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
     }
   }
 
+  // Fetch a larger pool of airing schedules to cover the week's releases and allow global deduplication
   const schedulesQuery = `
-    query ($page: Int, $perPage: Int, $airingAt_lesser: Int, $mediaId_in: [Int]) {
-      Page (page: $page, perPage: $perPage) {
-        pageInfo { hasNextPage }
+    query ($airingAt_lesser: Int, $mediaId_in: [Int]) {
+      Page (page: 1, perPage: 200) {
         airingSchedules (airingAt_lesser: $airingAt_lesser, sort: [TIME_DESC], mediaId_in: $mediaId_in) {
           episode
           airingAt
@@ -1854,8 +1856,6 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
       body: JSON.stringify({
         query: schedulesQuery,
         variables: {
-          page,
-          perPage: perPage * 3, // Fetch more to filter and deduplicate
           airingAt_lesser: now,
           mediaId_in: mediaIds
         }
@@ -1863,45 +1863,47 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
       cache: 'no-store'
     });
     const data = await response.json();
-    const pageInfo = data?.data?.Page?.pageInfo;
     const schedules = data?.data?.Page?.airingSchedules || [];
 
     const mapped = schedules
       .filter((s: any) => s.media && s.media.isAdult === false)
       .map((s: any) => {
-      const m = s.media;
-      return {
-        id: m.id.toString(),
-        title: m.title,
-        slug: slugify(getAnimeTitle(m.title)),
-        image: m.coverImage?.large,
-        cover: m.bannerImage || m.coverImage?.large,
-        description: m.description || "",
-        genres: m.genres || [],
-        type: m.format || m.type || "TV",
-        rating: m.averageScore || 0,
-        countryOfOrigin: m.countryOfOrigin,
-        episodeNumber: s.episode,
-        subEpisodes: s.episode,
-        duration: m.duration ? `${m.duration}m` : "24m"
-      };
-    });
+        const m = s.media;
+        return {
+          id: m.id.toString(),
+          title: m.title,
+          slug: slugify(getAnimeTitle(m.title)),
+          image: m.coverImage?.large,
+          cover: m.bannerImage || m.coverImage?.large,
+          description: m.description || "",
+          genres: m.genres || [],
+          type: m.format || m.type || "TV",
+          rating: m.averageScore || 0,
+          countryOfOrigin: m.countryOfOrigin,
+          episodeNumber: s.episode,
+          subEpisodes: s.episode,
+          duration: m.duration ? `${m.duration}m` : "24m"
+        };
+      });
 
-    // Deduplicate ongoing releases to keep only the latest episode entry for each unique anime
+    // Deduplicate the entire pool FIRST to get a unique list of anime series
     const seen = new Set<string>();
-    const results = [];
+    const uniqueList = [];
     for (const item of mapped) {
       if (!seen.has(item.id)) {
         seen.add(item.id);
-        results.push(item);
-        if (results.length >= perPage) {
-          break;
-        }
+        uniqueList.push(item);
       }
     }
 
+    // Paginate from the globally unique list of latest releases
+    const startIndex = (page - 1) * perPage;
+    const endIndex = page * perPage;
+    const results = uniqueList.slice(startIndex, endIndex);
+    const hasNextPage = uniqueList.length > endIndex;
+
     const enrichedResults = await enrichAnimeResultsWithSubDub(results);
-    return { results: enrichedResults, hasNextPage: pageInfo?.hasNextPage || false };
+    return { results: enrichedResults, hasNextPage };
   } catch (error) {
     console.error("Failed to fetch airing schedules:", error);
     return { results: [], hasNextPage: false };
