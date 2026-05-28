@@ -313,11 +313,11 @@ export function Navbar() {
 
               <div className="flex flex-col gap-2">
                 <Link href="/manga" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all uppercase tracking-widest text-xs">MANGA</Link>
-                <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">GENRES</Link>
+                <Link href="/search" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">GENRES</Link>
                 <Link href="/trending" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">TYPES</Link>
                 <Link href="/popular" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">NEW RELEASES</Link>
-                <Link href="/latest" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">UPDATES</Link>
-                <Link href="/ongoing" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">ONGOING</Link>
+                <Link href="/trending" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">UPDATES</Link>
+                <Link href="/search?status=RELEASING" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">ONGOING</Link>
               </div>
             </motion.div>
           </>
