@@ -176,7 +176,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
             >
               {/* Tabs Row */}
               <div className="flex border-b border-[#1f2330] select-none bg-[#131620]">
-                <div className="py-3.5 px-6 font-bold uppercase tracking-wider text-xs text-[#84cc16] border-b-2 border-[#84cc16]">
+                <div className="py-3.5 px-6 font-bold uppercase tracking-wider text-xs text-primary border-b-2 border-primary">
                   {isMangaRoute ? "Manga" : "Anime"}
                 </div>
               </div>
@@ -195,11 +195,11 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
 
               {/* Results List Section - Only visible when text is entered */}
               {query.trim() !== "" && (
-                <div className="border-r-4 border-[#84cc16] max-h-[360px] overflow-y-auto custom-scrollbar flex flex-col bg-[#131620]">
+                <div className="border-r-4 border-primary max-h-[360px] overflow-y-auto custom-scrollbar flex flex-col bg-[#131620]">
                   {loading ? (
                     // Rotating spinner circle
                     <div className="py-14 flex items-center justify-center">
-                      <div className="w-8 h-8 border-2 border-white/10 border-t-[#84cc16] rounded-full animate-spin" />
+                      <div className="w-8 h-8 border-2 border-white/10 border-t-primary rounded-full animate-spin" />
                     </div>
                   ) : results.length > 0 ? (
                     results.map((anime, idx) => {
@@ -237,7 +237,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
                               />
                             </div>
                             <div className="min-w-0 flex flex-col gap-1">
-                              <h4 className="text-sm font-bold text-white group-hover:text-[#84cc16] transition-colors truncate">
+                              <h4 className="text-sm font-bold text-white group-hover:text-primary transition-colors truncate">
                                 {getDisplayTitle(anime.title)}
                               </h4>
                               <p className="text-xs text-white/40 font-semibold tracking-wide">
@@ -245,7 +245,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
                               </p>
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-[#84cc16] group-hover:translate-x-0.5 transition-all" />
+                          <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                         </a>
                       );
                     })
@@ -272,7 +272,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #84cc16;
+          background: var(--color-primary);
           border-radius: 10px;
         }
       `}} />
