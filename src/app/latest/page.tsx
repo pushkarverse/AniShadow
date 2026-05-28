@@ -7,7 +7,7 @@ import type { HeroResult } from "@/types/anime";
 
 export const dynamic = "force-dynamic";
 
-export default async function OngoingPage({
+export default async function LatestPage({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string }>;
@@ -25,7 +25,7 @@ export default async function OngoingPage({
       <main className="flex-1 container mx-auto px-6 md:px-12 pt-32">
         <div className="flex flex-col gap-4 mb-12">
             <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter italic">
-                <span className="text-primary">Ongoing</span> Anime
+                <span className="text-primary">Latest</span> Anime
             </h1>
             <div className="h-1 w-24 bg-primary rounded-full shadow-lg shadow-primary/20" />
             <p className="text-foreground/60 max-w-2xl leading-relaxed">
@@ -54,7 +54,7 @@ export default async function OngoingPage({
             <Pagination 
               currentPage={currentPage} 
               hasNextPage={hasNextPage} 
-              baseUrl="/ongoing" 
+              baseUrl="/latest" 
             />
           </>
         ) : (
