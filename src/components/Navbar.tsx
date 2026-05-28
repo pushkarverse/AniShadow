@@ -142,24 +142,12 @@ export function Navbar() {
               readOnly
               placeholder={isMangaRoute ? "Search manga..." : "Search anime..."}
               suppressHydrationWarning
-              className="w-full h-11 bg-white/5 border border-white/10 rounded-full pl-11 pr-44 text-sm cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all outline-none select-none"
+              className="w-full h-11 bg-white/5 border border-white/10 rounded-full pl-11 pr-20 text-sm cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all outline-none select-none"
             />
-            <div className="absolute inset-y-0 right-28 flex items-center gap-1 pointer-events-none select-none">
+            <div className="absolute inset-y-0 right-4 flex items-center gap-1 pointer-events-none select-none">
               <kbd className="px-1.5 py-0.5 rounded bg-white/5 text-white/30 border border-white/10 text-[9px] font-sans font-bold shadow-inner">⌘</kbd>
               <kbd className="px-1.5 py-0.5 rounded bg-white/5 text-white/30 border border-white/10 text-[9px] font-sans font-bold shadow-inner">S</kbd>
             </div>
-            <button 
-              type="button" 
-              onClick={(e) => {
-                e.stopPropagation();
-                router.push(`/search?type=${isMangaRoute ? "MANGA" : "ANIME"}`);
-              }}
-              suppressHydrationWarning
-              className="absolute inset-y-1.5 right-1.5 px-4 rounded-full flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-all border bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border-white/5"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              Filter
-            </button>
           </div>
         </div>
 
