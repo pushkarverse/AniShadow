@@ -2,9 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PlayerWrapper } from "@/components/PlayerWrapper";
-import { List, X, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface ServerEntry {
   name: string;
@@ -86,7 +85,6 @@ export function WatchPlayerSection({
   const [currentVideoUrl, setCurrentVideoUrl] = useState(videoUrl);
   const [selectedServer, setSelectedServer] = useState(allServers[0]?.name || "Primary");
   const [activeServerGroup, setActiveServerGroup] = useState<"dub" | "other">("other");
-  const [showEpisodesSheet, setShowEpisodesSheet] = useState(false);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
 
   // Load theater mode preference on mount
@@ -286,19 +284,6 @@ export function WatchPlayerSection({
     </div>
   );
 
-  const renderMobileSheetTrigger = () =>
-    episodes.length > 0 && (
-      <div className="md:hidden px-4">
-        <button
-          onClick={() => setShowEpisodesSheet(true)}
-          className="w-full py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-white transition-all active:scale-[0.98] cursor-pointer"
-        >
-          <List className="w-4 h-4 text-primary" />
-          <span>Select Episode ({currentEpisodeNumber} / {episodes.length})</span>
-        </button>
-      </div>
-    );
-
   const renderInfoDetails = () => (
     <div className="px-4 md:px-0 flex flex-col gap-4">
       <div className="flex flex-col gap-2">
@@ -320,9 +305,9 @@ export function WatchPlayerSection({
   );
 
   const renderSidebar = () => (
-    <div className="hidden lg:flex w-full lg:w-80 flex-col gap-4 shrink-0">
-      <h3 className="text-lg font-semibold px-2">Episodes</h3>
-      <div className="flex flex-col gap-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+    <div className="w-full lg:w-80 flex flex-col gap-4 shrink-0 px-4 md:px-0">
+      <h3 className="text-lg font-black tracking-tight text-white px-2">Episodes</h3>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-3 lg:max-h-[600px] lg:overflow-y-auto pr-2 custom-scrollbar">
         {episodes.map((episode) => {
           const isActive = episode.number === currentEpisodeNumber;
           const targetUrl = `/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
@@ -331,13 +316,13 @@ export function WatchPlayerSection({
             <Link
               key={episode.id}
               href={targetUrl}
-              className={`flex items-center gap-4 p-3 rounded-2xl transition-all border ${
+              className={`flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-4 p-2.5 lg:p-3 rounded-2xl transition-all border ${
                 isActive
                   ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
                   : "bg-white/5 border-white/5 hover:border-white/20 text-white/40 hover:text-white"
               }`}
             >
-              <div className="relative w-24 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-[#121212]">
+              <div className="relative w-full lg:w-24 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-[#121212]">
                 <img
                   src={poster || "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx151807-m1gX3iqITmI6.png"}
                   alt={episode.title || `Episode ${episode.number}`}
@@ -347,11 +332,11 @@ export function WatchPlayerSection({
                   <span className="text-white text-xs font-bold">{episode.number}</span>
                 </div>
               </div>
-              <div className="flex flex-col gap-1 overflow-hidden">
-                <span className="text-sm font-medium truncate">
+              <div className="flex flex-col gap-0.5 overflow-hidden px-1 lg:px-0">
+                <span className="text-xs lg:text-sm font-semibold lg:font-medium truncate leading-tight">
                   {episode.title || `Episode ${episode.number}`}
                 </span>
-                <span className="text-[10px] text-white/30 font-medium">
+                <span className="text-[9px] lg:text-[10px] text-white/30 font-medium">
                   Episode {episode.number}
                 </span>
               </div>
@@ -360,83 +345,6 @@ export function WatchPlayerSection({
         })}
       </div>
     </div>
-  );
-
-  const renderMobileSheet = () => (
-    <AnimatePresence>
-      {showEpisodesSheet && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.6 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowEpisodesSheet(false)}
-            className="fixed inset-0 bg-black z-[9998] backdrop-blur-xs md:hidden"
-          />
-          <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 220 }}
-            className="fixed bottom-0 left-0 right-0 z-[9999] bg-[#0c0c0c] border-t border-white/10 rounded-t-3xl max-h-[75vh] flex flex-col overflow-hidden md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
-          >
-            <div className="flex justify-between items-center p-5 border-b border-white/5 shrink-0 bg-gradient-to-b from-white/[0.02] to-transparent">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Select Episode</span>
-                <h4 className="text-sm font-bold text-white/90 truncate max-w-[200px]">{title}</h4>
-              </div>
-              <button
-                onClick={() => setShowEpisodesSheet(false)}
-                className="p-2 rounded-full hover:bg-white/5 text-white/40 hover:text-white transition-all cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {episodes.map((episode) => {
-                  const isActive = episode.number === currentEpisodeNumber;
-                  const targetUrl = `/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
-
-                  return (
-                    <Link
-                      key={episode.id}
-                      href={targetUrl}
-                      onClick={() => setShowEpisodesSheet(false)}
-                      className={`flex items-center gap-4 p-3 rounded-2xl transition-all border ${
-                        isActive
-                          ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                          : "bg-white/5 border-white/5 hover:border-white/20 text-white/50 hover:text-white"
-                      }`}
-                    >
-                      <div className="relative w-20 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-[#121212]">
-                        <img
-                          src={poster || "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx151807-m1gX3iqITmI6.png"}
-                          alt={episode.title || `Episode ${episode.number}`}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">{episode.number}</span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-0.5 overflow-hidden">
-                        <span className="text-xs font-semibold truncate leading-tight">
-                          {episode.title || `Episode ${episode.number}`}
-                        </span>
-                        <span className="text-[9px] text-white/30 font-medium">
-                          Episode {episode.number}
-                        </span>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
   );
 
   // Return Standard vs Theater Mode Layouts
@@ -448,15 +356,11 @@ export function WatchPlayerSection({
           {renderBackButton()}
           {renderAudioSwitcher()}
           {renderPlayer()}
-          {renderMobileSheetTrigger()}
           {renderInfoDetails()}
         </div>
 
-        {/* Right Column: Episodes Sidebar */}
+        {/* Right Column: Episodes Sidebar / Grid underneath on mobile */}
         {renderSidebar()}
-
-        {/* Mobile slide-up sheet */}
-        {renderMobileSheet()}
       </div>
     );
   }
@@ -469,7 +373,6 @@ export function WatchPlayerSection({
         {renderBackButton()}
         {renderAudioSwitcher()}
         {renderPlayer()}
-        {renderMobileSheetTrigger()}
       </div>
 
       {/* Bottom: Info and Sidebar side-by-side */}
@@ -479,9 +382,6 @@ export function WatchPlayerSection({
         </div>
         {renderSidebar()}
       </div>
-
-      {/* Mobile slide-up sheet */}
-      {renderMobileSheet()}
     </div>
   );
 }
