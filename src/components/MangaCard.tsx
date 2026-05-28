@@ -132,6 +132,7 @@ export const MangaCard = ({
   const mangaSlug = slug || slugify(title);
   const detailsUrl = href || `/manga/${id}/${mangaSlug}`;
   const actionUrl = href || `/manga/${id}/${mangaSlug}`;
+  const displayTitle = getDisplayTitle(title);
 
   const toggleLibrary = () => {
     setIsLibraryLoading(true);
@@ -267,6 +268,14 @@ export const MangaCard = ({
             </div>
           </div>
         )}
+
+      </div>
+
+      <Link href={detailsUrl} className="block mt-2 px-1">
+        <h3 className="text-[11px] font-black text-white/85 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+          {displayTitle}
+        </h3>
+      </Link>
 
         {/* Quick Info Popover */}
         {isMounted && createPortal(
@@ -505,9 +514,6 @@ export const MangaCard = ({
           </AnimatePresence>,
           document.body
         )}
-      </div>
-
-      
 
       <RoomModal 
         isOpen={isRoomModalOpen} 

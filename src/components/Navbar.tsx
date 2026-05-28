@@ -8,6 +8,7 @@ import { Search, Menu, SlidersHorizontal, Shuffle, Users, Bell, X } from "lucide
 import { motion, AnimatePresence } from "framer-motion";
 import { SearchFilters } from "./SearchFilters";
 import { BottomTabBar } from "./BottomTabBar";
+import { SearchModal } from "./SearchModal";
 
 export function Navbar() {
   const router = useRouter();
@@ -18,7 +19,20 @@ export function Navbar() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isShuffling, setIsShuffling] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
+
+  // Shortcut CTRL + S / CMD + S to open search modal
+  useEffect(() => {
+    function handleGlobalShortcut(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        setIsSearchModalOpen((prev) => !prev);
+      }
+    }
+    window.addEventListener("keydown", handleGlobalShortcut);
+    return () => window.removeEventListener("keydown", handleGlobalShortcut);
+  }, []);
 
   const [isMangaRoute, setIsMangaRoute] = useState(pathname?.startsWith('/manga') || false);
 
@@ -116,50 +130,37 @@ export function Navbar() {
 
         {/* Center: Search Bar (Desktop) */}
         <div className="hidden md:flex flex-1 max-w-2xl px-4 relative">
-          <form onSubmit={handleSearch} className="relative w-full group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/40 group-focus-within:text-primary transition-colors">
+          <div 
+            onClick={() => setIsSearchModalOpen(true)}
+            className="relative w-full group cursor-pointer"
+          >
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-white/40 group-hover:text-primary transition-colors">
               <Search className="w-4 h-4" />
             </div>
             <input
               type="text"
+              readOnly
               placeholder={isMangaRoute ? "Search manga..." : "Search anime..."}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
               suppressHydrationWarning
-              className="w-full h-11 bg-white/5 border border-white/10 rounded-full pl-11 pr-32 text-sm focus:bg-white/10 focus:border-primary/50 focus:ring-0 transition-all outline-none"
+              className="w-full h-11 bg-white/5 border border-white/10 rounded-full pl-11 pr-44 text-sm cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all outline-none select-none"
             />
+            <div className="absolute inset-y-0 right-28 flex items-center gap-1 pointer-events-none select-none">
+              <kbd className="px-1.5 py-0.5 rounded bg-white/5 text-white/30 border border-white/10 text-[9px] font-sans font-bold shadow-inner">⌘</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-white/5 text-white/30 border border-white/10 text-[9px] font-sans font-bold shadow-inner">S</kbd>
+            </div>
             <button 
               type="button" 
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/search?type=${isMangaRoute ? "MANGA" : "ANIME"}`);
+              }}
               suppressHydrationWarning
-              className={`absolute inset-y-1.5 right-1.5 px-4 rounded-full flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-all border ${
-                isFilterOpen 
-                  ? "bg-primary text-white border-primary" 
-                  : "bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border-white/5"
-              }`}
+              className="absolute inset-y-1.5 right-1.5 px-4 rounded-full flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-all border bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border-white/5"
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               Filter
             </button>
-          </form>
-
-          {/* Filter Dropdown */}
-          <AnimatePresence>
-            {isFilterOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                className="absolute top-full left-4 right-4 mt-4 z-50 pointer-events-auto"
-              >
-                <div className="bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-2 max-h-[70vh] overflow-y-auto no-scrollbar">
-                  <Suspense fallback={<div className="p-4 text-xs font-bold text-white/20 animate-pulse">Loading filters...</div>}>
-                    <SearchFilters />
-                  </Suspense>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          </div>
         </div>
 
         {/* Right: Actions */}
@@ -383,12 +384,18 @@ export function Navbar() {
       </AnimatePresence>
 
       {/* Bottom Tab Bar (Mobile) */}
-      {!pathname?.startsWith('/watch') && (
+      {!(pathname === '/watch' || pathname?.startsWith('/watch/')) && (
         <BottomTabBar 
           onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
           isMangaRoute={isMangaRoute} 
         />
       )}
+
+      <SearchModal 
+        isOpen={isSearchModalOpen} 
+        onClose={() => setIsSearchModalOpen(false)} 
+        isMangaRoute={isMangaRoute}
+      />
     </header>
   );
 }

@@ -86,8 +86,8 @@ export function SearchFilters() {
   };
 
   return (
-    <div className="mb-8 w-full select-none">
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-x-4 gap-y-5 md:gap-4 items-end bg-[#0d0d0d] p-5 md:p-6 rounded-2xl border border-white/5 shadow-2xl">
+    <div className="w-full select-none">
+      <div className="grid grid-cols-2 lg:grid-cols-1 gap-x-4 gap-y-5 items-end">
         {/* Genres */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[10px] font-black uppercase tracking-wider text-white/50 pl-0.5">Genres</label>

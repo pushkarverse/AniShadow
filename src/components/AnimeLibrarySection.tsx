@@ -137,6 +137,7 @@ export function AnimeLibrarySection() {
                       alt={item.title}
                       fill
                       sizes="180px"
+                      loading="eager"
                       className="object-cover transition-all duration-700 group-hover:scale-105"
                     />
                     

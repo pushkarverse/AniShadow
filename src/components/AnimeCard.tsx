@@ -114,6 +114,8 @@ export function AnimeCard({
   const detailsUrl = href || `/anime/${id}/${animeSlug}`;
   const actionUrl = href || (isManga ? `/anime/${id}/${animeSlug}` : `/watch/${id}/${animeSlug}?ep=1`);
 
+  const displayTitle = getDisplayTitle(title);
+
   return (
     <div className={variant === "search" ? "group relative flex flex-col gap-2 w-full" : "group relative flex flex-col gap-3 w-[155px] sm:w-[180px] shrink-0 md:w-full"}>
       {/* Image Container */}
@@ -196,6 +198,14 @@ export function AnimeCard({
             )}
           </button>
         </div>
+
+      </div>
+
+      <Link href={detailsUrl} className="block mt-2 px-1">
+        <h3 className="text-[11px] font-black text-white/85 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+          {displayTitle}
+        </h3>
+      </Link>
 
         {/* Quick Info Popover */}
         {isMounted && createPortal(
@@ -373,9 +383,6 @@ export function AnimeCard({
           </AnimatePresence>,
           document.body
         )}
-      </div>
-
-      
 
       <RoomModal 
         isOpen={isRoomModalOpen} 

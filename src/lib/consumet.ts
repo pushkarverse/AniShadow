@@ -700,6 +700,7 @@ export async function advancedSearchAnime({
           countryOfOrigin
           format
           duration
+          seasonYear
         }
       }
     }`;
@@ -737,7 +738,9 @@ export async function advancedSearchAnime({
         episodeNumber: m.type === "MANGA" ? m.chapters : getReleasedAnimeEpisodesCount(m),
         subEpisodes: m.type === "MANGA" ? m.chapters : getReleasedAnimeEpisodesCount(m),
         countryOfOrigin: m.countryOfOrigin,
-        duration: m.duration ? `${m.duration}m` : "24m"
+        duration: m.duration ? `${m.duration}m` : "24m",
+        status: m.status,
+        year: m.seasonYear
       })) || [];
       results = await enrichAnimeResultsWithSubDub(results);
       return { results, hasNextPage: pageInfo?.hasNextPage || false, total: pageInfo?.total || 0 };
