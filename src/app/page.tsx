@@ -2,6 +2,7 @@ import { Navbar } from "@/components/Navbar";
 import { Hero, type HeroItem } from "@/components/Hero";
 import { AnimeCard } from "@/components/AnimeCard";
 import { TrendingSidebar } from "@/components/TrendingSidebar";
+import { AnimeLibrarySection } from "@/components/AnimeLibrarySection";
 import Link from "next/link";
 import { getTrendingAnime, getPopularAnime } from "@/lib/consumet";
 import { getAnimeTitle } from "@/lib/anime-utils";
@@ -39,6 +40,9 @@ export default async function Home() {
         <section className="w-full relative mb-12 md:mb-16 -mx-4 w-[calc(100%+2rem)] md:mx-0 md:w-full">
           <Hero items={featuredAnime} />
         </section>
+
+        {/* Anime Continue Watching Section */}
+        <AnimeLibrarySection />
 
         {/* Main Layout Grid */}
         <div className="flex flex-col lg:flex-row gap-8 xl:gap-12 px-1 md:px-0">
