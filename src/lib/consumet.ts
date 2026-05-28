@@ -1828,6 +1828,7 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
           airingAt
           media {
             id
+            isAdult
             title { romaji english native }
             coverImage { large }
             bannerImage
@@ -1854,17 +1855,20 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
         query: schedulesQuery,
         variables: {
           page,
-          perPage: perPage * 2, // Fetch more to deduplicate
+          perPage: perPage * 3, // Fetch more to filter and deduplicate
           airingAt_lesser: now,
           mediaId_in: mediaIds
         }
-      })
+      }),
+      cache: 'no-store'
     });
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;
     const schedules = data?.data?.Page?.airingSchedules || [];
 
-    const mapped = schedules.map((s: any) => {
+    const mapped = schedules
+      .filter((s: any) => s.media && s.media.isAdult === false)
+      .map((s: any) => {
       const m = s.media;
       return {
         id: m.id.toString(),
