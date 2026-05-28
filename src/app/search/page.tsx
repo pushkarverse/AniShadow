@@ -132,7 +132,7 @@ export default async function SearchPage({
                         title={getAnimeTitle(anime.title)}
                         image={anime.image && anime.image !== "" ? anime.image : "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop"}
                         rating={anime.rating ? anime.rating / 10 : undefined}
-                        type={currentType}
+                        type={currentType === "MANGA" ? "MANGA" : ((anime as any).type || "TV")}
                         slug={anime.slug}
                         {...(currentType === "MANGA" ? { 
                           chapterNumber: (anime as any).episodeNumber,
@@ -141,7 +141,8 @@ export default async function SearchPage({
                         } : {
                           episodeNumber: (anime as any).episodeNumber,
                           subEpisodes: (anime as any).subEpisodes,
-                          dubEpisodes: (anime as any).dubEpisodes
+                          dubEpisodes: (anime as any).dubEpisodes,
+                          duration: (anime as any).duration
                         })}
                       />
                     );

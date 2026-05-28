@@ -696,6 +696,8 @@ export async function advancedSearchAnime({
           }
           averageScore
           countryOfOrigin
+          format
+          duration
         }
       }
     }`;
@@ -723,16 +725,17 @@ export async function advancedSearchAnime({
       });
       const data = await response.json();
       const pageInfo = data?.data?.Page?.pageInfo;
-      let results = data?.data?.Page?.media?.map((m: AnilistNode) => ({
+      let results = data?.data?.Page?.media?.map((m: any) => ({
         id: m.id.toString(),
         title: m.title,
         slug: slugify(getAnimeTitle(m.title)),
         image: m.coverImage?.large,
-        type: m.type,
+        type: m.format || m.type || "TV",
         rating: m.averageScore,
         episodeNumber: m.type === "MANGA" ? m.chapters : getReleasedAnimeEpisodesCount(m),
         subEpisodes: m.type === "MANGA" ? m.chapters : getReleasedAnimeEpisodesCount(m),
-        countryOfOrigin: m.countryOfOrigin
+        countryOfOrigin: m.countryOfOrigin,
+        duration: m.duration ? `${m.duration}m` : "24m"
       })) || [];
       results = await enrichAnimeResultsWithSubDub(results);
       return { results, hasNextPage: pageInfo?.hasNextPage || false, total: pageInfo?.total || 0 };
@@ -800,6 +803,8 @@ export async function getMediaByGenre(genres: string[], type: 'ANIME' | 'MANGA' 
           }
           averageScore
           countryOfOrigin
+          format
+          duration
         }
       }
     }`;
@@ -811,16 +816,17 @@ export async function getMediaByGenre(genres: string[], type: 'ANIME' | 'MANGA' 
       body: JSON.stringify({ query, variables: { genres, page, type } })
     });
     const data = await response.json();
-    const results = data?.data?.Page?.media?.map((m: AnilistNode) => ({
+    const results = data?.data?.Page?.media?.map((m: any) => ({
       id: m.id.toString(),
       title: m.title,
       slug: slugify(getAnimeTitle(m.title)),
       image: m.coverImage?.large,
-      type: m.type,
+      type: m.format || m.type || "TV",
       rating: m.averageScore,
       episodeNumber: m.type === "MANGA" ? m.chapters : getReleasedAnimeEpisodesCount(m),
       subEpisodes: m.type === "MANGA" ? m.chapters : getReleasedAnimeEpisodesCount(m),
-      countryOfOrigin: m.countryOfOrigin
+      countryOfOrigin: m.countryOfOrigin,
+      duration: m.duration ? `${m.duration}m` : "24m"
     })) || [];
     return await enrichAnimeResultsWithSubDub(results);
   } catch {
@@ -844,6 +850,9 @@ export async function getPopularAnime(page: number = 1, perPage: number = 20) {
             episode
           }
           averageScore
+          format
+          duration
+          countryOfOrigin
         }
       }
     }`;
@@ -856,13 +865,15 @@ export async function getPopularAnime(page: number = 1, perPage: number = 20) {
     });
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;
-    let results = data?.data?.Page?.media?.map((m: AnilistNode) => ({
+    let results = data?.data?.Page?.media?.map((m: any) => ({
       id: m.id.toString(),
       title: m.title,
       slug: slugify(getAnimeTitle(m.title)),
       image: m.coverImage?.large,
-      type: m.type,
+      type: m.format || m.type || "TV",
       rating: m.averageScore,
+      duration: m.duration ? `${m.duration}m` : "24m",
+      countryOfOrigin: m.countryOfOrigin,
       episodeNumber: getReleasedAnimeEpisodesCount(m),
       subEpisodes: getReleasedAnimeEpisodesCount(m)
     })) || [];
@@ -1775,49 +1786,117 @@ export async function getMangaChapterPages(chapterId: string) {
 }
 
 export const getOngoingAnime = async (page: number = 1, perPage: number = 20, country?: string) => {
-  const query = `
-    query ($page: Int, $perPage: Int, $country: CountryCode) {
-      Page (page: $page, perPage: $perPage) {
-        pageInfo { hasNextPage }
-        media (type: ANIME, status_in: [RELEASING], sort: [UPDATED_AT_DESC, POPULARITY_DESC], isAdult: false, countryOfOrigin: $country) {
-          id
-          title { romaji english native }
-          coverImage { large }
-          type
-          status
-          episodes
-          nextAiringEpisode {
-            episode
+  const now = Math.floor(Date.now() / 1000);
+  let mediaIds: number[] | undefined = undefined;
+
+  if (country) {
+    const mediaIdsQuery = `
+      query ($country: CountryCode) {
+        Page (page: 1, perPage: 250) {
+          media (type: ANIME, status: RELEASING, countryOfOrigin: $country, isAdult: false) {
+            id
           }
-          averageScore
-          countryOfOrigin
         }
       }
-    }`;
+    `;
+    try {
+      const response = await fetch('https://graphql.anilist.co', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ query: mediaIdsQuery, variables: { country } })
+      });
+      const data = await response.json();
+      mediaIds = data?.data?.Page?.media?.map((m: any) => m.id) || [];
+      if (mediaIds && mediaIds.length === 0) {
+        return { results: [], hasNextPage: false };
+      }
+    } catch (e) {
+      console.error("Failed to fetch media IDs for country:", e);
+      return { results: [], hasNextPage: false };
+    }
+  }
+
+  const schedulesQuery = `
+    query ($page: Int, $perPage: Int, $airingAt_lesser: Int, $mediaId_in: [Int]) {
+      Page (page: $page, perPage: $perPage) {
+        pageInfo { hasNextPage }
+        airingSchedules (airingAt_lesser: $airingAt_lesser, sort: [TIME_DESC], mediaId_in: $mediaId_in) {
+          episode
+          airingAt
+          media {
+            id
+            title { romaji english native }
+            coverImage { large }
+            bannerImage
+            description
+            genres
+            type
+            status
+            episodes
+            averageScore
+            countryOfOrigin
+            format
+            duration
+          }
+        }
+      }
+    }
+  `;
 
   try {
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ query, variables: { page, perPage, country } })
+      body: JSON.stringify({
+        query: schedulesQuery,
+        variables: {
+          page,
+          perPage: perPage * 2, // Fetch more to deduplicate
+          airingAt_lesser: now,
+          mediaId_in: mediaIds
+        }
+      })
     });
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;
-    let results = data?.data?.Page?.media?.map((m: AnilistNode) => ({
-      id: m.id.toString(),
-      title: m.title,
-      slug: slugify(getAnimeTitle(m.title)),
-      image: m.coverImage?.large,
-      type: m.type,
-      rating: m.averageScore,
-      countryOfOrigin: m.countryOfOrigin,
-      episodeNumber: getReleasedAnimeEpisodesCount(m),
-      subEpisodes: getReleasedAnimeEpisodesCount(m)
-    })) || [];
-    results = await enrichAnimeResultsWithSubDub(results);
-    return { results, hasNextPage: pageInfo?.hasNextPage || false };
+    const schedules = data?.data?.Page?.airingSchedules || [];
+
+    const mapped = schedules.map((s: any) => {
+      const m = s.media;
+      return {
+        id: m.id.toString(),
+        title: m.title,
+        slug: slugify(getAnimeTitle(m.title)),
+        image: m.coverImage?.large,
+        cover: m.bannerImage || m.coverImage?.large,
+        description: m.description || "",
+        genres: m.genres || [],
+        type: m.format || m.type || "TV",
+        rating: m.averageScore || 0,
+        countryOfOrigin: m.countryOfOrigin,
+        episodeNumber: s.episode,
+        subEpisodes: s.episode,
+        duration: m.duration ? `${m.duration}m` : "24m"
+      };
+    });
+
+    // Deduplicate ongoing releases to keep only the latest episode entry for each unique anime
+    const seen = new Set<string>();
+    const results = [];
+    for (const item of mapped) {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        results.push(item);
+        if (results.length >= perPage) {
+          break;
+        }
+      }
+    }
+
+    const enrichedResults = await enrichAnimeResultsWithSubDub(results);
+    return { results: enrichedResults, hasNextPage: pageInfo?.hasNextPage || false };
   } catch (error) {
-    console.error("Failed to fetch ongoing anime:", error);
+    console.error("Failed to fetch airing schedules:", error);
     return { results: [], hasNextPage: false };
   }
 };

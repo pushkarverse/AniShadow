@@ -94,6 +94,7 @@ export default async function LatestPage({
                   subEpisodes={anime.subEpisodes}
                   dubEpisodes={anime.dubEpisodes}
                   type={anime.type}
+                  duration={anime.duration}
                 />
               ))}
             </div>

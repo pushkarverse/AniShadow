@@ -55,4 +55,6 @@ export interface HeroResult {
     episodeNumber: number;
     subEpisodes?: number;
     dubEpisodes?: number;
+    duration?: string;
+    countryOfOrigin?: string;
 }

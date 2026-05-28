@@ -78,6 +78,7 @@ export default async function Home() {
                     subEpisodes={anime.subEpisodes}
                     dubEpisodes={anime.dubEpisodes}
                     type={anime.type || "TV"}
+                    duration={anime.duration}
                   />
                 )) : (
                   <p className="col-span-full py-20 text-center text-white/20 font-medium italic bg-white/5 rounded-3xl border border-white/5 w-full">

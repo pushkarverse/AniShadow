@@ -96,6 +96,7 @@ export function LatestSection({ initialItems = [] }: LatestSectionProps) {
               subEpisodes={anime.subEpisodes}
               dubEpisodes={anime.dubEpisodes}
               type={anime.type || "TV"}
+              duration={anime.duration}
             />
           ))
         ) : (

@@ -23,6 +23,7 @@ interface AnimeCardProps {
   subEpisodes?: number | string;
   dubEpisodes?: number | string;
   variant?: "default" | "search";
+  duration?: string;
 }
 
 const statusOptions = ["Watching", "On-Hold", "Planning", "Completed", "Dropped"];
@@ -44,7 +45,8 @@ export function AnimeCard({
   href,
   subEpisodes,
   dubEpisodes,
-  variant = "default"
+  variant = "default",
+  duration
 }: AnimeCardProps) {
   const [showInfo, setShowInfo] = useState(false);
   const [infoData, setInfoData] = useState<IAnimeInfo | null>(null);
@@ -138,28 +140,46 @@ export function AnimeCard({
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
         </Link>
 
-        {/* Status Badges Overlay */}
-        {variant === "search" ? (
-          <div className="absolute top-2 left-2 flex items-center gap-1 select-none pointer-events-none">
-            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black text-yellow-400">
-              <span>★</span>
-              <span className="text-white font-bold">{rating ? Number(rating).toFixed(1) : "8.5"}</span>
-            </div>
-            <div className="px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black text-white/60">
-              {rating && rating > 8.0 ? "R-17+" : "PG-13"}
-            </div>
-          </div>
-        ) : (
-          <div className="absolute top-2 left-2 flex flex-col gap-1.5 z-10 pointer-events-none">
-            <div className="flex items-center gap-1">
-              {rating && (
-                <span className="px-1.5 py-0.5 text-[9px] font-black tracking-widest rounded bg-black/60 text-primary backdrop-blur-md border border-white/10 uppercase">
-                  {Number(rating).toFixed(1)}
-                </span>
+        {/* Bottom stats overlay (Sub/Dub/Episode counts) */}
+        {!isManga && (displaySub > 0 || displayDub > 0 || episodeNumber !== undefined) && (
+          <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center z-10 pointer-events-none select-none">
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black text-white/80">
+              <div className="flex items-center gap-1 shrink-0">
+                <svg className="w-3 h-3 fill-current text-white/40" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-9 3h2v2h-2V7zm0 3h2v2h-2v-2zM8 7h2v2H8V7zm0 3h2v2H8v-2zm-3 0h2v2H5v-2zm0-3h2v2H5V7zm11 10H8v-2h8v2zm3-4h-2v-2h2v2zm0-3h-2V7h2v2z"/></svg>
+                <span>{displaySub}</span>
+              </div>
+              <span className="text-white/20">/</span>
+              <div className="flex items-center gap-1 shrink-0">
+                <svg className="w-3 h-3 fill-current text-white/40" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>
+                <span>{displayDub}</span>
+              </div>
+              {episodeNumber !== undefined && (
+                <>
+                  <span className="text-white/20">/</span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <svg className="w-3 h-3 fill-current text-white/40" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                    <span>{episodeNumber}</span>
+                  </div>
+                </>
               )}
             </div>
           </div>
         )}
+
+        {/* Status Badges Overlay */}
+        <div className="absolute top-2 left-2 flex items-center gap-1 select-none pointer-events-none z-10">
+          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black text-yellow-400">
+            <span>★</span>
+            <span className="text-white font-bold">
+              {rating ? (Number(rating) > 10 ? (Number(rating) / 10).toFixed(1) : Number(rating).toFixed(1)) : "0.0"}
+            </span>
+          </div>
+          {!isManga && (
+            <div className="px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black text-white/60">
+              {rating ? (Number(rating) > 10 ? (Number(rating) > 80 ? "R-17+" : Number(rating) > 65 ? "PG-13" : "G") : (Number(rating) > 8.0 ? "R-17+" : Number(rating) > 6.5 ? "PG-13" : "G")) : "PG-13"}
+            </div>
+          )}
+        </div>
 
         {/* Info/Watchlist '+' Button (Top Right) */}
         <div className="absolute top-2 right-2 z-20">
@@ -394,42 +414,33 @@ export function AnimeCard({
         )}
       </div>
 
-      {/* Metadata Section Above Title */}
-      {variant === "search" ? (
-        <div className="flex flex-col gap-0.5 px-1">
-          <Link href={actionUrl} className="group/title block">
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/80 shrink-0" />
-              <h3 className="text-xs sm:text-sm font-bold text-white/95 truncate leading-tight group-hover/title:text-primary transition-colors">
-                {title}
-              </h3>
-            </div>
-          </Link>
-          <span className="text-[10px] text-white/40 font-semibold uppercase tracking-wider pl-3">
-            {type || "TV"} &bull; 24m
-          </span>
-        </div>
-      ) : (
-        <>
-          {isManga && (
-            <div className="flex items-center gap-2 px-1 mt-1 mb-1 shadow-sm">
-              {episodeNumber && (
-                <span className="text-[10px] font-black tracking-[0.15em] text-primary uppercase bg-primary/10 px-1.5 py-0.5 rounded-md border border-primary/20">
-                  CH {episodeNumber}
-                </span>
-              )}
-              <span className="px-1.5 py-0.5 text-[8px] font-black tracking-widest rounded bg-primary/20 text-primary border border-primary/20 uppercase">MANGA</span>
-            </div>
-          )}
-
-          {/* Title Below Image */}
-          <Link href={actionUrl} className="group/title block px-1 mt-0.5">
-            <h3 className="text-sm font-black text-white/90 line-clamp-2 leading-[1.2] group-hover/title:text-primary group-hover/title:drop-shadow-[var(--shadow-primary)] transition-all mb-1">
-              {title}
-            </h3>
-          </Link>
-        </>
-      )}
+      {/* Metadata Section Below Image */}
+      <div className="flex flex-col gap-0.5 px-1">
+        {isManga ? (
+          <div className="flex items-center gap-2 mt-1 mb-1 shadow-sm">
+            {episodeNumber && (
+              <span className="text-[10px] font-black tracking-[0.15em] text-primary uppercase bg-primary/10 px-1.5 py-0.5 rounded-md border border-primary/20">
+                CH {episodeNumber}
+              </span>
+            )}
+            <span className="px-1.5 py-0.5 text-[8px] font-black tracking-widest rounded bg-primary/20 text-primary border border-primary/20 uppercase">MANGA</span>
+          </div>
+        ) : (
+          <>
+            <Link href={actionUrl} className="group/title block">
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                <h3 className="text-xs sm:text-sm font-bold text-white/90 truncate leading-tight group-hover/title:text-primary transition-colors">
+                  {title}
+                </h3>
+              </div>
+            </Link>
+            <span className="text-[10px] text-white/40 font-semibold uppercase tracking-wider pl-3">
+              {type || "TV"} &bull; {duration || "24m"}
+            </span>
+          </>
+        )}
+      </div>
 
       <RoomModal 
         isOpen={isRoomModalOpen} 
