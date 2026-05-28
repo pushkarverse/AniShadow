@@ -8,6 +8,7 @@ import { AnimeActions } from "@/components/AnimeActions";
 import { getAnimeDetails, getMediaByGenre } from "@/lib/consumet";
 import { slugify, getAnimeTitle } from "@/lib/anime-utils";
 import { AnimeCard } from "@/components/AnimeCard";
+import { CollapsibleDescription } from "@/components/CollapsibleDescription";
 
 export const dynamic = "force-dynamic";
 
@@ -214,18 +215,18 @@ export default async function AnimeDetailsPage({ params }: PageProps) {
 
         <div className="container relative z-10 px-6 md:px-12 mx-auto pb-20 pt-40">
           <div className="flex flex-col lg:flex-row gap-16 items-start lg:items-end">
-             <div className="hidden lg:block w-72 shrink-0 rounded-[2.5rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.9)] border border-white/5 group relative aspect-[2/3] ring-1 ring-white/10">
+             <div className="w-48 sm:w-56 lg:w-72 shrink-0 rounded-[2rem] lg:rounded-[2.5rem] overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.8)] border border-white/5 group relative aspect-[2/3] ring-1 ring-white/10 mx-auto lg:mx-0">
                 <Image
                   src={anime.posterImage}
                   alt="Poster"
                   fill
-                  sizes="(max-width: 768px) 100vw, 288px"
+                  sizes="(max-width: 768px) 192px, (max-width: 1024px) 224px, 288px"
                   className="object-cover transition-transform duration-1000 group-hover:scale-110"
                   priority
                 />
             </div>
 
-            <div className="flex-1 space-y-8 max-w-5xl">
+            <div className="flex-1 space-y-8 max-w-5xl w-full">
               <div>
                 <h1 className="text-[clamp(2.5rem,8vw,5.5rem)] font-black mb-4 tracking-tighter leading-[0.85] text-white uppercase drop-shadow-2xl">
                   {anime.title}
@@ -240,10 +241,7 @@ export default async function AnimeDetailsPage({ params }: PageProps) {
               </div>
 
               <div className="max-w-3xl relative">
-                <div 
-                  className="text-lg md:text-xl text-white/50 font-medium leading-relaxed line-clamp-3 hover:line-clamp-none transition-all duration-500 cursor-default"
-                  dangerouslySetInnerHTML={{ __html: anime.description || 'No description available.' }} 
-                />
+                <CollapsibleDescription htmlContent={anime.description} />
               </div>
 
               <div className="flex flex-wrap items-center gap-x-12 gap-y-4 pt-4 border-t border-white/5">
@@ -321,14 +319,14 @@ export default async function AnimeDetailsPage({ params }: PageProps) {
                Official Adaptation
                <div className="h-[2px] flex-1 bg-white/10" />
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-x-6 md:gap-y-6 no-scrollbar momentum-scroll -mx-6 px-6 md:mx-0 md:px-0">
               {adaptations.map((rel) => {
                 const isMangaRel = rel.type === 'MANGA' || rel.type === 'MANHWA' || rel.type === 'NOVEL';
                 return (
                   <Link 
                     key={rel.id} 
                     href={isMangaRel ? `/manga/${rel.id}/${slugify(getDisplayTitle(rel.title))}` : `/anime/${rel.id}/${slugify(getDisplayTitle(rel.title))}`} 
-                    className={`relative group overflow-hidden rounded-3xl bg-white/5 border border-white/5 hover:border-primary/40 transition-all flex h-48 shadow-xl ${isMangaRel ? 'manga-theme' : ''}`}
+                    className={`relative group overflow-hidden rounded-3xl bg-white/5 border border-white/5 hover:border-primary/40 transition-all flex h-48 shadow-xl ${isMangaRel ? 'manga-theme' : ''} w-[280px] sm:w-[320px] shrink-0 md:w-full`}
                   >
                   <div className="w-32 h-full relative shrink-0">
                     <Image 
@@ -362,7 +360,7 @@ export default async function AnimeDetailsPage({ params }: PageProps) {
                Seasons
                <div className="h-[2px] flex-1 bg-white/10" />
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+            <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 md:gap-x-6 md:gap-y-6 no-scrollbar momentum-scroll -mx-6 px-6 md:mx-0 md:px-0">
               {sortedSeasons.map((rel) => (
                 <AnimeCard 
                   key={rel.id} 
@@ -388,7 +386,7 @@ export default async function AnimeDetailsPage({ params }: PageProps) {
                Related Series
                <div className="h-[2px] flex-1 bg-white/10" />
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-3 xl:grid-cols-4 md:gap-x-4 md:gap-y-4 no-scrollbar momentum-scroll -mx-6 px-6 md:mx-0 md:px-0">
               {sortedRelatedSeries.map((rel) => (
                 <AnimeCard 
                   key={rel.id} 
@@ -414,7 +412,7 @@ export default async function AnimeDetailsPage({ params }: PageProps) {
                Similar Genre <span className="text-[10px] normal-case tracking-normal opacity-50 ml-2">({anime.genres[0]})</span>
                <div className="h-[2px] flex-1 bg-white/10" />
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+            <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 md:gap-x-6 md:gap-y-6 no-scrollbar momentum-scroll -mx-6 px-6 md:mx-0 md:px-0">
                 {filteredSimilarMedia.slice(0, 20).map((item) => (
                     <AnimeCard 
                         key={item.id} 

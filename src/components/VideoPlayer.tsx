@@ -905,37 +905,69 @@ export function VideoPlayer({
         {/* Double Tap Skip Animations */}
         <AnimatePresence>
           {showSkipOverlay.visible && showSkipOverlay.direction === "backward" && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, x: -20 }}
-              animate={{ opacity: 1, scale: 1, x: 0 }}
-              exit={{ opacity: 0, scale: 0.8, x: -20 }}
-              className="absolute left-16 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none"
-            >
-              <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20">
-                <RotateCcw className="w-8 h-8 text-white animate-pulse" />
-              </div>
-              <span className="text-white text-xs font-black uppercase tracking-widest bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm shadow-md">
-                -{showSkipOverlay.count}s
-              </span>
-            </motion.div>
+            <>
+              {/* Left Ripple Backdrop */}
+              <motion.div
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 0.15 }}
+                exit={{ scaleX: 0, opacity: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="absolute left-0 top-0 bottom-0 w-1/2 bg-gradient-to-r from-white/30 to-transparent origin-left rounded-r-[100px] pointer-events-none z-30"
+              />
+              {/* Left Spinning Indicator */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5, y: "-50%", x: "-50%" }}
+                animate={{ opacity: 1, scale: 1, y: "-50%", x: "-50%" }}
+                exit={{ opacity: 0, scale: 0.5, y: "-50%", x: "-50%" }}
+                className="absolute left-1/4 top-1/2 z-50 flex flex-col items-center gap-3 pointer-events-none"
+              >
+                <motion.div 
+                  initial={{ rotate: 0 }}
+                  animate={{ rotate: -360 }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  className="w-20 h-20 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-md border border-white/10 shadow-[0_0_35px_rgba(204,0,0,0.35)]"
+                >
+                  <RotateCcw className="w-9 h-9 text-white" />
+                </motion.div>
+                <span className="text-white text-xs font-black uppercase tracking-widest bg-black/80 px-4 py-1.5 rounded-full backdrop-blur-sm shadow-md border border-white/5">
+                  -{showSkipOverlay.count} seconds
+                </span>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
 
         <AnimatePresence>
           {showSkipOverlay.visible && showSkipOverlay.direction === "forward" && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, x: 20 }}
-              animate={{ opacity: 1, scale: 1, x: 0 }}
-              exit={{ opacity: 0, scale: 0.8, x: 20 }}
-              className="absolute right-16 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none"
-            >
-              <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20">
-                <RotateCw className="w-8 h-8 text-white animate-pulse" />
-              </div>
-              <span className="text-white text-xs font-black uppercase tracking-widest bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm shadow-md">
-                +{showSkipOverlay.count}s
-              </span>
-            </motion.div>
+            <>
+              {/* Right Ripple Backdrop */}
+              <motion.div
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 0.15 }}
+                exit={{ scaleX: 0, opacity: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-white/30 to-transparent origin-right rounded-l-[100px] pointer-events-none z-30"
+              />
+              {/* Right Spinning Indicator */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5, y: "-50%", x: "50%" }}
+                animate={{ opacity: 1, scale: 1, y: "-50%", x: "50%" }}
+                exit={{ opacity: 0, scale: 0.5, y: "-50%", x: "50%" }}
+                className="absolute right-1/4 top-1/2 z-50 flex flex-col items-center gap-3 pointer-events-none"
+              >
+                <motion.div 
+                  initial={{ rotate: 0 }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  className="w-20 h-20 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-md border border-white/10 shadow-[0_0_35px_rgba(204,0,0,0.35)]"
+                >
+                  <RotateCw className="w-9 h-9 text-white" />
+                </motion.div>
+                <span className="text-white text-xs font-black uppercase tracking-widest bg-black/80 px-4 py-1.5 rounded-full backdrop-blur-sm shadow-md border border-white/5">
+                  +{showSkipOverlay.count} seconds
+                </span>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
 

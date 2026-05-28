@@ -8,6 +8,7 @@ import { MangaCard } from "@/components/MangaCard";
 import { MangaActions } from "@/components/MangaActions";
 import { MangaProgressPosterBadge, MangaProgressText, MangaProgressButton } from "@/components/MangaProgressTracker";
 import { MangaChapterList } from "@/components/MangaChapterList";
+import { CollapsibleDescription } from "@/components/CollapsibleDescription";
 
 import { slugify } from "@/lib/anime-utils";
 
@@ -57,7 +58,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
 
         <div className="container relative z-10 px-6 md:px-12 mx-auto pb-16 pt-32">
           <div className="flex flex-col lg:flex-row gap-12 items-start lg:items-end">
-            <div className="hidden lg:block w-64 shrink-0 rounded-3xl overflow-hidden shadow-2xl border border-white/5 relative aspect-[2/3]">
+            <div className="w-48 sm:w-56 lg:w-64 shrink-0 rounded-3xl overflow-hidden shadow-2xl border border-white/5 relative aspect-[2/3] mx-auto lg:mx-0">
               <Image
                 src={manga.image || ""}
                 alt="Poster"
@@ -87,9 +88,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
               </div>
 
               <div className="max-w-3xl">
-                <p className="text-base md:text-lg text-white/50 font-medium leading-relaxed line-clamp-4">
-                  {manga.description?.replace(/<[^>]*>?/gm, '') || "No description available."}
-                </p>
+                <CollapsibleDescription htmlContent={manga.description || "No description available."} />
               </div>
 
               <div className="flex items-center gap-6 pt-6 flex-wrap">
@@ -218,7 +217,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
                Similar Manga
                <div className="h-[2px] flex-1 bg-white/10" />
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+            <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 md:gap-x-6 md:gap-y-6 no-scrollbar momentum-scroll -mx-6 px-6 md:mx-0 md:px-0">
               {recommendations.map((rec: any) => (
                 <MangaCard 
                   key={rec.id}

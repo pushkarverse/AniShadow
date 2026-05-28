@@ -39,6 +39,7 @@ export default function CommunityWatchClient({ id, slug, episodeNumber, anime, s
   const [messages, setMessages] = useState<{ id: number; user: string; text: string; time: string; color: string }[]>(mockMessages);
   const [inputValue, setInputValue] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [activeMobileTab, setActiveMobileTab] = useState<"chat" | "info">("chat");
 
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
@@ -67,15 +68,17 @@ export default function CommunityWatchClient({ id, slug, episodeNumber, anime, s
       
       <main className="flex-1 flex flex-col lg:flex-row min-h-0">
         {/* Left Side: Video Player & Info */}
-        <div className="flex-1 flex flex-col">
-           <div className="container mx-auto px-4 py-8 md:px-10 lg:px-12 space-y-8 pb-32">
-              <Link href="/community" className="inline-flex items-center gap-2 text-white/20 hover:text-amber-500 transition-all mb-2 group font-black uppercase tracking-widest text-[10px]">
-                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                <span>Back to Hub</span>
-              </Link>
+        <div className="flex-1 flex flex-col min-w-0">
+           <div className="container mx-auto px-0 md:px-10 lg:px-12 py-0 md:py-8 space-y-4 md:space-y-8 pb-4 md:pb-32">
+              <div className="px-4 md:px-0 pt-4 md:pt-0">
+                <Link href="/community" className="inline-flex items-center gap-2 text-white/20 hover:text-amber-500 transition-all mb-2 group font-black uppercase tracking-widest text-[10px]">
+                  <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                  <span>Back to Hub</span>
+                </Link>
+              </div>
 
               {/* Player Section */}
-              <div className="w-full aspect-video rounded-[2rem] overflow-hidden bg-black border border-white/5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] relative ring-1 ring-white/5">
+              <div className="w-full aspect-video rounded-none md:rounded-[2rem] overflow-hidden bg-black border-b md:border border-white/5 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] relative ring-1 ring-white/5">
                 {videoUrl ? (
                   <PlayerWrapper 
                     videoUrl={videoUrl} 
@@ -94,66 +97,93 @@ export default function CommunityWatchClient({ id, slug, episodeNumber, anime, s
                 )}
               </div>
 
-              {/* Content Info */}
-              <div className="flex flex-col gap-6 max-w-5xl">
-                <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 font-black uppercase tracking-widest text-[10px] rounded border border-amber-500/20">{episodeTitle}</span>
-                      <div className="flex items-center gap-1.5 text-white/20 text-[10px] font-bold uppercase">
-                         <Users className="w-3.5 h-3.5" />
-                         <span>42 watching</span>
-                      </div>
-                    </div>
-                    <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[0.9] text-white uppercase">{titleString}</h1>
-                </div>
-
-                <div className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 backdrop-blur-2xl relative overflow-hidden group">
-                  <div 
-                    className="text-white/40 text-sm md:text-base leading-relaxed font-medium transition-colors group-hover:text-white/60"
-                    dangerouslySetInnerHTML={{ __html: anime.description || 'No description available.' }} 
-                  />
-                </div>
+              {/* Mobile Tab Selection Bar (Visible only on md:hidden) */}
+              <div className="flex border-b border-white/5 bg-[#080B12] md:hidden w-full sticky top-0 z-30">
+                <button
+                  onClick={() => setActiveMobileTab("chat")}
+                  className={`flex-1 py-4 text-center text-xs font-black uppercase tracking-widest transition-all border-b-2 ${
+                    activeMobileTab === "chat" 
+                      ? "border-amber-500 text-amber-500 bg-white/[0.02]" 
+                      : "border-transparent text-white/40"
+                  }`}
+                >
+                  Live Chat
+                </button>
+                <button
+                  onClick={() => setActiveMobileTab("info")}
+                  className={`flex-1 py-4 text-center text-xs font-black uppercase tracking-widest transition-all border-b-2 ${
+                    activeMobileTab === "info" 
+                      ? "border-amber-500 text-amber-500 bg-white/[0.02]" 
+                      : "border-transparent text-white/40"
+                  }`}
+                >
+                  Info & Episodes
+                </button>
               </div>
 
-              {/* Episode List */}
-              <div className="pt-12 border-t border-white/5">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-4 text-white/20">
-                    Episodes
-                  </h3>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6">
-                  {anime.episodes?.map((episode: { id: string; number: number; title?: string }) => (
-                    <Link
-                      key={episode.id}
-                      href={`/community/watch/${id}/${slug}?ep=${episode.number}`}
-                      className={`group relative aspect-video rounded-2xl overflow-hidden border transition-all duration-500 ${
-                        episode.number === episodeNumber 
-                          ? "border-amber-500 bg-amber-500/5 ring-4 ring-amber-500/10" 
-                          : "border-white/5 hover:border-white/20 bg-white/5"
-                      }`}
-                    >
-                      <Image
-                        src={anime.image || ""}
-                        alt={episode.title || `EP ${episode.number}`}
-                        fill
-                        sizes="180px"
-                        className={`object-cover transition-all duration-700 ${episode.number === episodeNumber ? "opacity-60 scale-110" : "opacity-20 group-hover:opacity-40"}`}
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/60 to-transparent">
-                        <span className={`text-base font-black ${episode.number === episodeNumber ? "text-amber-400" : "text-white/20 group-hover:text-white/60"} transition-all uppercase tracking-tighter`}>
-                          {episode.number}
-                        </span>
+              {/* Content Info & Episode List - hidden on mobile unless activeMobileTab is "info" */}
+              <div className={`${activeMobileTab === 'info' ? 'block px-4 pt-4' : 'hidden md:block'} space-y-8`}>
+                {/* Content Info */}
+                <div className="flex flex-col gap-6 max-w-5xl">
+                  <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-3 mb-1">
+                        <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 font-black uppercase tracking-widest text-[10px] rounded border border-amber-500/20">{episodeTitle}</span>
+                        <div className="flex items-center gap-1.5 text-white/20 text-[10px] font-bold uppercase">
+                           <Users className="w-3.5 h-3.5" />
+                           <span>42 watching</span>
+                        </div>
                       </div>
-                    </Link>
-                  ))}
+                      <h1 className="text-3xl md:text-5xl font-black tracking-tighter leading-[0.9] text-white uppercase">{titleString}</h1>
+                  </div>
+
+                  <div className="p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 backdrop-blur-2xl relative overflow-hidden group">
+                    <div 
+                      className="text-white/40 text-sm md:text-base leading-relaxed font-medium transition-colors group-hover:text-white/60"
+                      dangerouslySetInnerHTML={{ __html: anime.description || 'No description available.' }} 
+                    />
+                  </div>
+                </div>
+
+                {/* Episode List */}
+                <div className="pt-12 border-t border-white/5">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-4 text-white/20">
+                      Episodes
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6">
+                    {anime.episodes?.map((episode: { id: string; number: number; title?: string }) => (
+                      <Link
+                        key={episode.id}
+                        href={`/community/watch/${id}/${slug}?ep=${episode.number}`}
+                        className={`group relative aspect-video rounded-2xl overflow-hidden border transition-all duration-500 ${
+                          episode.number === episodeNumber 
+                            ? "border-amber-500 bg-amber-500/5 ring-4 ring-amber-500/10" 
+                            : "border-white/5 hover:border-white/20 bg-white/5"
+                        }`}
+                      >
+                        <Image
+                          src={anime.image || ""}
+                          alt={episode.title || `EP ${episode.number}`}
+                          fill
+                          sizes="180px"
+                          className={`object-cover transition-all duration-700 ${episode.number === episodeNumber ? "opacity-60 scale-110" : "opacity-20 group-hover:opacity-40"}`}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/60 to-transparent">
+                          <span className={`text-base font-black ${episode.number === episodeNumber ? "text-amber-400" : "text-white/20 group-hover:text-white/60"} transition-all uppercase tracking-tighter`}>
+                            {episode.number}
+                          </span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               </div>
            </div>
         </div>
 
-        {/* Right Side: Live Chat Sidebar */}
-        <div className="lg:w-[380px] w-full shrink-0 lg:sticky lg:top-16 lg:h-[calc(100vh-64px)] bg-[#080B12] border-l border-white/5 flex flex-col relative z-10 transition-all">
+        {/* Right Side: Live Chat Sidebar - hidden on mobile unless activeMobileTab is "chat" */}
+        <div className={`${activeMobileTab === 'chat' ? 'flex' : 'hidden md:flex'} w-full h-[520px] lg:h-[calc(100vh-64px)] lg:w-[380px] shrink-0 lg:sticky lg:top-16 bg-[#080B12] border-l border-white/5 flex flex-col relative z-10 transition-all`}>
            {/* Chat Header */}
            <div className="p-8 border-b border-white/5 flex items-center justify-between bg-gradient-to-b from-white/[0.01] to-transparent">
               <div className="flex items-center gap-4 font-black uppercase tracking-[0.3em] text-[10px] text-white/40">
@@ -216,7 +246,7 @@ export default function CommunityWatchClient({ id, slug, episodeNumber, anime, s
                     </button>
                     <button 
                       onClick={handleSendMessage}
-                      className="p-2.5 bg-amber-600 rounded-xl text-white hover:bg-amber-500 transition-all shadow-lg shadow-amber-900/20 active:scale-95"
+                      className="p-2.5 bg-amber-600 rounded-xl text-white hover:bg-amber-500 transition-all shadow-lg shadow-amber-900/20 active:scale-95 cursor-pointer"
                     >
                        <Send className="w-4 h-4" />
                     </button>
