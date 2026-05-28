@@ -43,7 +43,7 @@ export function TrendingSidebar({ initialData }: TrendingSidebarProps) {
   }, [period]);
 
   return (
-    <section className="sticky top-8 mb-12">
+    <section className="mb-12">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl md:text-2xl font-black tracking-tighter text-white relative inline-block uppercase">
           Top Trending

@@ -116,7 +116,7 @@ export function AnimeLibrarySection() {
 
         <div
           ref={scrollContainerRef}
-          className="flex gap-5 overflow-x-auto pb-4 no-scrollbar scroll-smooth snap-x"
+          className="flex gap-5 overflow-x-auto pb-4 no-scrollbar scroll-smooth snap-x md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 md:overflow-visible md:pb-0 md:snap-none"
         >
           {history.map((item, index) => {
             const watchUrl = `/watch/${item.animeId}/${item.slug || "anime"}?ep=${item.episodeNumber}`;
@@ -127,7 +127,7 @@ export function AnimeLibrarySection() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="group relative shrink-0 w-[155px] sm:w-[180px] snap-start"
+                className="group relative shrink-0 w-[155px] sm:w-[180px] snap-start md:w-full"
               >
                 {/* Card */}
                 <Link href={watchUrl} className="block">

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+import { RouteProgress } from "@/components/RouteProgress";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 
 const spaceGrotesk = Space_Grotesk({
@@ -45,6 +46,7 @@ export default function RootLayout({
         className={`${spaceGrotesk.variable} font-sans antialiased min-h-screen bg-background text-foreground`}
       >
         <Providers>
+          <RouteProgress />
           <div className="relative flex min-h-screen flex-col">
             <main className="flex-1 pb-20 md:pb-0">{children}</main>
             <PWAInstallPrompt />
