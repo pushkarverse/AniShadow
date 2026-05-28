@@ -153,12 +153,7 @@ export function AnimeLibrarySection() {
                       </div>
                     </div>
 
-                    {/* Continue Watching overlay on hover */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-10">
-                      <div className="px-4 py-2 bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 text-[10px] font-black uppercase tracking-widest text-white shadow-xl">
-                        Resume
-                      </div>
-                    </div>
+                    
                   </div>
                 </Link>
 
@@ -175,12 +170,7 @@ export function AnimeLibrarySection() {
                   <X className="w-3 h-3 text-white/70 hover:text-red-300" />
                 </button>
 
-                {/* Title */}
-                <Link href={`/anime/${item.animeId}/${item.slug || "anime"}`} className="block mt-3 px-1">
-                  <h4 className="text-xs font-black text-white/80 line-clamp-2 leading-tight group-hover:text-primary transition-colors uppercase italic">
-                    {item.title}
-                  </h4>
-                </Link>
+                
               </motion.div>
             );
           })}

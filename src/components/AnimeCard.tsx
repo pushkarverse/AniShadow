@@ -375,25 +375,7 @@ export function AnimeCard({
         )}
       </div>
 
-      {/* Metadata Section Below Image */}
-      <div className="flex flex-col gap-0.5 px-1">
-        {isManga ? (
-          <div className="flex items-center gap-2 mt-1 mb-1 shadow-sm">
-            <span className="px-1.5 py-0.5 text-[8px] font-black tracking-widest rounded bg-primary/20 text-primary border border-primary/20 uppercase">MANGA</span>
-          </div>
-        ) : (
-          <>
-            <Link href={actionUrl} className="group/title block">
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <h3 className="text-xs sm:text-sm font-bold text-white/90 truncate leading-tight group-hover/title:text-primary transition-colors">
-                  {title}
-                </h3>
-              </div>
-            </Link>
-          </>
-        )}
-      </div>
+      
 
       <RoomModal 
         isOpen={isRoomModalOpen} 

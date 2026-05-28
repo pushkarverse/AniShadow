@@ -507,39 +507,7 @@ export const MangaCard = ({
         )}
       </div>
 
-      {/* Metadata Section Above Title */}
-      {variant === "search" ? (
-        <div className="flex flex-col gap-0.5 px-1">
-          <Link href={actionUrl} className="group/title block">
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/80 shrink-0" />
-              <h3 className="text-xs sm:text-sm font-bold text-white/95 truncate leading-tight group-hover/title:text-primary transition-colors">
-                {title}
-              </h3>
-            </div>
-          </Link>
-          <span className="text-[10px] text-white/40 font-semibold uppercase tracking-wider pl-3">
-            {type || "MANGA"} &bull; chs
-          </span>
-        </div>
-      ) : (
-        <>
-          <div className="flex items-center gap-2 px-1 mt-1 mb-1 shadow-sm">
-            {(chapterNumber || chapters) ? (
-              <span className="text-[10px] font-black tracking-[0.15em] text-primary uppercase">
-                 CH {chapterNumber || chapters}
-              </span>
-            ) : null}
-          </div>
-
-          {/* Title Below Image */}
-          <Link href={actionUrl} className="group/title block px-1 mt-0.5">
-            <h3 className="text-sm font-black text-white/90 line-clamp-2 leading-[1.2] group-hover/title:text-primary group-hover/title:drop-shadow-[var(--shadow-primary)] transition-all mb-1 uppercase italic">
-              {title}
-            </h3>
-          </Link>
-        </>
-      )}
+      
 
       <RoomModal 
         isOpen={isRoomModalOpen} 

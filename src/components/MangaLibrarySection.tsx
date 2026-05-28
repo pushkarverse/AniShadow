@@ -175,12 +175,7 @@ export function MangaLibrarySection() {
                     {/* Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-80 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
-                    {/* Progress Badge */}
-                    {progress && (
-                      <div className="absolute bottom-3 left-3 right-3 z-10">
-                        <div className="flex items-center gap-2 px-3 py-2 bg-primary/90 backdrop-blur-md rounded-xl border border-white/10 shadow-lg shadow-primary/20">
-                          <BookOpen className="w-3 h-3 text-white shrink-0" />
-                          <span className="text-[10px] font-black text-white uppercase tracking-widest truncate">
+                    
                             Ch. {progress.chapterNumber}
                           </span>
                         </div>
@@ -210,11 +205,7 @@ export function MangaLibrarySection() {
                 </button>
 
                 {/* Title */}
-                <Link href={`/manga/${item.mangaId}/${item.slug}`} className="block mt-3 px-1">
-                  <h4 className="text-xs font-black text-white/80 line-clamp-2 leading-tight group-hover:text-primary transition-colors uppercase italic">
-                    {item.title}
-                  </h4>
-                </Link>
+                
               </motion.div>
             );
           })}
