@@ -5,6 +5,7 @@ import Link from "next/link";
 import { WifiOff, RotateCw, Bookmark, ArrowRight, Home } from "lucide-react";
 import { motion } from "framer-motion";
 import { AnimeLibrarySection } from "@/components/AnimeLibrarySection";
+import Image from "next/image";
 
 export default function OfflinePage() {
   const [mounted, setMounted] = useState(false);
@@ -24,8 +25,14 @@ export default function OfflinePage() {
       {/* Top Header */}
       <header className="w-full px-6 py-6 flex items-center justify-between border-b border-white/5">
         <Link href="/" className="flex items-center gap-2 select-none group">
-          <div className="relative w-8 h-8 flex items-center justify-center bg-primary rounded-xl overflow-hidden group-hover:scale-105 transition-transform duration-300">
-            <span className="font-sans font-black text-white text-lg tracking-tighter italic">A</span>
+          <div className="relative w-8 h-8 rounded-xl overflow-hidden group-hover:scale-105 transition-transform duration-300 bg-primary">
+            <Image
+              src="/icon.png"
+              alt="AniShadow Icon"
+              fill
+              sizes="32px"
+              className="object-cover"
+            />
           </div>
           <span className="font-sans font-black text-white tracking-widest text-sm uppercase italic group-hover:text-primary transition-colors duration-300">
             AniShadow

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Download, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -74,8 +75,14 @@ export function PWAInstallPrompt() {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             {/* Logo Icon */}
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
-              <span className="font-sans font-black text-white text-lg italic select-none">A</span>
+            <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-primary/20 border border-white/10 shrink-0 bg-primary">
+              <Image
+                src="/icon.png"
+                alt="AniShadow Icon"
+                fill
+                sizes="40px"
+                className="object-cover"
+              />
             </div>
             <div>
               <h4 className="text-xs font-black uppercase tracking-wider text-white italic">
