@@ -5,9 +5,23 @@ interface PaginationProps {
   currentPage: number;
   hasNextPage: boolean;
   baseUrl: string;
+  extraParams?: Record<string, string | number | undefined>;
 }
 
-export function Pagination({ currentPage, hasNextPage, baseUrl }: PaginationProps) {
+export function Pagination({ currentPage, hasNextPage, baseUrl, extraParams }: PaginationProps) {
+  const getPageUrl = (pageNum: number) => {
+    const params = new URLSearchParams();
+    params.set("page", pageNum.toString());
+    if (extraParams) {
+      Object.entries(extraParams).forEach(([key, val]) => {
+        if (val !== undefined && val !== null && val !== "") {
+          params.set(key, val.toString());
+        }
+      });
+    }
+    return `${baseUrl}?${params.toString()}`;
+  };
+
   const prevPage = currentPage > 1 ? currentPage - 1 : null;
   const nextPage = hasNextPage && currentPage < 50 ? currentPage + 1 : null;
 
@@ -17,7 +31,7 @@ export function Pagination({ currentPage, hasNextPage, baseUrl }: PaginationProp
     <div className="flex items-center justify-center gap-4 mt-16 group">
       {prevPage ? (
         <Link
-          href={`${baseUrl}?page=${prevPage}`}
+          href={getPageUrl(prevPage)}
           className="flex items-center gap-2 px-6 py-3 rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 hover:border-accent/40 transition-all duration-300 shadow-lg shadow-black/20"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -40,7 +54,7 @@ export function Pagination({ currentPage, hasNextPage, baseUrl }: PaginationProp
 
       {nextPage ? (
         <Link
-          href={`${baseUrl}?page=${nextPage}`}
+          href={getPageUrl(nextPage)}
           className="flex items-center gap-2 px-6 py-3 rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 hover:border-accent/40 transition-all duration-300 shadow-lg shadow-black/20"
         >
           <span className="text-sm font-bold uppercase tracking-widest">Next</span>

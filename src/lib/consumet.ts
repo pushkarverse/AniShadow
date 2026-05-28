@@ -1774,12 +1774,12 @@ export async function getMangaChapterPages(chapterId: string) {
   }
 }
 
-export const getOngoingAnime = async (page: number = 1, perPage: number = 20) => {
+export const getOngoingAnime = async (page: number = 1, perPage: number = 20, country?: string) => {
   const query = `
-    query ($page: Int, $perPage: Int) {
+    query ($page: Int, $perPage: Int, $country: CountryCode) {
       Page (page: $page, perPage: $perPage) {
         pageInfo { hasNextPage }
-        media (type: ANIME, status_in: [RELEASING], sort: [UPDATED_AT_DESC, POPULARITY_DESC], isAdult: false) {
+        media (type: ANIME, status_in: [RELEASING], sort: [UPDATED_AT_DESC, POPULARITY_DESC], isAdult: false, countryOfOrigin: $country) {
           id
           title { romaji english native }
           coverImage { large }
@@ -1799,7 +1799,7 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20) =>
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ query, variables: { page, perPage } })
+      body: JSON.stringify({ query, variables: { page, perPage, country } })
     });
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;
