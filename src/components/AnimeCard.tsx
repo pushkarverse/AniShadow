@@ -39,6 +39,7 @@ export function AnimeCard({
   title, 
   slug,
   image, 
+  rating,
   type, 
   href,
   variant = "default"
@@ -130,6 +131,16 @@ export function AnimeCard({
           {/* Enhanced Overlays */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
         </Link>
+
+          {/* Rating Badge */}
+          <div className="absolute top-2 left-2 flex items-center gap-1 select-none pointer-events-none z-10">
+            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black text-yellow-400">
+              <span>★</span>
+              <span className="text-white font-bold">
+                {rating ? (Number(rating) > 10 ? (Number(rating) / 10).toFixed(1) : Number(rating).toFixed(1)) : "0.0"}
+              </span>
+            </div>
+          </div>
 
         {/* Info/Watchlist '+' Button (Top Right) */}
         <div className="absolute top-2 right-2 z-20">
@@ -380,8 +391,6 @@ export function AnimeCard({
                 </h3>
               </div>
             </Link>
-            <span className="text-[10px] text-white/40 font-semibold uppercase tracking-wider pl-3">
-            </span>
           </>
         )}
       </div>
