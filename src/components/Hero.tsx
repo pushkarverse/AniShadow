@@ -122,14 +122,14 @@ export function Hero({ items = [] }: HeroProps) {
 
           {/* Content Container */}
           <div className="relative z-10 px-6 md:px-12 lg:px-20 h-full flex flex-col justify-end pb-12 md:justify-center md:pb-0">
-            <div className="w-full max-w-4xl pt-8 flex flex-col items-center text-center">
+            <div className="w-full max-w-4xl pt-8 flex flex-col items-center text-center md:items-start md:text-left">
               
               {/* Metadata Badges */}
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="flex items-center justify-center gap-2.5 mb-3"
+                className="flex items-center justify-center gap-2.5 mb-3 md:justify-start"
               >
                 <div className="flex items-center gap-1 px-2.5 py-1 bg-green-500/20 text-green-400 rounded border border-green-500/30 text-[10px] font-black uppercase tracking-widest shadow-md">
                   ★ {currentItem.rating || "8.5"}
@@ -147,7 +147,7 @@ export function Hero({ items = [] }: HeroProps) {
                 initial={{ opacity: 0, x: -30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tighter mb-4 text-center drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tighter mb-4 text-center md:text-left drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
               >
                 {currentItem.title}
               </motion.h1>
@@ -158,7 +158,7 @@ export function Hero({ items = [] }: HeroProps) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="text-white/70 text-xs md:text-base text-center mb-6 md:mb-8 max-w-sm md:max-w-2xl leading-relaxed drop-shadow-md line-clamp-2 md:line-clamp-3"
+                className="text-white/70 text-xs md:text-base text-center md:text-left mb-6 md:mb-8 max-w-sm md:max-w-2xl leading-relaxed drop-shadow-md line-clamp-2 md:line-clamp-3"
               >
                 <div 
                   dangerouslySetInnerHTML={{ __html: currentItem.description || '' }}
@@ -170,7 +170,7 @@ export function Hero({ items = [] }: HeroProps) {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                className="flex items-center gap-3 w-full justify-center"
+                className="flex items-center gap-3 w-full justify-center md:justify-start"
               >
                 <Link 
                   href={`/watch/${currentItem.id}/${currentItem.slug || slugify(currentItem.title)}?ep=1`} 
@@ -193,23 +193,40 @@ export function Hero({ items = [] }: HeroProps) {
         </motion.div>
       </AnimatePresence>
 
-      {/* Top-Right Page Controls (PWA style) */}
+      {/* Mid-Right Page Controls (Reanime style) */}
       {items.length > 1 && (
-        <div className="absolute right-4 top-4 z-20 flex items-center gap-1.5 select-none">
+        <div className="absolute right-6 md:right-10 top-1/2 -translate-y-1/2 z-20 flex items-center gap-2 select-none">
           <button 
             onClick={prevSlide}
             suppressHydrationWarning
-            className="w-7 h-7 flex items-center justify-center bg-black/65 backdrop-blur-md text-white hover:text-white rounded border border-white/10 transition-all cursor-pointer active:scale-95"
+            className="w-9 h-9 flex items-center justify-center bg-black/65 backdrop-blur-md text-white hover:text-white rounded-md border border-white/10 transition-all cursor-pointer active:scale-95"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button 
             onClick={nextSlide}
             suppressHydrationWarning
-            className="w-7 h-7 flex items-center justify-center bg-black/65 backdrop-blur-md text-white hover:text-white rounded border border-white/10 transition-all cursor-pointer active:scale-95"
+            className="w-9 h-9 flex items-center justify-center bg-black/65 backdrop-blur-md text-white hover:text-white rounded-md border border-white/10 transition-all cursor-pointer active:scale-95"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
+        </div>
+      )}
+
+      {/* Bottom-Right Indicators */}
+      {items.length > 1 && (
+        <div className="absolute right-8 md:right-12 bottom-8 z-20 flex gap-2">
+          {items.map((_, idx) => (
+            <button
+              key={idx}
+              suppressHydrationWarning
+              onClick={() => {
+                setDirection(idx > currentIndex ? 1 : -1);
+                setCurrentIndex(idx);
+              }}
+              className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentIndex ? 'w-8 bg-primary' : 'w-3 bg-white/30 hover:bg-white/50'}`}
+            />
+          ))}
         </div>
       )}
     </div>
