@@ -4,7 +4,7 @@ import { AnimeCard } from "@/components/AnimeCard";
 import { TrendingSidebar } from "@/components/TrendingSidebar";
 import { AnimeLibrarySection } from "@/components/AnimeLibrarySection";
 import Link from "next/link";
-import { getTrendingAnime, getPopularAnime } from "@/lib/consumet";
+import { getTrendingAnime, getPopularAnime, getOngoingAnime } from "@/lib/consumet";
 import { getAnimeTitle } from "@/lib/anime-utils";
 import type { HeroResult } from "@/types/anime";
 import type { IAnimeResult } from "@consumet/extensions";
@@ -12,9 +12,11 @@ import type { IAnimeResult } from "@consumet/extensions";
 export default async function Home() {
   const trendingData = await getTrendingAnime();
   const popularData = await getPopularAnime();
+  const ongoingData = await getOngoingAnime();
 
   const trendingAnime = trendingData?.results || [];
   const popularAnime = popularData?.results || [];
+  const ongoingAnime = ongoingData?.results || [];
 
   // Use the top 5 trending anime as carousel features
   const featuredAnime: HeroItem[] = trendingAnime.slice(0, 5).map((anime: HeroResult) => ({
@@ -82,6 +84,7 @@ export default async function Home() {
                 )}
               </div>
             </section>
+
           </div>
 
           {/* Right Column: Trending Sidebar Ranking - Hidden on Mobile */}
