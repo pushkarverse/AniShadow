@@ -344,13 +344,37 @@ export function VideoPlayer({
 
   const scheduleControlsHide = () => {
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-    const delay = typeof window !== 'undefined' && window.innerWidth < 768 ? 6000 : 4000;
+    
+    // Do not schedule auto-hide if settings/audio/quality menus are open
+    if (showQualityMenu || showSpeedMenu || showAudioMenu) return;
+
+    const delay = typeof window !== 'undefined' && window.innerWidth < 768 ? 6000 : 5000;
     controlsTimeoutRef.current = setTimeout(() => {
-      if (videoRef.current && !videoRef.current.paused && !isScrubbingRef.current) {
+      if (
+        videoRef.current && 
+        !videoRef.current.paused && 
+        !isScrubbingRef.current &&
+        !showQualityMenu &&
+        !showSpeedMenu &&
+        !showAudioMenu
+      ) {
         setShowControls(false);
       }
     }, delay);
   };
+
+  // Keep controls open when settings menus are active
+  useEffect(() => {
+    if (showQualityMenu || showSpeedMenu || showAudioMenu) {
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+        controlsTimeoutRef.current = null;
+      }
+      setShowControls(true);
+    } else {
+      scheduleControlsHide();
+    }
+  }, [showQualityMenu, showSpeedMenu, showAudioMenu]);
 
   const [showSkipOverlay, setShowSkipOverlay] = useState<{
     visible: boolean;
@@ -1010,7 +1034,11 @@ export function VideoPlayer({
         }}
         onMouseLeave={() => {
           if (videoRef.current && !videoRef.current.paused && !isScrubbingRef.current) {
-            setShowControls(false);
+            if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+            if (showQualityMenu || showSpeedMenu || showAudioMenu) return;
+            controlsTimeoutRef.current = setTimeout(() => {
+              setShowControls(false);
+            }, 2500);
           }
         }}
         onTouchStart={handleTouchStart}
