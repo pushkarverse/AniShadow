@@ -70,17 +70,7 @@ export function TrendingSidebar({ initialData }: TrendingSidebarProps) {
                     ★ {(Number(anime.rating) / 10).toFixed(1)}
                   </span>
                 )}
-                {/* CC/MIC Badges */}
-                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-red-500/10 border border-red-500/20">
-                  <span className="text-[8px] font-black text-red-500 uppercase tracking-tighter">CC</span>
-                  <span className="text-[9px] font-bold text-white/80">{anime.subEpisodes || anime.episodeNumber || 0}</span>
-                </div>
-                {anime.dubEpisodes !== undefined && anime.dubEpisodes > 0 && (
-                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                    <span className="text-[8px] font-black text-amber-500 uppercase tracking-tighter">MIC</span>
-                    <span className="text-[9px] font-bold text-white/80">{anime.dubEpisodes}</span>
-                  </div>
-                )}
+
               </div>
             </div>
           </Link>
