@@ -562,7 +562,7 @@ export async function getTrendingAnime(page: number = 1, perPage: number = 20, p
     query ($page: Int, $perPage: Int, $season: MediaSeason, $seasonYear: Int) {
       Page (page: $page, perPage: $perPage) {
         pageInfo { hasNextPage }
-        media (type: ANIME, sort: ${sort}, status_in: ${statusIn}, season: $season, seasonYear: $seasonYear) {
+        media (type: ANIME, sort: ${sort}, status_in: ${statusIn}, season: $season, seasonYear: $seasonYear, isAdult: false) {
           id
           title { romaji english native }
           coverImage { large }
@@ -616,7 +616,7 @@ export async function getSeasonalAnime(season: string, year: number, page: numbe
     query ($season: MediaSeason, $seasonYear: Int, $page: Int) {
       Page (page: $page, perPage: 20) {
         pageInfo { hasNextPage }
-        media (season: $season, seasonYear: $seasonYear, type: ANIME, sort: POPULARITY_DESC) {
+        media (season: $season, seasonYear: $seasonYear, type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
           id
           title { romaji english native }
           coverImage { large }
@@ -683,7 +683,7 @@ export async function advancedSearchAnime({
     query ($page: Int, $search: String, $genres: [String], $tags: [String], $status: MediaStatus, $season: MediaSeason, $seasonYear: Int, $format: MediaFormat, $sort: [MediaSort], $type: MediaType) {
       Page (page: $page, perPage: 20) {
         pageInfo { total hasNextPage }
-        media (search: $search, genre_in: $genres, tag_in: $tags, status: $status, season: $season, seasonYear: $seasonYear, format: $format, type: $type, sort: $sort) {
+        media (search: $search, genre_in: $genres, tag_in: $tags, status: $status, season: $season, seasonYear: $seasonYear, format: $format, type: $type, sort: $sort, isAdult: false) {
           id
           title { romaji english native }
           coverImage { large }
@@ -833,7 +833,7 @@ export async function getPopularAnime(page: number = 1, perPage: number = 20) {
     query ($page: Int, $perPage: Int) {
       Page (page: $page, perPage: $perPage) {
         pageInfo { hasNextPage }
-        media (type: ANIME, sort: [POPULARITY_DESC]) {
+        media (type: ANIME, sort: [POPULARITY_DESC], isAdult: false) {
           id
           title { romaji english native }
           coverImage { large }
@@ -1779,7 +1779,7 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20) =>
     query ($page: Int, $perPage: Int) {
       Page (page: $page, perPage: $perPage) {
         pageInfo { hasNextPage }
-        media (type: ANIME, status_in: [RELEASING], sort: [UPDATED_AT_DESC, POPULARITY_DESC]) {
+        media (type: ANIME, status_in: [RELEASING], sort: [UPDATED_AT_DESC, POPULARITY_DESC], isAdult: false) {
           id
           title { romaji english native }
           coverImage { large }
