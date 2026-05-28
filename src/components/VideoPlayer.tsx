@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, ReactElement, useMemo } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles, Mic, Gauge, ChevronLeft } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles, Mic, Gauge, ChevronLeft, Sparkles, Monitor } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Hls from "hls.js";
 import { useRouter } from "next/navigation";
@@ -20,6 +20,8 @@ interface VideoPlayerProps {
   episodeTitle: string;
   poster?: string;
   allServers?: ServerEntry[];
+  isTheaterMode?: boolean;
+  onTheaterToggle?: () => void;
 }
 
 function unpackDeanEdwards(html: string): string | null {
@@ -53,6 +55,8 @@ export function VideoPlayer({
   episodeTitle,
   poster,
   allServers = [],
+  isTheaterMode = false,
+  onTheaterToggle,
 }: VideoPlayerProps): ReactElement {
   const [currentVideoUrl, setCurrentVideoUrl] = useState(initialVideoUrl);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -190,6 +194,73 @@ export function VideoPlayer({
   const [duration, setDuration] = useState(0);
   const [buffered, setBuffered] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+
+  const [isCinemaGlow, setIsCinemaGlow] = useState(true);
+
+  // Load Cinema Glow preference on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("cinemaGlow");
+    if (saved === "false") {
+      setIsCinemaGlow(false);
+    }
+  }, []);
+
+  const toggleCinemaGlow = () => {
+    setIsCinemaGlow((prev) => {
+      const next = !prev;
+      localStorage.setItem("cinemaGlow", String(next));
+      return next;
+    });
+  };
+
+  const glowCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Helper to draw a single frame onto the backlight canvas (pause seek updates)
+  const drawGlowFrame = () => {
+    const video = videoRef.current;
+    const canvas = glowCanvasRef.current;
+    if (!video || !canvas || isIframe || !isCinemaGlow) return;
+    const ctx = canvas.getContext("2d", { willReadFrequently: false });
+    if (!ctx) return;
+    try {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    } catch (err) {
+      // Silently catch tainted canvas restrictions (CORS)
+    }
+  };
+
+  // Real-time ambient glow backlight loop
+  useEffect(() => {
+    const video = videoRef.current;
+    const canvas = glowCanvasRef.current;
+    if (!video || !canvas || !isPlaying || !isCinemaGlow || isIframe) return;
+
+    const ctx = canvas.getContext("2d", { willReadFrequently: false });
+    if (!ctx) return;
+
+    let animationFrameId: number;
+
+    canvas.width = 32;
+    canvas.height = 18;
+
+    const renderLoop = () => {
+      if (video.paused || video.ended) return;
+
+      try {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      } catch (err) {
+        // Silently catch tainted canvas restrictions (CORS)
+      }
+
+      animationFrameId = requestAnimationFrame(renderLoop);
+    };
+
+    renderLoop();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [isPlaying, isCinemaGlow, isIframe, currentVideoUrl]);
 
   const updateBuffered = () => {
     const video = videoRef.current;
@@ -918,22 +989,34 @@ export function VideoPlayer({
   }, [currentVideoUrl, useNative, initialProxiedUrl]);
 
   return (
-    <div
-      ref={containerRef}
-      className={`relative w-full bg-black rounded-lg overflow-hidden group shadow-2xl transition-all ${isFullscreen ? 'rounded-none' : ''}`}
-      onMouseMove={() => {
-        setShowControls(true);
-        scheduleControlsHide();
-      }}
-      onMouseLeave={() => {
-        if (videoRef.current && !videoRef.current.paused && !isScrubbingRef.current) {
-          setShowControls(false);
-        }
-      }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
+    <div className="relative w-full">
+      {/* Real-time blurred ambient backlight glow canvas */}
+      {isCinemaGlow && !isIframe && (
+        <canvas
+          ref={glowCanvasRef}
+          className="absolute inset-0 w-full h-full scale-[1.08] blur-[80px] opacity-80 pointer-events-none z-0 transition-opacity duration-500"
+          style={{
+            transform: "scale(1.06, 1.10)",
+          }}
+        />
+      )}
+
+      <div
+        ref={containerRef}
+        className={`relative w-full bg-black rounded-lg overflow-hidden group shadow-2xl transition-all z-10 ${isFullscreen ? 'rounded-none' : ''}`}
+        onMouseMove={() => {
+          setShowControls(true);
+          scheduleControlsHide();
+        }}
+        onMouseLeave={() => {
+          if (videoRef.current && !videoRef.current.paused && !isScrubbingRef.current) {
+            setShowControls(false);
+          }
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
       {/* Cinematic Thumbnail Preview Overlay */}
       <div className={`relative w-full ${isFullscreen ? 'h-full min-h-screen' : 'aspect-video'}`}>
         {/* Brightness Overlay */}
@@ -1060,6 +1143,7 @@ export function VideoPlayer({
                 setProgress(time);
                 lastTimeRef.current = time;
                 updateBuffered();
+                if (!isPlaying) drawGlowFrame();
               }}
               onProgress={() => {
                 updateBuffered();
@@ -1076,6 +1160,7 @@ export function VideoPlayer({
                     }).catch(() => { });
                   }
                 }
+                setTimeout(drawGlowFrame, 300);
               }}
               onClick={handleVideoClick}
               onPlay={() => {
@@ -1093,7 +1178,10 @@ export function VideoPlayer({
               onWaiting={() => setIsBuffering(true)}
               onPlaying={() => setIsBuffering(false)}
               onSeeking={() => setIsBuffering(true)}
-              onSeeked={() => setIsBuffering(false)}
+              onSeeked={() => {
+                setIsBuffering(false);
+                drawGlowFrame();
+              }}
               onCanPlay={() => setIsBuffering(false)}
               onLoadStart={() => setIsBuffering(true)}
             >
@@ -1442,6 +1530,32 @@ export function VideoPlayer({
                       </div>
                     )}
 
+                    {/* Cinema Glow Toggle */}
+                    {!isIframe && (
+                      <button
+                        onClick={toggleCinemaGlow}
+                        className={`transition-all active:scale-95 cursor-pointer ${
+                          isCinemaGlow ? "text-primary" : "text-white/60 hover:text-white"
+                        }`}
+                        title="Cinema Glow (Ambient Backlight)"
+                      >
+                        <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
+                      </button>
+                    )}
+
+                    {/* Theater Mode Toggle */}
+                    {onTheaterToggle && (
+                      <button
+                        onClick={onTheaterToggle}
+                        className={`transition-all hidden md:inline-flex active:scale-95 cursor-pointer ${
+                          isTheaterMode ? "text-primary" : "text-white/60 hover:text-white"
+                        }`}
+                        title="Theater Mode"
+                      >
+                        <Monitor className="w-5 h-5 sm:w-6 sm:h-6" />
+                      </button>
+                    )}
+
                     <button onClick={toggleFullscreen} className="text-white hover:text-accent transition-all">
                       <Maximize className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
@@ -1452,6 +1566,7 @@ export function VideoPlayer({
           )}
         </AnimatePresence>
       </div>
+    </div>
     </div>
   );
 }

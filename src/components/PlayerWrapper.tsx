@@ -19,6 +19,8 @@ interface PlayerWrapperProps {
   title: string;
   episodeTitle: string;
   poster?: string;
+  isTheaterMode?: boolean;
+  onTheaterToggle?: () => void;
 }
 
 export function PlayerWrapper(props: PlayerWrapperProps) {

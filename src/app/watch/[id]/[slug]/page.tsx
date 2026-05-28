@@ -63,64 +63,18 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
         />
         
         <main className="flex-1 container mx-auto px-0 md:px-4 py-0 md:py-8">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Left Column: Player & Info */}
-            <div className="flex-1 flex flex-col gap-6">
-              <Link href={`/anime/${id}/${animeSlug}`} className="hidden md:inline-flex items-center gap-2 text-white/40 hover:text-primary transition-all mb-4 group font-black uppercase tracking-widest text-[10px]">
-                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                <span>Back to Series</span>
-              </Link>
- 
-              <WatchPlayerSection
-                videoUrl={videoUrl || ""}
-                title={titleString}
-                episodeTitle={episodeTitle}
-                poster={anime.cover || anime.image || ""}
-                description={anime.description || "No description available."}
-                allServers={streamData?.allServers}
-                episodes={anime.episodes || []}
-                currentEpisodeNumber={episodeNumber}
-                animeId={id}
-                animeSlug={animeSlug}
-              />
-            </div>
- 
-            {/* Right Column: Episode List */}
-            <div className="hidden lg:flex w-full lg:w-80 flex-col gap-4">
-              <h3 className="text-lg font-semibold px-2">Episodes</h3>
-              <div className="flex flex-col gap-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                {anime.episodes?.map((episode) => (
-                  <Link
-                    key={episode.id}
-                    href={`/watch/${id}/${animeSlug}?ep=${episode.number}`}
-                    className={`flex items-center gap-4 p-3 rounded-2xl transition-all border ${
-                      episode.number === episodeNumber 
-                        ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" 
-                        : "bg-white/5 border-white/5 hover:border-white/20 text-white/40 hover:text-white"
-                    }`}
-                  >
-                    <div className="relative w-24 aspect-video rounded-lg overflow-hidden flex-shrink-0">
-                      <Image
-                        src={anime.image && anime.image !== "" ? anime.image : "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx151807-m1gX3iqITmI6.png"}
-                        alt={episode.title || `Episode ${episode.number}`}
-                        fill
-                        sizes="96px"
-                        className="object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                        <span className="text-white text-xs font-bold">{episode.number}</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1 overflow-hidden">
-                      <span className="text-sm font-medium truncate">
-                        {episode.title || `Episode ${episode.number}`}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
+          <WatchPlayerSection
+            videoUrl={videoUrl || ""}
+            title={titleString}
+            episodeTitle={episodeTitle}
+            poster={anime.cover || anime.image || ""}
+            description={anime.description || "No description available."}
+            allServers={streamData?.allServers}
+            episodes={anime.episodes || []}
+            currentEpisodeNumber={episodeNumber}
+            animeId={id}
+            animeSlug={animeSlug}
+          />
         </main>
       </div>
     );
