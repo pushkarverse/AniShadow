@@ -604,28 +604,6 @@ export async function getTrendingAnime(page: number = 1, perPage: number = 20, p
       subEpisodes: getReleasedAnimeEpisodesCount(m)
     })) || [];
 
-    // Enrich the Top 5 Hero items with Kitsu posters for "Wow" factor
-    if (results.length > 0) {
-      results = await Promise.all(results.map(async (anime: HeroResult, idx: number) => {
-        if (idx > 4 || !anime.title) return anime;
-        try {
-          const searchTitle = anime.title.english || anime.title.romaji;
-          if (!searchTitle) return anime;
-          const kitsuRes = await fetch(`https://kitsu.io/api/edge/anime?filter[text]=${encodeURIComponent(searchTitle)}&page[limit]=1`, { next: { revalidate: 3600 } });
-          if (kitsuRes.ok) {
-            const kitsuData = await kitsuRes.json();
-            const kitsuCover = kitsuData?.data?.[0]?.attributes?.coverImage?.original || kitsuData?.data?.[0]?.attributes?.coverImage?.large;
-            if (kitsuCover) {
-              anime.cover = kitsuCover;
-            }
-          }
-        } catch {
-          // Ignore errors to not block page load
-        }
-        return anime;
-      }));
-    }
-
     const enrichedResults = await enrichAnimeResultsWithSubDub(results);
     return { results: enrichedResults, hasNextPage: pageInfo?.hasNextPage || false };
   } catch {
