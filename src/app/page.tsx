@@ -47,14 +47,14 @@ export default async function Home() {
           <Hero items={featuredAnime} />
         </section>
 
-        {/* Anime Continue Watching Section */}
-        <AnimeLibrarySection />
-
         {/* Main Layout Grid */}
         <div className="flex flex-col lg:flex-row gap-8 xl:gap-12 px-1 md:px-0">
           
-          {/* Left Column: Popular Anime */}
+          {/* Left Column: Popular Anime & Library */}
           <div className="flex-1 min-w-0">
+            {/* Anime Continue Watching Section */}
+            <AnimeLibrarySection />
+
             <LatestSection 
               initialItems={ongoingAnimeJP} 
             />
