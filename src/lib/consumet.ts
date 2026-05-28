@@ -1774,13 +1774,48 @@ export async function getMangaChapterPages(chapterId: string) {
   }
 }
 
-export const getOngoingAnime = async (page?: number, perPage?: number) => {
+export const getOngoingAnime = async (page: number = 1, perPage: number = 20) => {
+  const query = `
+    query ($page: Int, $perPage: Int) {
+      Page (page: $page, perPage: $perPage) {
+        pageInfo { hasNextPage }
+        media (type: ANIME, status_in: [RELEASING], sort: [UPDATED_AT_DESC, POPULARITY_DESC]) {
+          id
+          title { romaji english native }
+          coverImage { large }
+          type
+          status
+          episodes
+          nextAiringEpisode {
+            episode
+          }
+          averageScore
+        }
+      }
+    }`;
+
   try {
-    // Fetch trending anime as a fallback for ongoing
-    const data = await getTrendingAnime(page, perPage);
-    return data;
+    const response = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ query, variables: { page, perPage } })
+    });
+    const data = await response.json();
+    const pageInfo = data?.data?.Page?.pageInfo;
+    let results = data?.data?.Page?.media?.map((m: AnilistNode) => ({
+      id: m.id.toString(),
+      title: m.title,
+      slug: slugify(getAnimeTitle(m.title)),
+      image: m.coverImage?.large,
+      type: m.type,
+      rating: m.averageScore,
+      episodeNumber: getReleasedAnimeEpisodesCount(m),
+      subEpisodes: getReleasedAnimeEpisodesCount(m)
+    })) || [];
+    results = await enrichAnimeResultsWithSubDub(results);
+    return { results, hasNextPage: pageInfo?.hasNextPage || false };
   } catch (error) {
     console.error("Failed to fetch ongoing anime:", error);
-    return null;
+    return { results: [], hasNextPage: false };
   }
 };

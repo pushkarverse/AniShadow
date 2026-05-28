@@ -18,8 +18,25 @@ export default async function Home() {
   const popularAnime = popularData?.results || [];
   const ongoingAnime = ongoingData?.results || [];
 
-  // Use the top 5 trending anime as carousel features
-  const featuredAnime: HeroItem[] = trendingAnime.slice(0, 5).map((anime: HeroResult) => ({
+  // Mix latest and trending to keep the hero varied
+  const mixedBuckets = [ongoingAnime, trendingAnime];
+  const interleaved: any[] = [];
+  const maxLength = Math.max(...mixedBuckets.map((bucket) => bucket.length));
+  for (let i = 0; i < maxLength; i += 1) {
+    for (const bucket of mixedBuckets) {
+      if (bucket[i]) interleaved.push(bucket[i]);
+    }
+  }
+
+  const seenIds = new Set<string>();
+  const mixedAnime = interleaved.filter((anime) => {
+    const id = String(anime.id ?? "");
+    if (!id || seenIds.has(id)) return false;
+    seenIds.add(id);
+    return true;
+  });
+
+  const featuredAnime: HeroItem[] = mixedAnime.slice(0, 5).map((anime: any) => ({
     id: anime.id,
     title: getAnimeTitle(anime.title),
     description: anime.description?.replace(/<[^>]*>?/gm, '') || "Discover a premium, ad-free streaming experience with the latest trending and legendary anime.",
@@ -27,7 +44,7 @@ export default async function Home() {
     poster: anime.image || anime.cover || "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop",
     genres: anime.genres || ["Action", "Adventure"],
     rating: anime.rating ? (Number(anime.rating) / 10).toFixed(1) : "8.5",
-    releaseDate: anime.releaseDate || "2024",
+    releaseDate: anime.releaseDate || anime.seasonYear,
     type: anime.type,
     slug: anime.slug,
     subEpisodes: anime.subEpisodes,
