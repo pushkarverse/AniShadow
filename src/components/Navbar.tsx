@@ -7,6 +7,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Search, Menu, SlidersHorizontal, Shuffle, Users, Bell, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SearchFilters } from "./SearchFilters";
+import { BottomTabBar } from "./BottomTabBar";
 
 export function Navbar() {
   const router = useRouter();
@@ -77,7 +78,7 @@ export function Navbar() {
         {/* Left: Logo & Menu Toggle */}
         <div className="flex items-center gap-4">
           <button 
-            className="p-2 hover:bg-white/5 rounded-full transition-colors md:hidden"
+            className="p-2 hover:bg-white/5 rounded-full transition-colors hidden"
             onClick={() => setIsMobileMenuOpen(true)}
           >
             <Menu className="w-6 h-6" />
@@ -380,6 +381,14 @@ export function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Bottom Tab Bar (Mobile) */}
+      {!pathname?.startsWith('/watch') && (
+        <BottomTabBar 
+          onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+          isMangaRoute={isMangaRoute} 
+        />
+      )}
     </header>
   );
 }

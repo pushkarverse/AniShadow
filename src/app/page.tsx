@@ -34,14 +34,14 @@ export default async function Home() {
     <div className="min-h-screen bg-background text-foreground pb-20">
       <Navbar />
       
-      <main className="container mx-auto px-4 md:px-8 pt-8">
-        {/* Featured Hero Boxed */}
-        <section className="w-full relative mb-12 md:mb-16">
+      <main className="container mx-auto px-4 md:px-8 pt-0 md:pt-8 overflow-x-hidden">
+        {/* Featured Hero Boxed - Full bleed on mobile, standard layout on desktop */}
+        <section className="w-full relative mb-12 md:mb-16 -mx-4 w-[calc(100%+2rem)] md:mx-0 md:w-full">
           <Hero items={featuredAnime} />
         </section>
 
         {/* Main Layout Grid */}
-        <div className="flex flex-col lg:flex-row gap-8 xl:gap-12">
+        <div className="flex flex-col lg:flex-row gap-8 xl:gap-12 px-1 md:px-0">
           
           {/* Left Column: Popular Anime */}
           <div className="flex-1 min-w-0">
@@ -56,7 +56,7 @@ export default async function Home() {
                 </Link>
               </div>
               
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
+              <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
                 {popularAnime.length > 0 ? popularAnime.slice(0, 15).map((anime: any) => (
                   <AnimeCard 
                     key={anime.id} 
@@ -71,7 +71,7 @@ export default async function Home() {
                     type={anime.type || "TV"}
                   />
                 )) : (
-                  <p className="col-span-full py-20 text-center text-white/20 font-medium italic bg-white/5 rounded-3xl border border-white/5">
+                  <p className="col-span-full py-20 text-center text-white/20 font-medium italic bg-white/5 rounded-3xl border border-white/5 w-full">
                     Temporarily unavailable due to high traffic. Please try again in a few moments.
                   </p>
                 )}
@@ -79,8 +79,8 @@ export default async function Home() {
             </section>
           </div>
 
-          {/* Right Column: Trending Sidebar Ranking */}
-          <div className="w-full lg:w-[320px] xl:w-[380px] shrink-0">
+          {/* Right Column: Trending Sidebar Ranking - Hidden on Mobile */}
+          <div className="hidden lg:block w-full lg:w-[320px] xl:w-[380px] shrink-0">
             <TrendingSidebar initialData={trendingAnime as HeroResult[]} />
           </div>
 

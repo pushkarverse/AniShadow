@@ -119,7 +119,7 @@ export function AnimeCard({
   const actionUrl = href || (isManga ? `/anime/${id}/${animeSlug}` : `/watch/${id}/${animeSlug}?ep=1`);
 
   return (
-    <div className="group relative flex flex-col gap-3">
+    <div className="group relative flex flex-col gap-3 w-[155px] sm:w-[180px] shrink-0 md:w-full">
       {/* Image Container */}
       <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-[#121212] border border-white/5 shadow-2xl transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-primary/20 group-hover:-translate-y-1">
         <Link href={actionUrl} className="block w-full h-full relative">

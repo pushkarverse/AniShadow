@@ -28,8 +28,8 @@ export default async function MangaPage() {
         <MangaLibrarySection />
 
         {/* Categories / Trending */}
-        <div className="flex flex-col lg:flex-row gap-8">
-          <div className="flex-1">
+        <div className="flex flex-col lg:flex-row gap-8 overflow-x-hidden">
+          <div className="flex-1 min-w-0">
             <section className="mb-16">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
@@ -40,7 +40,7 @@ export default async function MangaPage() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
+              <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
                 {trendingManga.map((manga: any) => (
                   <MangaCard 
                     key={manga.id} 
@@ -67,7 +67,7 @@ export default async function MangaPage() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
+              <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
                 {popularManga.map((manga: any) => (
                   <MangaCard 
                     key={manga.id} 
@@ -84,7 +84,7 @@ export default async function MangaPage() {
             </section>
           </div>
 
-          <aside className="w-full lg:w-96 shrink-0">
+          <aside className="hidden lg:block w-full lg:w-96 shrink-0">
              <MangaTrendingSidebar initialData={trendingManga} />
           </aside>
         </div>
