@@ -1848,44 +1848,52 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
   `;
 
   try {
-    const response = await fetch('https://graphql.anilist.co', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({
-        query: schedulesQuery,
-        variables: {
-          page,
-          perPage: perPage * 3, // Fetch more to filter and deduplicate
-          airingAt_lesser: now,
-          mediaId_in: mediaIds
-        }
-      }),
-      cache: 'no-store'
-    });
-    const data = await response.json();
-    const pageInfo = data?.data?.Page?.pageInfo;
-    const schedules = data?.data?.Page?.airingSchedules || [];
+    const fetchPage = async (p: number) => {
+      const response = await fetch('https://graphql.anilist.co', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          query: schedulesQuery,
+          variables: {
+            page: p,
+            perPage: 50,
+            airingAt_lesser: now,
+            mediaId_in: mediaIds
+          }
+        }),
+        cache: 'no-store'
+      });
+      const data = await response.json();
+      return data?.data?.Page?.airingSchedules || [];
+    };
+    const startSchedPage = (page - 1) * 3 + 1;
+    const schedulePages = await Promise.all([
+      fetchPage(startSchedPage),
+      fetchPage(startSchedPage + 1),
+      fetchPage(startSchedPage + 2)
+    ]);
+    const schedules = schedulePages.flat();
 
     const mapped = schedules
       .filter((s: any) => s.media && s.media.isAdult === false)
       .map((s: any) => {
-      const m = s.media;
-      return {
-        id: m.id.toString(),
-        title: m.title,
-        slug: slugify(getAnimeTitle(m.title)),
-        image: m.coverImage?.large,
-        cover: m.bannerImage || m.coverImage?.large,
-        description: m.description || "",
-        genres: m.genres || [],
-        type: m.format || m.type || "TV",
-        rating: m.averageScore || 0,
-        countryOfOrigin: m.countryOfOrigin,
-        episodeNumber: s.episode,
-        subEpisodes: s.episode,
-        duration: m.duration ? `${m.duration}m` : "24m"
-      };
-    });
+        const m = s.media;
+        return {
+          id: m.id.toString(),
+          title: m.title,
+          slug: slugify(getAnimeTitle(m.title)),
+          image: m.coverImage?.large,
+          cover: m.bannerImage || m.coverImage?.large,
+          description: m.description || "",
+          genres: m.genres || [],
+          type: m.format || m.type || "TV",
+          rating: m.averageScore || 0,
+          countryOfOrigin: m.countryOfOrigin,
+          episodeNumber: s.episode,
+          subEpisodes: s.episode,
+          duration: m.duration ? `${m.duration}m` : "24m"
+        };
+      });
 
     // Deduplicate ongoing releases to keep only the latest episode entry for each unique anime
     const seen = new Set<string>();
@@ -1901,7 +1909,7 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
     }
 
     const enrichedResults = await enrichAnimeResultsWithSubDub(results);
-    return { results: enrichedResults, hasNextPage: pageInfo?.hasNextPage || false };
+    return { results: enrichedResults, hasNextPage: results.length >= perPage };
   } catch (error) {
     console.error("Failed to fetch airing schedules:", error);
     return { results: [], hasNextPage: false };
