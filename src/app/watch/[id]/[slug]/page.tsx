@@ -76,6 +76,10 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
                 poster={anime.cover || anime.image || ""}
                 description={anime.description || "No description available."}
                 allServers={streamData?.allServers}
+                episodes={anime.episodes}
+                currentEpisodeNumber={episodeNumber}
+                animeId={id}
+                animeSlug={animeSlug}
               />
             </div>
 

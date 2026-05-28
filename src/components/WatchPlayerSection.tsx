@@ -18,6 +18,10 @@ interface WatchPlayerSectionProps {
   poster?: string;
   description?: string;
   allServers?: ServerEntry[];
+  episodes?: any[];
+  currentEpisodeNumber?: number;
+  animeId?: string;
+  animeSlug?: string;
 }
 
 export function WatchPlayerSection({
@@ -26,7 +30,11 @@ export function WatchPlayerSection({
   episodeTitle,
   poster,
   description,
-  allServers = []
+  allServers = [],
+  episodes = [],
+  currentEpisodeNumber,
+  animeId,
+  animeSlug
 }: WatchPlayerSectionProps) {
   const [currentVideoUrl, setCurrentVideoUrl] = useState(videoUrl);
   const [selectedServer, setSelectedServer] = useState(allServers[0]?.name || "Primary");
@@ -125,6 +133,11 @@ export function WatchPlayerSection({
             title={title}
             episodeTitle={episodeTitle}
             poster={poster}
+            allServers={allServers}
+            episodes={episodes}
+            currentEpisodeNumber={currentEpisodeNumber}
+            animeId={animeId}
+            animeSlug={animeSlug}
           />
         ) : (
           <div className="aspect-video relative flex items-center justify-center bg-[#080808] overflow-hidden">

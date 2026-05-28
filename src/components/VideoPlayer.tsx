@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, ReactElement, useMemo } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles, Mic, Gauge } from "lucide-react";
+import Link from "next/link";
+import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles, Mic, Gauge, List } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Hls from "hls.js";
 
@@ -13,12 +14,23 @@ interface ServerEntry {
   label?: string;
 }
 
+interface EpisodeEntry {
+  id: string;
+  number: number;
+  title?: string;
+  image?: string;
+}
+
 interface VideoPlayerProps {
   videoUrl: string;
   title: string;
   episodeTitle: string;
   poster?: string;
   allServers?: ServerEntry[];
+  episodes?: EpisodeEntry[];
+  currentEpisodeNumber?: number;
+  animeId?: string;
+  animeSlug?: string;
 }
 
 function unpackDeanEdwards(html: string): string | null {
@@ -52,6 +64,10 @@ export function VideoPlayer({
   episodeTitle,
   poster,
   allServers = [],
+  episodes = [],
+  currentEpisodeNumber,
+  animeId,
+  animeSlug,
 }: VideoPlayerProps): ReactElement {
   const [currentVideoUrl, setCurrentVideoUrl] = useState(initialVideoUrl);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -216,6 +232,78 @@ export function VideoPlayer({
   const hlsRef = useRef<Hls | null>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // PWA/Mobile features state & refs
+  const [showEpisodeSheet, setShowEpisodeSheet] = useState(false);
+  const touchStartXRef = useRef<number>(0);
+  const touchStartYRef = useRef<number>(0);
+  const isSwipingSeekRef = useRef<boolean>(false);
+  const wasSwipingRef = useRef<boolean>(false);
+  const videoTimeOnTouchStartRef = useRef<number>(0);
+  const swipeTimeOffsetRef = useRef<number>(0);
+
+  const [swipeSeekPreview, setSwipeSeekPreview] = useState<{
+    visible: boolean;
+    targetTime: number;
+    offset: number;
+  }>({ visible: false, targetTime: 0, offset: 0 });
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLElement>) => {
+    if (e.touches.length !== 1 || isIframe || !videoRef.current) return;
+    const touch = e.touches[0];
+    touchStartXRef.current = touch.clientX;
+    touchStartYRef.current = touch.clientY;
+    isSwipingSeekRef.current = false;
+    wasSwipingRef.current = false;
+    videoTimeOnTouchStartRef.current = videoRef.current.currentTime;
+    swipeTimeOffsetRef.current = 0;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLElement>) => {
+    if (e.touches.length !== 1 || isIframe || !videoRef.current || duration === 0) return;
+    const touch = e.touches[0];
+    const diffX = touch.clientX - touchStartXRef.current;
+    const diffY = touch.clientY - touchStartYRef.current;
+
+    if (!isSwipingSeekRef.current && Math.abs(diffX) > 15 && Math.abs(diffX) > Math.abs(diffY)) {
+      isSwipingSeekRef.current = true;
+      wasSwipingRef.current = true;
+      setIsScrubbing(true);
+      setShowControls(true);
+    }
+
+    if (isSwipingSeekRef.current) {
+      if (e.cancelable) e.preventDefault();
+      const screenWidth = containerRef.current?.clientWidth || 300;
+      const maxSeekRange = 90;
+      const offset = (diffX / screenWidth) * maxSeekRange;
+      const targetTime = Math.max(0, Math.min(duration, videoTimeOnTouchStartRef.current + offset));
+      
+      swipeTimeOffsetRef.current = offset;
+      setSwipeSeekPreview({
+        visible: true,
+        targetTime,
+        offset,
+      });
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (isSwipingSeekRef.current) {
+      if (videoRef.current) {
+        const targetTime = Math.max(0, Math.min(duration, videoTimeOnTouchStartRef.current + swipeTimeOffsetRef.current));
+        videoRef.current.currentTime = targetTime;
+      }
+      setIsScrubbing(false);
+      setSwipeSeekPreview({ visible: false, targetTime: 0, offset: 0 });
+      scheduleControlsHide();
+
+      setTimeout(() => {
+        isSwipingSeekRef.current = false;
+        wasSwipingRef.current = false;
+      }, 100);
+    }
+  };
+
   // Subtitles & Quality States
   const [levels, setLevels] = useState<{ id: number; name: string }[]>([]);
   const [currentLevel, setCurrentLevel] = useState<number>(-1);
@@ -302,6 +390,7 @@ export function VideoPlayer({
   };
 
   const togglePlay = async () => {
+    const isFirstPlay = !hasInteracted;
     if (!hasInteracted) setHasInteracted(true);
     if (videoRef.current) {
       if (isPlaying) {
@@ -311,6 +400,10 @@ export function VideoPlayer({
         try {
           await videoRef.current.play();
           setIsPlaying(true);
+          // Auto fullscreen on mobile
+          if (isFirstPlay && window.innerWidth < 768 && !document.fullscreenElement) {
+            toggleFullscreen();
+          }
         } catch (e: unknown) {
           if (e instanceof Error && e.name !== 'AbortError') {
             console.error("Play error", e);
@@ -363,6 +456,11 @@ export function VideoPlayer({
   };
 
   const handleVideoClick = (e: React.MouseEvent<HTMLElement>) => {
+    // Ignore click/tap actions if the user was swiping to seek
+    if (wasSwipingRef.current || isSwipingSeekRef.current) {
+      return;
+    }
+
     const target = e.target as HTMLElement;
     if (
       target.closest("button") ||
@@ -771,7 +869,12 @@ export function VideoPlayer({
       }}
     >
       {/* Cinematic Thumbnail Preview Overlay */}
-      <div className={`relative w-full ${isFullscreen ? 'h-full min-h-screen' : 'aspect-video'}`}>
+      <div 
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className={`relative w-full ${isFullscreen ? 'h-full min-h-screen' : 'aspect-video'}`}
+      >
         {(isExtracting || isBuffering) && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#080808]/80 backdrop-blur-xs z-30 pointer-events-none">
             <div className="relative w-16 h-16 pointer-events-auto">
@@ -1038,17 +1141,17 @@ export function VideoPlayer({
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 sm:gap-6">
-                    <button onClick={skipBackward} className="text-white hover:text-accent transition-all scale-110 active:scale-95" title="Rewind 10s">
-                      <RotateCcw className="w-5 h-5" />
+                  <div className="flex items-center gap-4 sm:gap-6">
+                    <button onClick={skipBackward} className="text-white hover:text-accent transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer" title="Rewind 10s">
+                      <RotateCcw className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
                     </button>
 
-                    <button onClick={togglePlay} className="text-white hover:text-accent transition-all scale-110 active:scale-95">
-                      {isPlaying ? <Pause className="w-6 h-6 sm:w-7 h-7" /> : <Play className="w-6 h-6 sm:w-7 h-7 fill-current" />}
+                    <button onClick={togglePlay} className="text-white hover:text-accent transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer">
+                      {isPlaying ? <Pause className="w-7 h-7 sm:w-8 h-8 fill-current" /> : <Play className="w-7 h-7 sm:w-8 h-8 fill-current" />}
                     </button>
 
-                    <button onClick={skipForward} className="text-white hover:text-accent transition-all scale-110 active:scale-95" title="Forward 10s">
-                      <RotateCw className="w-5 h-5" />
+                    <button onClick={skipForward} className="text-white hover:text-accent transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer" title="Forward 10s">
+                      <RotateCw className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
                     </button>
 
                     <button onClick={() => {
@@ -1056,19 +1159,37 @@ export function VideoPlayer({
                         videoRef.current.muted = !isMuted;
                         setIsMuted(!isMuted);
                       }
-                    }} className="text-white hover:text-accent transition-all hidden sm:inline-flex">
-                      {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+                    }} className="text-white hover:text-accent transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer hidden sm:inline-flex">
+                      {isMuted ? <VolumeX className="w-5.5 h-5.5 sm:w-6 sm:h-6" /> : <Volume2 className="w-5.5 h-5.5 sm:w-6 sm:h-6" />}
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-3 sm:gap-6 relative">
+                  <div className="flex items-center gap-3 sm:gap-5 relative">
                     {proxiedSubtitleUrl && (
                       <button
                         onClick={() => setIsSubtitlesOn(!isSubtitlesOn)}
-                        className={`transition-all ${isSubtitlesOn ? 'text-primary' : 'text-white/60 hover:text-white'}`}
+                        className={`transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer ${isSubtitlesOn ? 'text-primary' : 'text-white/60 hover:text-white'}`}
                         title="Toggle Subtitles"
                       >
-                        <Subtitles className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <Subtitles className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
+                      </button>
+                    )}
+
+                    {episodes && episodes.length > 0 && animeId && animeSlug && (
+                      <button
+                        onClick={() => {
+                          setShowEpisodeSheet(true);
+                          setShowQualityMenu(false);
+                          setShowAudioMenu(false);
+                          setShowSpeedMenu(false);
+                        }}
+                        className="text-white/60 hover:text-white transition-all flex items-center gap-1.5 p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer"
+                        title="Episodes List"
+                      >
+                        <List className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
+                        <span className="text-[10px] font-black bg-white/10 px-2 py-0.5 rounded uppercase hidden sm:inline">
+                          EPs
+                        </span>
                       </button>
                     )}
 
@@ -1077,11 +1198,11 @@ export function VideoPlayer({
                       <div className="relative">
                         <button
                           onClick={() => { setShowAudioMenu(!showAudioMenu); setShowQualityMenu(false); setShowSpeedMenu(false); }}
-                          className={`transition-all flex items-center gap-1 ${activeAudioGroup === 'dub' ? 'text-primary' : 'text-white hover:text-accent'}`}
+                          className={`transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer flex items-center gap-1.5 ${activeAudioGroup === 'dub' ? 'text-primary' : 'text-white/60 hover:text-white'}`}
                           title="Switch Audio"
                         >
-                          <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
-                          <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase hidden sm:inline">
+                          <Mic className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
+                          <span className="text-[10px] font-black bg-white/10 px-2 py-0.5 rounded uppercase hidden sm:inline">
                             {activeAudioGroup === 'dub' ? 'Dub' : 'Sub'}
                           </span>
                         </button>
@@ -1126,11 +1247,11 @@ export function VideoPlayer({
                           setShowQualityMenu(false);
                           setShowAudioMenu(false);
                         }}
-                        className="text-white hover:text-accent transition-all flex items-center gap-1"
+                        className="text-white/60 hover:text-white transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer flex items-center gap-1.5"
                         title="Playback Speed"
                       >
-                        <Gauge className="w-5 h-5 sm:w-6 sm:h-6" />
-                        <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase">
+                        <Gauge className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
+                        <span className="text-[10px] font-black bg-white/10 px-2 py-0.5 rounded uppercase">
                           {playbackSpeed === 1 ? "1x" : `${playbackSpeed}x`}
                         </span>
                       </button>
@@ -1171,11 +1292,11 @@ export function VideoPlayer({
                       <div className="relative">
                         <button
                           onClick={() => { setShowQualityMenu(!showQualityMenu); setShowAudioMenu(false); setShowSpeedMenu(false); }}
-                          className="text-white hover:text-accent transition-all flex items-center gap-1"
+                          className="text-white/60 hover:text-white transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer flex items-center gap-1.5"
                           title="Quality Settings"
                         >
-                          <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
-                          <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase">
+                          <Settings className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
+                          <span className="text-[10px] font-black bg-white/10 px-2 py-0.5 rounded uppercase">
                             {levels.find(l => l.id === currentLevel)?.name || "Auto"}
                           </span>
                         </button>
@@ -1206,13 +1327,105 @@ export function VideoPlayer({
                       </div>
                     )}
 
-                    <button onClick={toggleFullscreen} className="text-white hover:text-accent transition-all">
-                      <Maximize className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <button onClick={toggleFullscreen} className="text-white/60 hover:text-white transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer">
+                      <Maximize className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
                     </button>
                   </div>
                 </div>
               </div>
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Swipe Seek Gesture Feedback Overlay */}
+        <AnimatePresence>
+          {swipeSeekPreview.visible && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none"
+            >
+              <div className="px-6 py-3 rounded-2xl bg-black/85 backdrop-blur-md border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col items-center gap-1.5 min-w-[140px]">
+                <span className="text-white text-xs font-black uppercase tracking-widest text-primary">
+                  {swipeSeekPreview.offset > 0 ? "Fast Forward" : "Rewind"}
+                </span>
+                <span className="text-white text-lg font-mono font-black">
+                  {formatTime(swipeSeekPreview.targetTime)}
+                </span>
+                <span className="text-white/60 text-[10px] font-bold uppercase tracking-wider">
+                  {swipeSeekPreview.offset > 0 ? "+" : ""}{Math.round(swipeSeekPreview.offset)}s
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Episodes Bottom Sheet inside Player */}
+        <AnimatePresence>
+          {showEpisodeSheet && episodes && episodes.length > 0 && animeId && animeSlug && (
+            <>
+              {/* Backdrop */}
+              <div 
+                onClick={() => setShowEpisodeSheet(false)}
+                className="absolute inset-0 bg-black/60 z-50 pointer-events-auto"
+              />
+              {/* Sheet */}
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="absolute bottom-0 left-0 right-0 max-h-[75%] bg-zinc-950/95 border-t border-white/10 rounded-t-2xl z-50 p-4 flex flex-col gap-3 pointer-events-auto overflow-hidden backdrop-blur-md"
+              >
+                <div className="flex justify-between items-center pb-2 border-b border-white/5">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-primary">Select Episode</h3>
+                  <button 
+                    onClick={() => setShowEpisodeSheet(false)}
+                    className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-full text-white/70 hover:text-white transition-all text-[10px] font-bold uppercase tracking-wider border border-white/5 cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+                
+                {/* Episodes Grid */}
+                <div className="flex-1 overflow-y-auto no-scrollbar grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 p-1">
+                  {episodes.map((ep) => {
+                    const isActive = ep.number === currentEpisodeNumber;
+                    const epUrl = `/watch/${animeId}/${animeSlug}?ep=${ep.number}`;
+                    
+                    return (
+                      <Link
+                        key={ep.id}
+                        href={epUrl}
+                        onClick={() => setShowEpisodeSheet(false)}
+                        className={`flex flex-col gap-1.5 p-2 rounded-xl border transition-all ${
+                          isActive
+                            ? "bg-primary border-primary text-white shadow-lg shadow-primary/20"
+                            : "bg-white/5 border-white/5 hover:border-white/20 text-white/50 hover:text-white"
+                        }`}
+                      >
+                        <div className="relative aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-zinc-900">
+                          {poster && (
+                            <img
+                              src={poster}
+                              alt={ep.title || `Episode ${ep.number}`}
+                              className="object-cover w-full h-full opacity-60"
+                            />
+                          )}
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <span className="text-xs font-bold text-white">EP {ep.number}</span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold truncate px-1">
+                          {ep.title || `Episode ${ep.number}`}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
       </div>
