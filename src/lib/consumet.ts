@@ -1803,7 +1803,8 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
       const response = await fetch('https://graphql.anilist.co', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ query: mediaIdsQuery, variables: { country } })
+        body: JSON.stringify({ query: mediaIdsQuery, variables: { country } }),
+        cache: 'no-store'
       });
       const data = await response.json();
       mediaIds = data?.data?.Page?.media?.map((m: any) => m.id) || [];
@@ -1855,7 +1856,8 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
           airingAt_lesser: now,
           mediaId_in: mediaIds
         }
-      })
+      }),
+      cache: 'no-store'
     });
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;

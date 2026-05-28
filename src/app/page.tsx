@@ -10,6 +10,8 @@ import { getAnimeTitle } from "@/lib/anime-utils";
 import type { HeroResult } from "@/types/anime";
 import type { IAnimeResult } from "@consumet/extensions";
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const trendingData = await getTrendingAnime();
   const popularData = await getPopularAnime();
