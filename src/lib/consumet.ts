@@ -668,7 +668,8 @@ export async function advancedSearchAnime({
   year,
   format,
   sort = "POPULARITY_DESC",
-  type = "ANIME"
+  type = "ANIME",
+  exact = false
 }: {
   query?: string;
   page?: number;
@@ -680,6 +681,7 @@ export async function advancedSearchAnime({
   format?: string;
   sort?: string;
   type?: "ANIME" | "MANGA";
+  exact?: boolean;
 }) {
   const gqlQuery = `
     query ($page: Int, $search: String, $genres: [String], $tags: [String], $status: MediaStatus, $season: MediaSeason, $seasonYear: Int, $format: MediaFormat, $sort: [MediaSort], $type: MediaType) {
@@ -753,7 +755,7 @@ export async function advancedSearchAnime({
   let searchRes = await executeQuery(search);
 
   // 2. If no results found, run fallback fuzzy checks
-  if (searchRes.results.length === 0 && search) {
+  if (!exact && searchRes.results.length === 0 && search) {
     const trimmed = search.trim();
 
     // Fallback A: Clean punctuation/symbols and normalize spacing

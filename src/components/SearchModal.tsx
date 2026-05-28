@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X, ChevronRight, Play, BookOpen } from "lucide-react";
+import { Search, X, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { slugify, getAnimeTitle } from "@/lib/anime-utils";
@@ -112,7 +112,6 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
             onClose();
           }
         } else if (query.trim()) {
-          // If no specific item focused, navigate to main search page
           const typeParam = isMangaRoute ? "&type=MANGA" : "";
           router.push(`/search?q=${encodeURIComponent(query.trim())}${typeParam}`);
           onClose();
@@ -136,16 +135,10 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
     }
   }, [focusedIndex]);
 
-  const isSearching = query.trim() !== "";
-
   return (
     <AnimatePresence>
       {isOpen && (
-        <div 
-          className={`fixed inset-0 z-[1000] flex justify-center px-4 transition-all duration-500 ease-out ${
-            isSearching ? "items-start pt-24 md:pt-32" : "items-center pt-0"
-          }`}
-        >
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
           {/* Backdrop Blur Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -155,17 +148,10 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
             className="fixed inset-0 bg-[#060608]/75 backdrop-blur-md cursor-pointer"
           />
 
-          {/* Modal Container */}
-          <motion.div
-            layout
-            initial={{ opacity: 0, scale: 0.95, y: -20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -20 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="w-full max-w-2xl bg-[#0c0e14]/90 border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-2xl rounded-3xl overflow-hidden flex flex-col z-[1001]"
-          >
-            {/* Quick Access Shortcut info bar */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 select-none bg-white/[0.01]">
+          {/* Modal Content Wrapper - Vertically & Horizontally Centered */}
+          <div className="relative w-full max-w-2xl z-[1001] flex flex-col gap-2">
+            {/* Quick Access Shortcut info bar - Outside the main box */}
+            <div className="flex items-center justify-between px-2 select-none w-full">
               <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-white/40">
                 For quick access : 
                 <kbd className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 font-sans font-black shadow-inner">CTRL</kbd> 
@@ -180,134 +166,116 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
               </button>
             </div>
 
-            {/* Input Wrapper */}
-            <div className="p-6 pb-4 relative">
-              <div className="absolute inset-y-0 left-10 flex items-center pointer-events-none text-white/20">
-                <Search className="w-5 h-5" />
-              </div>
-              <input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={isMangaRoute ? "Search Manga..." : "Search Anime..."}
-                className="w-full bg-[#131620]/80 text-white border border-white/5 rounded-2xl h-13 pl-12 pr-6 text-sm focus:outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition-all font-sans placeholder-white/20 shadow-inner"
-              />
-            </div>
-
-            {/* Content List Area */}
-            <div className="px-6 pb-6 max-h-[380px] overflow-y-auto custom-scrollbar flex flex-col gap-2">
-              {loading ? (
-                // Loading Skeleton rows
-                Array(3)
-                  .fill(0)
-                  .map((_, i) => (
-                    <div
-                      key={i}
-                      className="p-3 bg-white/[0.02] border border-white/5 rounded-2xl flex items-center gap-4 animate-pulse h-20"
-                    >
-                      <div className="w-10 h-14 bg-white/5 rounded-lg shrink-0" />
-                      <div className="flex-1 flex flex-col gap-2">
-                        <div className="h-4 bg-white/5 rounded w-1/2" />
-                        <div className="h-3 bg-white/5 rounded w-1/4" />
-                      </div>
-                    </div>
-                  ))
-              ) : query.trim() === "" ? (
-                <div className="py-14 text-center text-white/20 select-none">
-                  {isMangaRoute ? (
-                    <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                  ) : (
-                    <Play className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                  )}
-                  <p className="text-xs font-bold uppercase tracking-widest leading-relaxed">
-                    Type to search {isMangaRoute ? "manga series..." : "anime series..."}
-                  </p>
+            {/* Main Modal Container */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: "spring", duration: 0.4 }}
+              className="w-full bg-[#131620] border border-[#1f2330] rounded-2xl overflow-hidden flex flex-col shadow-[0_25px_60px_rgba(0,0,0,0.85)]"
+            >
+              {/* Tabs Row */}
+              <div className="flex border-b border-[#1f2330] select-none bg-[#131620]">
+                <div className="py-3.5 px-6 font-bold uppercase tracking-wider text-xs text-[#84cc16] border-b-2 border-[#84cc16]">
+                  {isMangaRoute ? "Manga" : "Anime"}
                 </div>
-              ) : results.length > 0 ? (
-                results.map((anime, idx) => {
-                  const isFocused = idx === focusedIndex;
-                  const slug = anime.slug || slugify(getDisplayTitle(anime.title));
-                  const dest = isMangaRoute ? `/manga/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
-                  return (
-                    <a
-                      key={anime.id}
-                      href={dest}
-                      ref={(el) => {
-                        itemRefs.current[idx] = el;
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        router.push(dest);
-                        onClose();
-                      }}
-                      className={`p-2.5 rounded-2xl border flex items-center justify-between transition-all duration-300 group cursor-pointer ${
-                        isFocused
-                          ? "bg-white/5 border-primary/40 shadow-inner scale-[1.01]"
-                          : "bg-[#11131c]/40 border-white/5 hover:bg-white/5 hover:border-primary/20"
-                      }`}
-                    >
-                      <div className="flex items-center gap-4 min-w-0">
-                        <div className="relative w-11 h-15 rounded-xl overflow-hidden border border-white/5 shrink-0 bg-white/5 shadow-md">
-                          <Image
-                            src={
-                              anime.image && anime.image !== ""
-                                ? anime.image
-                                : "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop"
-                            }
-                            alt={getDisplayTitle(anime.title)}
-                            fill
-                            unoptimized
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="min-w-0 flex flex-col gap-1.5">
-                          <h4 className="text-sm font-bold text-white group-hover:text-primary transition-colors leading-tight truncate">
-                            {getDisplayTitle(anime.title)}
-                          </h4>
-                          <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest truncate">
-                            {anime.type} &bull; {formatStatus(anime.status)} &bull; {anime.year || "N/A"}
-                          </p>
-                        </div>
-                      </div>
-                      <ChevronRight
-                        className={`w-4 h-4 transition-all ${
-                          isFocused
-                            ? "text-primary translate-x-0.5"
-                            : "text-white/20 group-hover:text-primary group-hover:translate-x-0.5"
-                        }`}
-                      />
-                    </a>
-                  );
-                })
-              ) : (
-                <div className="py-14 text-center text-white/20 select-none">
-                  <p className="text-xs font-bold uppercase tracking-widest leading-relaxed">
-                    No results found for &quot;{query}&quot;
-                  </p>
+              </div>
+
+              {/* Input Wrapper */}
+              <div className="relative bg-[#131620] border-b border-[#1f2330]/40">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={isMangaRoute ? "Search Manga..." : "Search Anime..."}
+                  className="w-full bg-transparent text-white border-0 px-6 py-4 outline-none font-sans text-sm placeholder-white/20"
+                />
+              </div>
+
+              {/* Results List Section - Only visible when text is entered */}
+              {query.trim() !== "" && (
+                <div className="border-r-4 border-[#84cc16] max-h-[360px] overflow-y-auto custom-scrollbar flex flex-col bg-[#131620]">
+                  {loading ? (
+                    // Rotating spinner circle
+                    <div className="py-14 flex items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-white/10 border-t-[#84cc16] rounded-full animate-spin" />
+                    </div>
+                  ) : results.length > 0 ? (
+                    results.map((anime, idx) => {
+                      const isFocused = idx === focusedIndex;
+                      const slug = anime.slug || slugify(getDisplayTitle(anime.title));
+                      const dest = isMangaRoute ? `/manga/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
+                      return (
+                        <a
+                          key={anime.id}
+                          href={dest}
+                          ref={(el) => {
+                            itemRefs.current[idx] = el;
+                          }}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            router.push(dest);
+                            onClose();
+                          }}
+                          className={`px-6 py-4 flex items-center justify-between transition-all duration-200 group border-b border-[#1f2330]/50 last:border-b-0 cursor-pointer ${
+                            isFocused ? "bg-[#1d2232]" : "hover:bg-[#181c29]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-4 min-w-0">
+                            <div className="relative w-10 h-14 rounded-lg overflow-hidden shrink-0 shadow-md bg-white/5 border border-white/5">
+                              <Image
+                                src={
+                                  anime.image && anime.image !== ""
+                                    ? anime.image
+                                    : "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop"
+                                }
+                                alt={getDisplayTitle(anime.title)}
+                                fill
+                                unoptimized
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="min-w-0 flex flex-col gap-1">
+                              <h4 className="text-sm font-bold text-white group-hover:text-[#84cc16] transition-colors truncate">
+                                {getDisplayTitle(anime.title)}
+                              </h4>
+                              <p className="text-xs text-white/40 font-semibold tracking-wide">
+                                {anime.type} &bull; {formatStatus(anime.status)} &bull; {anime.year || "N/A"}
+                              </p>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-[#84cc16] group-hover:translate-x-0.5 transition-all" />
+                        </a>
+                      );
+                    })
+                  ) : (
+                    <div className="py-14 text-center text-white/20 select-none">
+                      <p className="text-xs font-bold uppercase tracking-widest leading-relaxed">
+                        No results found for &quot;{query}&quot;
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-
-            {/* Footer tips bar */}
-            {results.length > 0 && (
-              <div className="px-6 py-3 bg-white/[0.01] border-t border-white/5 text-[9px] font-black uppercase tracking-wider text-white/20 flex items-center justify-between select-none">
-                <span>↑↓ navigate &bull; enter select</span>
-                <span 
-                  onClick={() => {
-                    const typeParam = isMangaRoute ? "&type=MANGA" : "";
-                    router.push(`/search?q=${encodeURIComponent(query.trim())}${typeParam}`);
-                    onClose();
-                  }}
-                  className="hover:text-primary transition-colors cursor-pointer"
-                >
-                  View all results &rarr;
-                </span>
-              </div>
-            )}
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       )}
+
+      {/* Scoped Scrollbar styling */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #84cc16;
+          border-radius: 10px;
+        }
+      `}} />
     </AnimatePresence>
   );
 }

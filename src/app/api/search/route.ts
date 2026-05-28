@@ -14,7 +14,8 @@ export async function GET(request: Request) {
     const data = await advancedSearchAnime({
       query: query.trim(),
       page: 1,
-      type: type === "MANGA" ? "MANGA" : "ANIME"
+      type: type === "MANGA" ? "MANGA" : "ANIME",
+      exact: true
     });
     return NextResponse.json(data);
   } catch (error) {
