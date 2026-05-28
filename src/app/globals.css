@@ -138,23 +138,6 @@
   padding-top: env(safe-area-inset-top);
 }
 
-@keyframes ticker-scroll {
-  0% {
-    transform: translateX(0%);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-.ticker-track {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  width: max-content;
-  animation: ticker-scroll 28s linear infinite;
-}
-
 /* Route progress bar */
 #nprogress {
   pointer-events: none;

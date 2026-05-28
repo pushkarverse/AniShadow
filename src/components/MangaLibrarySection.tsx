@@ -204,7 +204,7 @@ export function MangaLibrarySection() {
 
                 {/* Title */}
                 <Link href={`/manga/${item.mangaId}/${item.slug}`} className="block mt-3 px-1">
-                  <h4 className="text-xs font-black text-white/80 line-clamp-2 leading-tight group-hover:text-primary transition-colors uppercase italic">
+                  <h4 className="text-[11px] font-black text-white/85 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                     {item.title}
                   </h4>
                 </Link>
