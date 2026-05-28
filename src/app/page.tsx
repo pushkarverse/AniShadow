@@ -9,25 +9,16 @@ import { getAnimeTitle } from "@/lib/anime-utils";
 import type { HeroResult } from "@/types/anime";
 import type { IAnimeResult } from "@consumet/extensions";
 
-function shuffleArray<T>(items: T[]): T[] {
-  const shuffled = [...items];
-  for (let i = shuffled.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
-
 export default async function Home() {
   const trendingData = await getTrendingAnime();
   const popularData = await getPopularAnime();
   const ongoingData = await getOngoingAnime();
 
-  const trendingAnime = shuffleArray(trendingData?.results || []);
+  const trendingAnime = trendingData?.results || [];
   const popularAnime = popularData?.results || [];
   const ongoingAnime = ongoingData?.results || [];
 
-  // Use the same randomized catalog order for the hero
+  // Use the top 5 trending anime as carousel features
   const featuredAnime: HeroItem[] = trendingAnime.slice(0, 5).map((anime: HeroResult) => ({
     id: anime.id,
     title: getAnimeTitle(anime.title),
