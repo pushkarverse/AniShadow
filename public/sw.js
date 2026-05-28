@@ -4,6 +4,7 @@ const OFFLINE_URL = "/offline";
 const ASSETS_TO_CACHE = [
   OFFLINE_URL,
   "/logo.png",
+  "/icon.png",
   "/manifest.json",
   "/favicon.ico"
 ];
