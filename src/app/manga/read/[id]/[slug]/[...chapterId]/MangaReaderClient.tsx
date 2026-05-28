@@ -72,6 +72,34 @@ export function MangaReaderClient({
   const [autoPlayCountdown, setAutoPlayCountdown] = useState<number | null>(null);
   const autoPlayCancelled = useRef(false);
 
+  // Swipe Gestures for Mobile Paging
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const minSwipeDistance = 50;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (readingMode === 'vertical') return;
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      handleNextPage();
+    } else if (isRightSwipe) {
+      handlePrevPage();
+    }
+  };
+
   // Load preferences from localStorage & setup listeners
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -775,6 +803,9 @@ export function MangaReaderClient({
       <main 
         ref={scrollRef}
         onClick={handleMainScreenClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         className="relative w-full pt-16 pb-32 flex flex-col items-center"
       >
         {/* Reading Views */}

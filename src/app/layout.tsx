@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -46,6 +47,7 @@ export default function RootLayout({
         <Providers>
           <div className="relative flex min-h-screen flex-col">
             <main className="flex-1 pb-20 md:pb-0">{children}</main>
+            <PWAInstallPrompt />
           </div>
         </Providers>
       </body>
