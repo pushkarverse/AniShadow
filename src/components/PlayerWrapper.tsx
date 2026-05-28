@@ -19,11 +19,6 @@ interface PlayerWrapperProps {
   title: string;
   episodeTitle: string;
   poster?: string;
-  allServers?: any[];
-  episodes?: any[];
-  currentEpisodeNumber?: number;
-  animeId?: string;
-  animeSlug?: string;
 }
 
 export function PlayerWrapper(props: PlayerWrapperProps) {

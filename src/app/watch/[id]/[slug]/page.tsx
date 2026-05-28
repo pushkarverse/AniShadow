@@ -50,7 +50,9 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
 
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <Navbar />
+        <div className="hidden md:block">
+          <Navbar />
+        </div>
         <HistoryTracker 
           animeId={id} 
           title={titleString} 
@@ -60,15 +62,15 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
           episodeTitle={episodeTitle}
         />
         
-        <main className="flex-1 container mx-auto px-4 py-8">
+        <main className="flex-1 container mx-auto px-0 md:px-4 py-0 md:py-8">
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Left Column: Player & Info */}
             <div className="flex-1 flex flex-col gap-6">
-              <Link href={`/anime/${id}/${animeSlug}`} className="inline-flex items-center gap-2 text-white/40 hover:text-primary transition-all mb-4 group font-black uppercase tracking-widest text-[10px]">
+              <Link href={`/anime/${id}/${animeSlug}`} className="hidden md:inline-flex items-center gap-2 text-white/40 hover:text-primary transition-all mb-4 group font-black uppercase tracking-widest text-[10px]">
                 <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                 <span>Back to Series</span>
               </Link>
-
+ 
               <WatchPlayerSection
                 videoUrl={videoUrl || ""}
                 title={titleString}
@@ -76,15 +78,15 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
                 poster={anime.cover || anime.image || ""}
                 description={anime.description || "No description available."}
                 allServers={streamData?.allServers}
-                episodes={anime.episodes}
+                episodes={anime.episodes || []}
                 currentEpisodeNumber={episodeNumber}
                 animeId={id}
                 animeSlug={animeSlug}
               />
             </div>
-
+ 
             {/* Right Column: Episode List */}
-            <div className="w-full lg:w-80 flex flex-col gap-4">
+            <div className="hidden lg:flex w-full lg:w-80 flex-col gap-4">
               <h3 className="text-lg font-semibold px-2">Episodes</h3>
               <div className="flex flex-col gap-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                 {anime.episodes?.map((episode) => (

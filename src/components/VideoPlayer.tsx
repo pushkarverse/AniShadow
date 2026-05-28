@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect, ReactElement, useMemo } from "react";
-import Link from "next/link";
-import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles, Mic, Gauge, List } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles, Mic, Gauge, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Hls from "hls.js";
+import { useRouter } from "next/navigation";
 
 interface ServerEntry {
   name: string;
@@ -14,23 +14,12 @@ interface ServerEntry {
   label?: string;
 }
 
-interface EpisodeEntry {
-  id: string;
-  number: number;
-  title?: string;
-  image?: string;
-}
-
 interface VideoPlayerProps {
   videoUrl: string;
   title: string;
   episodeTitle: string;
   poster?: string;
   allServers?: ServerEntry[];
-  episodes?: EpisodeEntry[];
-  currentEpisodeNumber?: number;
-  animeId?: string;
-  animeSlug?: string;
 }
 
 function unpackDeanEdwards(html: string): string | null {
@@ -64,10 +53,6 @@ export function VideoPlayer({
   episodeTitle,
   poster,
   allServers = [],
-  episodes = [],
-  currentEpisodeNumber,
-  animeId,
-  animeSlug,
 }: VideoPlayerProps): ReactElement {
   const [currentVideoUrl, setCurrentVideoUrl] = useState(initialVideoUrl);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -232,77 +217,18 @@ export function VideoPlayer({
   const hlsRef = useRef<Hls | null>(null);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // PWA/Mobile features state & refs
-  const [showEpisodeSheet, setShowEpisodeSheet] = useState(false);
-  const touchStartXRef = useRef<number>(0);
-  const touchStartYRef = useRef<number>(0);
-  const isSwipingSeekRef = useRef<boolean>(false);
-  const wasSwipingRef = useRef<boolean>(false);
-  const videoTimeOnTouchStartRef = useRef<number>(0);
-  const swipeTimeOffsetRef = useRef<number>(0);
-
-  const [swipeSeekPreview, setSwipeSeekPreview] = useState<{
+  const router = useRouter();
+  const [brightness, setBrightness] = useState<number>(1);
+  const [gestureHud, setGestureHud] = useState<{
     visible: boolean;
-    targetTime: number;
-    offset: number;
-  }>({ visible: false, targetTime: 0, offset: 0 });
+    type: "seek" | "volume" | "brightness";
+    value: string;
+    percentage?: number;
+  }>({ visible: false, type: "seek", value: "" });
 
-  const handleTouchStart = (e: React.TouchEvent<HTMLElement>) => {
-    if (e.touches.length !== 1 || isIframe || !videoRef.current) return;
-    const touch = e.touches[0];
-    touchStartXRef.current = touch.clientX;
-    touchStartYRef.current = touch.clientY;
-    isSwipingSeekRef.current = false;
-    wasSwipingRef.current = false;
-    videoTimeOnTouchStartRef.current = videoRef.current.currentTime;
-    swipeTimeOffsetRef.current = 0;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLElement>) => {
-    if (e.touches.length !== 1 || isIframe || !videoRef.current || duration === 0) return;
-    const touch = e.touches[0];
-    const diffX = touch.clientX - touchStartXRef.current;
-    const diffY = touch.clientY - touchStartYRef.current;
-
-    if (!isSwipingSeekRef.current && Math.abs(diffX) > 15 && Math.abs(diffX) > Math.abs(diffY)) {
-      isSwipingSeekRef.current = true;
-      wasSwipingRef.current = true;
-      setIsScrubbing(true);
-      setShowControls(true);
-    }
-
-    if (isSwipingSeekRef.current) {
-      if (e.cancelable) e.preventDefault();
-      const screenWidth = containerRef.current?.clientWidth || 300;
-      const maxSeekRange = 90;
-      const offset = (diffX / screenWidth) * maxSeekRange;
-      const targetTime = Math.max(0, Math.min(duration, videoTimeOnTouchStartRef.current + offset));
-      
-      swipeTimeOffsetRef.current = offset;
-      setSwipeSeekPreview({
-        visible: true,
-        targetTime,
-        offset,
-      });
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (isSwipingSeekRef.current) {
-      if (videoRef.current) {
-        const targetTime = Math.max(0, Math.min(duration, videoTimeOnTouchStartRef.current + swipeTimeOffsetRef.current));
-        videoRef.current.currentTime = targetTime;
-      }
-      setIsScrubbing(false);
-      setSwipeSeekPreview({ visible: false, targetTime: 0, offset: 0 });
-      scheduleControlsHide();
-
-      setTimeout(() => {
-        isSwipingSeekRef.current = false;
-        wasSwipingRef.current = false;
-      }, 100);
-    }
-  };
+  const touchStartRef = useRef<{ x: number; y: number; time: number; volume: number; brightness: number } | null>(null);
+  const isSwipingRef = useRef<"horizontal" | "vertical-left" | "vertical-right" | null>(null);
+  const wasSwipingRef = useRef<boolean>(false);
 
   // Subtitles & Quality States
   const [levels, setLevels] = useState<{ id: number; name: string }[]>([]);
@@ -390,7 +316,6 @@ export function VideoPlayer({
   };
 
   const togglePlay = async () => {
-    const isFirstPlay = !hasInteracted;
     if (!hasInteracted) setHasInteracted(true);
     if (videoRef.current) {
       if (isPlaying) {
@@ -400,10 +325,6 @@ export function VideoPlayer({
         try {
           await videoRef.current.play();
           setIsPlaying(true);
-          // Auto fullscreen on mobile
-          if (isFirstPlay && window.innerWidth < 768 && !document.fullscreenElement) {
-            toggleFullscreen();
-          }
         } catch (e: unknown) {
           if (e instanceof Error && e.name !== 'AbortError') {
             console.error("Play error", e);
@@ -456,8 +377,8 @@ export function VideoPlayer({
   };
 
   const handleVideoClick = (e: React.MouseEvent<HTMLElement>) => {
-    // Ignore click/tap actions if the user was swiping to seek
-    if (wasSwipingRef.current || isSwipingSeekRef.current) {
+    if (wasSwipingRef.current) {
+      wasSwipingRef.current = false;
       return;
     }
 
@@ -543,6 +464,148 @@ export function VideoPlayer({
       if (skipOverlayTimeoutRef.current) clearTimeout(skipOverlayTimeoutRef.current);
     };
   }, []);
+
+  // Auto-fullscreen on rotation for mobile viewports
+  useEffect(() => {
+    const handleOrientationChange = async (e: MediaQueryListEvent) => {
+      const isMobileSize = window.innerWidth < 768 || window.innerHeight < 768;
+      if (!isMobileSize || isIframe) return;
+
+      if (e.matches) {
+        if (!document.fullscreenElement && containerRef.current) {
+          try {
+            await containerRef.current.requestFullscreen();
+            if (window.screen && (window.screen as any).orientation && (window.screen as any).orientation.lock) {
+              await (window.screen as any).orientation.lock("landscape").catch(() => { });
+            }
+          } catch (err) {
+            console.error("Auto-fullscreen on landscape failed:", err);
+          }
+        }
+      } else {
+        if (document.fullscreenElement) {
+          try {
+            if (window.screen && (window.screen as any).orientation && (window.screen as any).orientation.unlock) {
+              (window.screen as any).orientation.unlock();
+            }
+          } catch { }
+          await document.exitFullscreen().catch(() => { });
+        }
+      }
+    };
+
+    const mediaQueryList = window.matchMedia("(orientation: landscape)");
+    mediaQueryList.addEventListener("change", handleOrientationChange);
+    
+    return () => {
+      mediaQueryList.removeEventListener("change", handleOrientationChange);
+    };
+  }, [isIframe]);
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (isIframe) return;
+    const touch = e.touches[0];
+    const video = videoRef.current;
+    if (!video) return;
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: video.currentTime,
+      volume: video.volume,
+      brightness: brightness
+    };
+    isSwipingRef.current = null;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (isIframe || !touchStartRef.current) return;
+    const touch = e.touches[0];
+    const start = touchStartRef.current;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    const rect = e.currentTarget.getBoundingClientRect();
+
+    const target = e.target as HTMLElement;
+    if (target.closest("button") || target.closest("input") || target.closest(".no-swipe")) {
+      return;
+    }
+
+    if (!isSwipingRef.current) {
+      if (Math.abs(deltaX) > 15 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        isSwipingRef.current = "horizontal";
+        wasSwipingRef.current = true;
+      } else if (Math.abs(deltaY) > 15 && Math.abs(deltaY) > Math.abs(deltaX)) {
+        const startXFromLeft = start.x - rect.left;
+        if (startXFromLeft < rect.width / 2) {
+          isSwipingRef.current = "vertical-left";
+        } else {
+          isSwipingRef.current = "vertical-right";
+        }
+        wasSwipingRef.current = true;
+      }
+    }
+
+    if (isSwipingRef.current === "horizontal") {
+      e.preventDefault();
+      const sensitivity = 300;
+      const change = (deltaX / rect.width) * sensitivity;
+      const newTime = Math.max(0, Math.min(duration, start.time + change));
+      
+      const diff = Math.round(newTime - start.time);
+      const sign = diff >= 0 ? "+" : "";
+      setGestureHud({
+        visible: true,
+        type: "seek",
+        value: `${formatTime(newTime)} (${sign}${diff}s)`
+      });
+      video.currentTime = newTime;
+    } else if (isSwipingRef.current === "vertical-left") {
+      e.preventDefault();
+      const change = -(deltaY / rect.height);
+      const newBrightness = Math.max(0.1, Math.min(1, start.brightness + change));
+      setBrightness(newBrightness);
+      
+      setGestureHud({
+        visible: true,
+        type: "brightness",
+        value: `Brightness: ${Math.round(newBrightness * 100)}%`,
+        percentage: newBrightness * 100
+      });
+    } else if (isSwipingRef.current === "vertical-right") {
+      e.preventDefault();
+      const change = -(deltaY / rect.height);
+      const newVolume = Math.max(0, Math.min(1, start.volume + change));
+      video.volume = newVolume;
+      
+      if (newVolume > 0 && isMuted) {
+        video.muted = false;
+        setIsMuted(false);
+      } else if (newVolume === 0 && !isMuted) {
+        video.muted = true;
+        setIsMuted(true);
+      }
+      
+      setGestureHud({
+        visible: true,
+        type: "volume",
+        value: `Volume: ${Math.round(newVolume * 100)}%`,
+        percentage: newVolume * 100
+      });
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchStartRef.current = null;
+    if (isSwipingRef.current) {
+      setTimeout(() => {
+        setGestureHud(prev => ({ ...prev, visible: false }));
+      }, 500);
+      isSwipingRef.current = null;
+    }
+  };
 
   // Keyboard Shortcuts Effect
   useEffect(() => {
@@ -867,14 +930,72 @@ export function VideoPlayer({
           setShowControls(false);
         }
       }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       {/* Cinematic Thumbnail Preview Overlay */}
-      <div 
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        className={`relative w-full ${isFullscreen ? 'h-full min-h-screen' : 'aspect-video'}`}
-      >
+      <div className={`relative w-full ${isFullscreen ? 'h-full min-h-screen' : 'aspect-video'}`}>
+        {/* Brightness Overlay */}
+        {!isIframe && brightness < 1 && (
+          <div
+            className="absolute inset-0 bg-black pointer-events-none z-20"
+            style={{ opacity: 1 - brightness }}
+          />
+        )}
+
+        {/* Gesture HUD Indicator */}
+        <AnimatePresence>
+          {gestureHud.visible && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none"
+            >
+              <div className="bg-black/85 border border-white/10 rounded-2xl px-6 py-4 flex flex-col items-center gap-3 backdrop-blur-md shadow-2xl min-w-[140px]">
+                {gestureHud.type === "seek" && (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                      <Gauge className="w-6 h-6 text-primary" />
+                    </div>
+                    <span className="text-white text-xs font-black tracking-widest uppercase">Seek</span>
+                    <span className="text-white font-mono text-sm font-black">{gestureHud.value}</span>
+                  </div>
+                )}
+                {gestureHud.type === "brightness" && (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
+                      <span className="text-yellow-400 font-bold text-lg">☀</span>
+                    </div>
+                    <span className="text-white text-xs font-black tracking-widest uppercase">Brightness</span>
+                    <span className="text-white font-mono text-sm font-black">{gestureHud.value}</span>
+                    {gestureHud.percentage !== undefined && (
+                      <div className="w-20 h-1 bg-white/20 rounded-full overflow-hidden mt-1">
+                        <div className="bg-yellow-400 h-full" style={{ width: `${gestureHud.percentage}%` }} />
+                      </div>
+                    )}
+                  </div>
+                )}
+                {gestureHud.type === "volume" && (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                      {isMuted ? <VolumeX className="w-6 h-6 text-primary" /> : <Volume2 className="w-6 h-6 text-primary" />}
+                    </div>
+                    <span className="text-white text-xs font-black tracking-widest uppercase">Volume</span>
+                    <span className="text-white font-mono text-sm font-black">{gestureHud.value}</span>
+                    {gestureHud.percentage !== undefined && (
+                      <div className="w-20 h-1 bg-white/20 rounded-full overflow-hidden mt-1">
+                        <div className="bg-primary h-full" style={{ width: `${gestureHud.percentage}%` }} />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {(isExtracting || isBuffering) && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#080808]/80 backdrop-blur-xs z-30 pointer-events-none">
             <div className="relative w-16 h-16 pointer-events-auto">
@@ -1083,9 +1204,21 @@ export function VideoPlayer({
               className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/90 via-transparent to-black/60 p-4 md:p-6 pointer-events-none z-40"
             >
               <div className="flex justify-between items-start">
-                <div className="pointer-events-auto">
-                  <h2 className="text-white font-bold text-xl md:text-2xl drop-shadow-lg">{title}</h2>
-                  <p className="text-white/70 text-sm md:text-base">{episodeTitle}</p>
+                <div className="flex items-center gap-3 pointer-events-auto">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.back();
+                    }} 
+                    className="md:hidden p-2 rounded-full bg-black/60 border border-white/10 text-white/80 hover:text-white hover:bg-black/80 transition-all cursor-pointer"
+                    title="Go Back"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <div>
+                    <h2 className="text-white font-bold text-xl md:text-2xl drop-shadow-lg">{title}</h2>
+                    <p className="text-white/70 text-sm md:text-base">{episodeTitle}</p>
+                  </div>
                 </div>
               </div>
 
@@ -1141,17 +1274,17 @@ export function VideoPlayer({
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 sm:gap-6">
-                    <button onClick={skipBackward} className="text-white hover:text-accent transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer" title="Rewind 10s">
-                      <RotateCcw className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
+                  <div className="flex items-center gap-3 sm:gap-6">
+                    <button onClick={skipBackward} className="text-white hover:text-accent transition-all scale-110 active:scale-95" title="Rewind 10s">
+                      <RotateCcw className="w-5 h-5" />
                     </button>
 
-                    <button onClick={togglePlay} className="text-white hover:text-accent transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer">
-                      {isPlaying ? <Pause className="w-7 h-7 sm:w-8 h-8 fill-current" /> : <Play className="w-7 h-7 sm:w-8 h-8 fill-current" />}
+                    <button onClick={togglePlay} className="text-white hover:text-accent transition-all scale-110 active:scale-95">
+                      {isPlaying ? <Pause className="w-6 h-6 sm:w-7 h-7" /> : <Play className="w-6 h-6 sm:w-7 h-7 fill-current" />}
                     </button>
 
-                    <button onClick={skipForward} className="text-white hover:text-accent transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer" title="Forward 10s">
-                      <RotateCw className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
+                    <button onClick={skipForward} className="text-white hover:text-accent transition-all scale-110 active:scale-95" title="Forward 10s">
+                      <RotateCw className="w-5 h-5" />
                     </button>
 
                     <button onClick={() => {
@@ -1159,37 +1292,19 @@ export function VideoPlayer({
                         videoRef.current.muted = !isMuted;
                         setIsMuted(!isMuted);
                       }
-                    }} className="text-white hover:text-accent transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer hidden sm:inline-flex">
-                      {isMuted ? <VolumeX className="w-5.5 h-5.5 sm:w-6 sm:h-6" /> : <Volume2 className="w-5.5 h-5.5 sm:w-6 sm:h-6" />}
+                    }} className="text-white hover:text-accent transition-all hidden sm:inline-flex">
+                      {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
                     </button>
                   </div>
 
-                  <div className="flex items-center gap-3 sm:gap-5 relative">
+                  <div className="flex items-center gap-3 sm:gap-6 relative">
                     {proxiedSubtitleUrl && (
                       <button
                         onClick={() => setIsSubtitlesOn(!isSubtitlesOn)}
-                        className={`transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer ${isSubtitlesOn ? 'text-primary' : 'text-white/60 hover:text-white'}`}
+                        className={`transition-all ${isSubtitlesOn ? 'text-primary' : 'text-white/60 hover:text-white'}`}
                         title="Toggle Subtitles"
                       >
-                        <Subtitles className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
-                      </button>
-                    )}
-
-                    {episodes && episodes.length > 0 && animeId && animeSlug && (
-                      <button
-                        onClick={() => {
-                          setShowEpisodeSheet(true);
-                          setShowQualityMenu(false);
-                          setShowAudioMenu(false);
-                          setShowSpeedMenu(false);
-                        }}
-                        className="text-white/60 hover:text-white transition-all flex items-center gap-1.5 p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer"
-                        title="Episodes List"
-                      >
-                        <List className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
-                        <span className="text-[10px] font-black bg-white/10 px-2 py-0.5 rounded uppercase hidden sm:inline">
-                          EPs
-                        </span>
+                        <Subtitles className="w-5 h-5 sm:w-6 sm:h-6" />
                       </button>
                     )}
 
@@ -1198,11 +1313,11 @@ export function VideoPlayer({
                       <div className="relative">
                         <button
                           onClick={() => { setShowAudioMenu(!showAudioMenu); setShowQualityMenu(false); setShowSpeedMenu(false); }}
-                          className={`transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer flex items-center gap-1.5 ${activeAudioGroup === 'dub' ? 'text-primary' : 'text-white/60 hover:text-white'}`}
+                          className={`transition-all flex items-center gap-1 ${activeAudioGroup === 'dub' ? 'text-primary' : 'text-white hover:text-accent'}`}
                           title="Switch Audio"
                         >
-                          <Mic className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
-                          <span className="text-[10px] font-black bg-white/10 px-2 py-0.5 rounded uppercase hidden sm:inline">
+                          <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
+                          <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase hidden sm:inline">
                             {activeAudioGroup === 'dub' ? 'Dub' : 'Sub'}
                           </span>
                         </button>
@@ -1247,11 +1362,11 @@ export function VideoPlayer({
                           setShowQualityMenu(false);
                           setShowAudioMenu(false);
                         }}
-                        className="text-white/60 hover:text-white transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer flex items-center gap-1.5"
+                        className="text-white hover:text-accent transition-all flex items-center gap-1"
                         title="Playback Speed"
                       >
-                        <Gauge className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
-                        <span className="text-[10px] font-black bg-white/10 px-2 py-0.5 rounded uppercase">
+                        <Gauge className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase">
                           {playbackSpeed === 1 ? "1x" : `${playbackSpeed}x`}
                         </span>
                       </button>
@@ -1292,11 +1407,11 @@ export function VideoPlayer({
                       <div className="relative">
                         <button
                           onClick={() => { setShowQualityMenu(!showQualityMenu); setShowAudioMenu(false); setShowSpeedMenu(false); }}
-                          className="text-white/60 hover:text-white transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer flex items-center gap-1.5"
+                          className="text-white hover:text-accent transition-all flex items-center gap-1"
                           title="Quality Settings"
                         >
-                          <Settings className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
-                          <span className="text-[10px] font-black bg-white/10 px-2 py-0.5 rounded uppercase">
+                          <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
+                          <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase">
                             {levels.find(l => l.id === currentLevel)?.name || "Auto"}
                           </span>
                         </button>
@@ -1327,105 +1442,13 @@ export function VideoPlayer({
                       </div>
                     )}
 
-                    <button onClick={toggleFullscreen} className="text-white/60 hover:text-white transition-all p-2 rounded-lg hover:bg-white/5 active:scale-90 cursor-pointer">
-                      <Maximize className="w-5.5 h-5.5 sm:w-6 sm:h-6" />
+                    <button onClick={toggleFullscreen} className="text-white hover:text-accent transition-all">
+                      <Maximize className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
                   </div>
                 </div>
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Swipe Seek Gesture Feedback Overlay */}
-        <AnimatePresence>
-          {swipeSeekPreview.visible && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none"
-            >
-              <div className="px-6 py-3 rounded-2xl bg-black/85 backdrop-blur-md border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col items-center gap-1.5 min-w-[140px]">
-                <span className="text-white text-xs font-black uppercase tracking-widest text-primary">
-                  {swipeSeekPreview.offset > 0 ? "Fast Forward" : "Rewind"}
-                </span>
-                <span className="text-white text-lg font-mono font-black">
-                  {formatTime(swipeSeekPreview.targetTime)}
-                </span>
-                <span className="text-white/60 text-[10px] font-bold uppercase tracking-wider">
-                  {swipeSeekPreview.offset > 0 ? "+" : ""}{Math.round(swipeSeekPreview.offset)}s
-                </span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Episodes Bottom Sheet inside Player */}
-        <AnimatePresence>
-          {showEpisodeSheet && episodes && episodes.length > 0 && animeId && animeSlug && (
-            <>
-              {/* Backdrop */}
-              <div 
-                onClick={() => setShowEpisodeSheet(false)}
-                className="absolute inset-0 bg-black/60 z-50 pointer-events-auto"
-              />
-              {/* Sheet */}
-              <motion.div
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="absolute bottom-0 left-0 right-0 max-h-[75%] bg-zinc-950/95 border-t border-white/10 rounded-t-2xl z-50 p-4 flex flex-col gap-3 pointer-events-auto overflow-hidden backdrop-blur-md"
-              >
-                <div className="flex justify-between items-center pb-2 border-b border-white/5">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-primary">Select Episode</h3>
-                  <button 
-                    onClick={() => setShowEpisodeSheet(false)}
-                    className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-full text-white/70 hover:text-white transition-all text-[10px] font-bold uppercase tracking-wider border border-white/5 cursor-pointer"
-                  >
-                    Close
-                  </button>
-                </div>
-                
-                {/* Episodes Grid */}
-                <div className="flex-1 overflow-y-auto no-scrollbar grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 p-1">
-                  {episodes.map((ep) => {
-                    const isActive = ep.number === currentEpisodeNumber;
-                    const epUrl = `/watch/${animeId}/${animeSlug}?ep=${ep.number}`;
-                    
-                    return (
-                      <Link
-                        key={ep.id}
-                        href={epUrl}
-                        onClick={() => setShowEpisodeSheet(false)}
-                        className={`flex flex-col gap-1.5 p-2 rounded-xl border transition-all ${
-                          isActive
-                            ? "bg-primary border-primary text-white shadow-lg shadow-primary/20"
-                            : "bg-white/5 border-white/5 hover:border-white/20 text-white/50 hover:text-white"
-                        }`}
-                      >
-                        <div className="relative aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-zinc-900">
-                          {poster && (
-                            <img
-                              src={poster}
-                              alt={ep.title || `Episode ${ep.number}`}
-                              className="object-cover w-full h-full opacity-60"
-                            />
-                          )}
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <span className="text-xs font-bold text-white">EP {ep.number}</span>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-bold truncate px-1">
-                          {ep.title || `Episode ${ep.number}`}
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            </>
           )}
         </AnimatePresence>
       </div>
