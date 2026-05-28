@@ -136,10 +136,16 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
     }
   }, [focusedIndex]);
 
+  const isSearching = query.trim() !== "";
+
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[1000] flex items-start justify-center pt-24 md:pt-32 px-4">
+        <div 
+          className={`fixed inset-0 z-[1000] flex justify-center px-4 transition-all duration-500 ease-out ${
+            isSearching ? "items-start pt-24 md:pt-32" : "items-center pt-0"
+          }`}
+        >
           {/* Backdrop Blur Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -151,10 +157,11 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
 
           {/* Modal Container */}
           <motion.div
+            layout
             initial={{ opacity: 0, scale: 0.95, y: -20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -20 }}
-            transition={{ type: "spring", duration: 0.4 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="w-full max-w-2xl bg-[#0c0e14]/90 border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.02)] backdrop-blur-2xl rounded-3xl overflow-hidden flex flex-col z-[1001]"
           >
             {/* Quick Access Shortcut info bar */}
