@@ -201,9 +201,27 @@ export function MangaLibrarySection() {
                 >
                   <X className="w-3 h-3 text-white/70 hover:text-red-300" />
                 </button>                
+
+                {/* Title */}
+                <Link href={`/manga/${item.mangaId}/${item.slug}`} className="block mt-3 px-1">
+                  <h4 className="text-xs font-black text-white/80 line-clamp-2 leading-tight group-hover:text-primary transition-colors uppercase italic">
+                    {item.title}
+                  </h4>
+                </Link>
               </motion.div>
             );
           })}
+        </div>
+
+        <div className="mt-4 overflow-hidden border-t border-white/5 pt-3">
+          <div className="ticker-track text-[10px] font-black uppercase tracking-[0.2em] text-white/50">
+            {library.concat(library).map((item, index) => (
+              <span key={`${item.mangaId}-ticker-${index}`} className="flex items-center gap-2">
+                <span className="text-primary">•</span>
+                <span className="whitespace-nowrap">{item.title}</span>
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </section>
