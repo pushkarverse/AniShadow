@@ -44,7 +44,7 @@ export function TrendingSidebar({ initialData }: TrendingSidebarProps) {
 
   return (
     <section className="sticky top-8 mb-12">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl md:text-2xl font-black tracking-tighter text-white relative inline-block uppercase">
           Top Trending
           <div className="absolute -bottom-2 left-0 w-8 h-1 bg-primary rounded-full transition-colors" />
@@ -52,25 +52,44 @@ export function TrendingSidebar({ initialData }: TrendingSidebarProps) {
         <TrendingSelector value={period} onChange={setPeriod} />
       </div>
       
-      <div className={`flex flex-col bg-[#0a0a0a] rounded-2xl border border-white/5 shadow-2xl overflow-hidden transition-opacity duration-300 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
+      <div className={`flex flex-col gap-3 bg-[#0a0a0a] rounded-2xl border border-white/5 shadow-2xl p-3 transition-opacity duration-300 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
         {trendingAnime.length > 0 ? (trendingAnime).slice(0, 10).map((anime: HeroResult, idx: number) => (
-          <Link href={`/anime/${anime.id}`} key={`trending-side-${anime.id}`} className={`flex gap-4 items-center group hover:bg-white/5 p-4 transition-colors ${idx !== 0 ? 'border-t border-white/5' : ''}`}>
-            <div className={`w-8 text-center text-xl sm:text-2xl font-black ${idx < 3 ? 'text-primary' : 'text-white/40 group-hover:text-white/80'} transition-colors`}>
-              {(idx + 1).toString().padStart(2, '0')}
-            </div>
-            <div className="w-[60px] h-[85px] rounded-lg overflow-hidden relative shadow-lg shrink-0">
-              <Image unoptimized fill sizes="60px" src={anime.image || anime.cover || ""} alt={getAnimeTitle(anime.title)} className="object-cover group-hover:scale-110 transition-transform duration-500" />
-            </div>
-            <div className="flex flex-col flex-1 min-w-0 pr-2">
-              <h4 className="text-sm font-bold text-white group-hover:text-primary transition-colors line-clamp-2 leading-snug mb-1.5">{getAnimeTitle(anime.title)}</h4>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[9px] text-white/50 font-bold bg-white/5 py-0.5 px-1.5 rounded uppercase tracking-wider">{anime.type || "TV"}</span>
-                {anime.rating && (
-                  <span className="flex items-center text-[9px] text-amber-500 font-bold py-0.5 px-1.5 rounded uppercase tracking-wider bg-amber-500/10">
-                    ★ {(Number(anime.rating) / 10).toFixed(1)}
-                  </span>
-                )}
+          <Link
+            href={`/anime/${anime.id}`}
+            key={`trending-side-${anime.id}`}
+            className="group relative overflow-hidden rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 transition-colors"
+          >
+            <div className="relative flex items-center gap-4 px-4 py-4">
+              <div className="absolute inset-0">
+                <Image
+                  unoptimized
+                  fill
+                  sizes="320px"
+                  src={anime.cover || anime.image || ""}
+                  alt={getAnimeTitle(anime.title)}
+                  className="object-cover opacity-20 group-hover:opacity-30 transition-opacity duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/70 to-transparent" />
+              </div>
 
+              <div className="relative z-10 w-16 text-center">
+                <span className={`text-3xl font-black tracking-tight ${idx < 3 ? 'text-primary' : 'text-white/30'}`}>
+                  {idx + 1}
+                </span>
+              </div>
+
+              <div className="relative z-10 flex flex-col min-w-0 flex-1">
+                <h4 className="text-sm font-bold text-white line-clamp-1 leading-snug">
+                  {getAnimeTitle(anime.title)}
+                </h4>
+                <div className="mt-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-wider">
+                  {anime.rating && (
+                    <span className="flex items-center gap-1 text-amber-400">
+                      ★ {(Number(anime.rating) / 10).toFixed(1)}
+                    </span>
+                  )}
+                  <span className="text-white/50">{anime.type || "TV"}</span>
+                </div>
               </div>
             </div>
           </Link>
