@@ -720,43 +720,86 @@ export async function advancedSearchAnime({
       }
     }`;
 
-  try {
-    const response = await fetch('https://graphql.anilist.co', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({
-        query: gqlQuery,
-        variables: {
-          search: search || undefined,
-          page,
-          genres: genres?.length ? genres : undefined,
-          status: status || undefined,
-          season: season || undefined,
-          seasonYear: year || undefined,
-          format: format || undefined,
-          sort: [sort],
-          type
+  const executeQuery = async (searchQuery?: string) => {
+    try {
+      const response = await fetch('https://graphql.anilist.co', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          query: gqlQuery,
+          variables: {
+            search: searchQuery || undefined,
+            page,
+            genres: genres?.length ? genres : undefined,
+            status: status || undefined,
+            season: season || undefined,
+            seasonYear: year || undefined,
+            format: format || undefined,
+            sort: [sort],
+            type
+          }
+        })
+      });
+      const data = await response.json();
+      const pageInfo = data?.data?.Page?.pageInfo;
+      let results = data?.data?.Page?.media?.map((m: AnilistNode) => ({
+        id: m.id.toString(),
+        title: m.title,
+        slug: slugify(getAnimeTitle(m.title)),
+        image: m.coverImage?.large,
+        type: m.type,
+        rating: m.averageScore,
+        episodeNumber: m.type === "MANGA" ? m.chapters : getReleasedAnimeEpisodesCount(m),
+        subEpisodes: m.type === "MANGA" ? m.chapters : getReleasedAnimeEpisodesCount(m),
+        countryOfOrigin: m.countryOfOrigin
+      })) || [];
+      results = await enrichAnimeResultsWithSubDub(results);
+      return { results, hasNextPage: pageInfo?.hasNextPage || false };
+    } catch {
+      return { results: [], hasNextPage: false };
+    }
+  };
+
+  // 1. Run main query
+  let searchRes = await executeQuery(search);
+
+  // 2. If no results found, run fallback fuzzy checks
+  if (searchRes.results.length === 0 && search) {
+    const trimmed = search.trim();
+
+    // Fallback A: Clean punctuation/symbols and normalize spacing
+    const cleaned = trimmed
+      .replace(/[^a-zA-Z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (cleaned && cleaned.toLowerCase() !== trimmed.toLowerCase()) {
+      const fallbackRes = await executeQuery(cleaned);
+      if (fallbackRes.results.length > 0) {
+        return fallbackRes;
+      }
+    }
+
+    // Fallback B: Relax query by using first 3 words, then first 2 words
+    const words = (cleaned || trimmed).split(/\s+/);
+    if (words.length > 2) {
+      const firstThree = words.slice(0, 3).join(" ");
+      let fallbackRes = await executeQuery(firstThree);
+      if (fallbackRes.results.length > 0) {
+        return fallbackRes;
+      }
+
+      const firstTwo = words.slice(0, 2).join(" ");
+      if (firstTwo !== firstThree) {
+        fallbackRes = await executeQuery(firstTwo);
+        if (fallbackRes.results.length > 0) {
+          return fallbackRes;
         }
-      })
-    });
-    const data = await response.json();
-    const pageInfo = data?.data?.Page?.pageInfo;
-    let results = data?.data?.Page?.media?.map((m: AnilistNode) => ({
-      id: m.id.toString(),
-      title: m.title,
-      slug: slugify(getAnimeTitle(m.title)),
-      image: m.coverImage?.large,
-      type: m.type,
-      rating: m.averageScore,
-      episodeNumber: m.type === "MANGA" ? m.chapters : getReleasedAnimeEpisodesCount(m),
-      subEpisodes: m.type === "MANGA" ? m.chapters : getReleasedAnimeEpisodesCount(m),
-      countryOfOrigin: m.countryOfOrigin
-    })) || [];
-    results = await enrichAnimeResultsWithSubDub(results);
-    return { results, hasNextPage: pageInfo?.hasNextPage || false };
-  } catch {
-    return { results: [], hasNextPage: false };
+      }
+    }
   }
+
+  return searchRes;
 }
 
 export async function getMediaByGenre(genres: string[], type: 'ANIME' | 'MANGA' = 'ANIME', page: number = 1) {
