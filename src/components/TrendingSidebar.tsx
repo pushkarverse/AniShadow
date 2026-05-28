@@ -100,9 +100,6 @@ export function TrendingSidebar({ initialData }: TrendingSidebarProps) {
         )}
       </div>
       
-      <Link href="/trending" className="mt-4 w-full block text-center text-[10px] font-black text-white/40 hover:text-white transition-all uppercase tracking-[0.2em] bg-white/5 hover:bg-white/10 py-4 rounded-2xl border border-white/5">
-        View Top 50
-      </Link>
     </section>
   );
 }
