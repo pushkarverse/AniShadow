@@ -188,13 +188,6 @@ export function WatchPlayerSection({
     }
   }, [videoUrl, groupedServers.dub, groupedServers.other, allServers]);
 
-  // Smooth scroll to top of page on episode transition to bring player into view
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  }, [currentEpisodeNumber]);
-
   const switchGroup = (kind: "dub" | "other") => {
     setActiveServerGroup(kind);
     const nextServer = (kind === "dub" ? groupedServers.dub : groupedServers.other)[0];
@@ -297,11 +290,13 @@ export function WatchPlayerSection({
     episodes.length > 0 && (
       <div className="md:hidden px-4">
         <button
-          onClick={() => setShowEpisodesSheet(true)}
+          onClick={() => setShowEpisodesSheet((prev) => !prev)}
           className="w-full py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-white transition-all active:scale-[0.98] cursor-pointer"
         >
           <List className="w-4 h-4 text-primary" />
-          <span>Select Episode ({currentEpisodeNumber} / {episodes.length})</span>
+          <span>
+            {showEpisodesSheet ? "Hide Episodes" : "Select Episode"} ({currentEpisodeNumber} / {episodes.length})
+          </span>
         </button>
       </div>
     );
@@ -369,79 +364,61 @@ export function WatchPlayerSection({
     </div>
   );
 
-  const renderMobileSheet = () => (
+  const renderMobileEpisodesInline = () => (
     <AnimatePresence>
       {showEpisodesSheet && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.6 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowEpisodesSheet(false)}
-            className="fixed inset-0 bg-black z-[9998] backdrop-blur-xs md:hidden"
-          />
-          <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 220 }}
-            className="fixed bottom-0 left-0 right-0 z-[9999] bg-[#0c0c0c] border-t border-white/10 rounded-t-3xl max-h-[75vh] flex flex-col overflow-hidden md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
-          >
-            <div className="flex justify-between items-center p-5 border-b border-white/5 shrink-0 bg-gradient-to-b from-white/[0.02] to-transparent">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Select Episode</span>
-                <h4 className="text-sm font-bold text-white/90 truncate max-w-[200px]">{title}</h4>
-              </div>
-              <button
-                onClick={() => setShowEpisodesSheet(false)}
-                className="p-2 rounded-full hover:bg-white/5 text-white/40 hover:text-white transition-all cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="overflow-hidden md:hidden px-4"
+        >
+          <div className="bg-white/5 rounded-2xl border border-white/5 p-4 mt-2 space-y-3 shadow-inner backdrop-blur-md">
+            <div className="flex justify-between items-center pb-2 border-b border-white/5">
+              <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Select Episode</span>
+              <span className="text-[10px] font-medium text-white/40">{episodes.length} Episodes</span>
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+              {episodes.map((episode) => {
+                const isActive = episode.number === currentEpisodeNumber;
+                const targetUrl = `/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {episodes.map((episode) => {
-                  const isActive = episode.number === currentEpisodeNumber;
-                  const targetUrl = `/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
-
-                  return (
-                    <Link
-                      key={episode.id}
-                      href={targetUrl}
-                      onClick={() => setShowEpisodesSheet(false)}
-                      className={`flex items-center gap-4 p-3 rounded-2xl transition-all border ${
-                        isActive
-                          ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                          : "bg-white/5 border-white/5 hover:border-white/20 text-white/50 hover:text-white"
-                      }`}
-                    >
-                      <div className="relative w-20 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-[#121212]">
-                        <img
-                          src={poster || "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx151807-m1gX3iqITmI6.png"}
-                          alt={episode.title || `Episode ${episode.number}`}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">{episode.number}</span>
-                        </div>
+                return (
+                  <Link
+                    key={episode.id}
+                    href={targetUrl}
+                    onClick={() => setShowEpisodesSheet(false)}
+                    className={`flex items-center gap-4 p-2.5 rounded-2xl transition-all border ${
+                      isActive
+                        ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                        : "bg-white/5 border-white/5 hover:border-white/20 text-white/50 hover:text-white"
+                    }`}
+                  >
+                    <div className="relative w-16 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-[#121212]">
+                      <img
+                        src={poster || "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx151807-m1gX3iqITmI6.png"}
+                        alt={episode.title || `Episode ${episode.number}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">{episode.number}</span>
                       </div>
-                      <div className="flex flex-col gap-0.5 overflow-hidden">
-                        <span className="text-xs font-semibold truncate leading-tight">
-                          {episode.title || `Episode ${episode.number}`}
-                        </span>
-                        <span className="text-[9px] text-white/30 font-medium">
-                          Episode {episode.number}
-                        </span>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
+                    </div>
+                    <div className="flex flex-col gap-0.5 overflow-hidden">
+                      <span className="text-xs font-semibold truncate leading-tight">
+                        {episode.title || `Episode ${episode.number}`}
+                      </span>
+                      <span className="text-[9px] text-white/30 font-medium">
+                        Episode {episode.number}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
-          </motion.div>
-        </>
+          </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );
@@ -456,14 +433,12 @@ export function WatchPlayerSection({
           {renderAudioSwitcher()}
           {renderPlayer()}
           {renderMobileSheetTrigger()}
+          {renderMobileEpisodesInline()}
           {renderInfoDetails()}
         </div>
 
         {/* Right Column: Episodes Sidebar */}
         {renderSidebar()}
-
-        {/* Mobile slide-up sheet */}
-        {renderMobileSheet()}
       </div>
     );
   }
@@ -477,6 +452,7 @@ export function WatchPlayerSection({
         {renderAudioSwitcher()}
         {renderPlayer()}
         {renderMobileSheetTrigger()}
+        {renderMobileEpisodesInline()}
       </div>
 
       {/* Bottom: Info and Sidebar side-by-side */}
@@ -486,9 +462,6 @@ export function WatchPlayerSection({
         </div>
         {renderSidebar()}
       </div>
-
-      {/* Mobile slide-up sheet */}
-      {renderMobileSheet()}
     </div>
   );
 }
