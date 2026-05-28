@@ -1,31 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import { AnimeCard } from "./AnimeCard";
 import { getAnimeTitle } from "@/lib/anime-utils";
 import Link from "next/link";
 
 interface LatestSectionProps {
   initialItems: any[];
-  japaneseItems?: any[];
-  chineseItems?: any[];
 }
 
-type FilterTab = "all" | "japanese" | "chinese";
-
 export function LatestSection({ 
-  initialItems = [], 
-  japaneseItems = [], 
-  chineseItems = [] 
+  initialItems = []
 }: LatestSectionProps) {
-  const [activeTab, setActiveTab] = useState<FilterTab>("all");
-
-  const filteredItems = 
-    activeTab === "japanese"
-      ? (japaneseItems.length > 0 ? japaneseItems : initialItems.filter((anime) => anime.countryOfOrigin === "JP"))
-      : activeTab === "chinese"
-      ? (chineseItems.length > 0 ? chineseItems : initialItems.filter((anime) => anime.countryOfOrigin === "CN"))
-      : initialItems;
+  const filteredItems = initialItems;
 
   return (
     <section className="mb-12 md:mb-24">
@@ -36,44 +22,10 @@ export function LatestSection({
             Latest
             <div className="absolute -bottom-2 left-0 w-8 h-1 bg-primary rounded-full" />
           </h2>
-
-          {/* Segmented Control Picker */}
-          <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/5 select-none shrink-0">
-            <button
-              onClick={() => setActiveTab("all")}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-                activeTab === "all"
-                  ? "bg-primary text-white shadow-lg"
-                  : "text-white/40 hover:text-white/70"
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setActiveTab("japanese")}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-                activeTab === "japanese"
-                  ? "bg-primary text-white shadow-lg"
-                  : "text-white/40 hover:text-white/70"
-              }`}
-            >
-              Japanese
-            </button>
-            <button
-              onClick={() => setActiveTab("chinese")}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-                activeTab === "chinese"
-                  ? "bg-primary text-white shadow-lg"
-                  : "text-white/40 hover:text-white/70"
-              }`}
-            >
-              Chinese
-            </button>
-          </div>
         </div>
 
         <Link 
-          href={activeTab === "all" ? "/latest" : `/latest?filter=${activeTab}`} 
+          href="/latest" 
           className="text-[10px] font-black text-white/40 hover:text-primary transition-all uppercase tracking-[0.2em] bg-white/5 px-4 py-2 rounded-lg border border-white/5 self-start sm:self-center"
         >
           View All

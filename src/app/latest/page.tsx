@@ -11,21 +11,11 @@ export const dynamic = "force-dynamic";
 export default async function LatestPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; filter?: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
-  const { page, filter } = await searchParams;
+  const { page } = await searchParams;
   const currentPage = parseInt(page || "1");
-  const currentFilter = filter || "all";
-
-  // Map user-friendly filter names to AniList country of origin codes
-  let country: string | undefined = undefined;
-  if (currentFilter === "japanese") {
-    country = "JP";
-  } else if (currentFilter === "chinese") {
-    country = "CN";
-  }
-
-  const ongoingData = await getOngoingAnime(currentPage, 24, country);
+  const ongoingData = await getOngoingAnime(currentPage, 24, "JP");
   const ongoingAnime = ongoingData?.results || [];
   const hasNextPage = ongoingData?.hasNextPage || false;
 
@@ -45,39 +35,6 @@ export default async function LatestPage({
             </p>
           </div>
 
-          {/* Segmented Control Picker */}
-          <div className="flex items-center gap-1 bg-white/5 p-1.5 rounded-2xl border border-white/5 select-none shrink-0 self-start md:self-end shadow-inner">
-            <Link
-              href="/latest?filter=all"
-              className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${
-                currentFilter === "all"
-                  ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]"
-                  : "text-white/40 hover:text-white/70 hover:bg-white/5"
-              }`}
-            >
-              All
-            </Link>
-            <Link
-              href="/latest?filter=japanese"
-              className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${
-                currentFilter === "japanese"
-                  ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]"
-                  : "text-white/40 hover:text-white/70 hover:bg-white/5"
-              }`}
-            >
-              Japanese
-            </Link>
-            <Link
-              href="/latest?filter=chinese"
-              className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${
-                currentFilter === "chinese"
-                  ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]"
-                  : "text-white/40 hover:text-white/70 hover:bg-white/5"
-              }`}
-            >
-              Chinese
-            </Link>
-          </div>
         </div>
 
         {ongoingAnime.length > 0 ? (
@@ -103,7 +60,6 @@ export default async function LatestPage({
               currentPage={currentPage} 
               hasNextPage={hasNextPage} 
               baseUrl="/latest" 
-              extraParams={{ filter: currentFilter }}
             />
           </>
         ) : (
@@ -114,7 +70,7 @@ export default async function LatestPage({
               Please try again in a few moments.
             </p>
             <Link 
-              href={`/latest?page=${currentPage}&filter=${currentFilter}`}
+              href={`/latest?page=${currentPage}`}
               className="px-10 py-4 bg-primary text-white font-black rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 uppercase tracking-widest text-sm inline-block"
             >
               RETRY

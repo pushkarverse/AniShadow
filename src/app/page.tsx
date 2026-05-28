@@ -11,19 +11,15 @@ import type { HeroResult } from "@/types/anime";
 import type { IAnimeResult } from "@consumet/extensions";
 
 export default async function Home() {
-  const [trendingData, popularData, ongoingData, ongoingDataJP, ongoingDataCN] = await Promise.all([
+  const [trendingData, popularData, ongoingDataJP] = await Promise.all([
     getTrendingAnime(),
     getPopularAnime(),
-    getOngoingAnime(1, 24),
-    getOngoingAnime(1, 24, "JP"),
-    getOngoingAnime(1, 24, "CN")
+    getOngoingAnime(1, 24, "JP")
   ]);
 
   const trendingAnime = trendingData?.results || [];
   const popularAnime = popularData?.results || [];
-  const ongoingAnime = ongoingData?.results || [];
   const ongoingAnimeJP = ongoingDataJP?.results || [];
-  const ongoingAnimeCN = ongoingDataCN?.results || [];
 
   // Use the top 5 trending anime as carousel features
   const featuredAnime: HeroItem[] = trendingAnime.slice(0, 10).map((anime: HeroResult) => ({
@@ -60,9 +56,7 @@ export default async function Home() {
           {/* Left Column: Popular Anime */}
           <div className="flex-1 min-w-0">
             <LatestSection 
-              initialItems={ongoingAnime} 
-              japaneseItems={ongoingAnimeJP} 
-              chineseItems={ongoingAnimeCN} 
+              initialItems={ongoingAnimeJP} 
             />
             <section className="mb-12 md:mb-24">
               <div className="flex items-center justify-between mb-8">
