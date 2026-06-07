@@ -317,6 +317,18 @@ export function VideoPlayer({
   useEffect(() => {
     const mobile = navigator.maxTouchPoints > 0 || window.innerWidth < 768;
     setIsMobileDevice(mobile);
+
+    // Lock portrait on mobile so physical rotation doesn't rotate the page
+    if (mobile) {
+      try {
+        window.screen?.orientation?.lock?.('portrait-primary').catch(() => {});
+      } catch { }
+    }
+
+    return () => {
+      // Unlock when player unmounts
+      try { window.screen?.orientation?.unlock?.(); } catch { }
+    };
   }, []);
 
   // Sync playback speed when video URL or component changes
@@ -1088,9 +1100,13 @@ export function VideoPlayer({
               )}
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 backdrop-blur-[2px]">
                 <motion.button
-                  className="w-16 h-16 md:w-16 md:h-16 bg-primary/90 group-hover/preview:bg-primary group-hover/preview:scale-105 rounded-full flex items-center justify-center text-white shadow-[0_0_40px_rgba(155,12,12,0.5)] backdrop-blur-sm transition-all pointer-events-none border-2 border-[#4A2125]"
+                  className={`flex items-center justify-center text-white transition-all pointer-events-none ${
+                    isMobileDevice
+                      ? 'drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]'
+                      : 'w-14 h-14 bg-primary/90 group-hover/preview:bg-primary group-hover/preview:scale-105 rounded-full shadow-[0_0_40px_rgba(155,12,12,0.5)] backdrop-blur-sm border-2 border-[#4A2125]'
+                  }`}
                 >
-                  <Play className="w-8 h-8 md:w-8 md:h-8 fill-current" />
+                  <Play className={`fill-current ${isMobileDevice ? 'w-10 h-10' : 'w-7 h-7'}`} />
                 </motion.button>
               </div>
             </div>
@@ -1107,9 +1123,13 @@ export function VideoPlayer({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={togglePlay}
-                className="w-12 h-12 md:w-12 md:h-12 bg-primary/90 hover:bg-primary rounded-full flex items-center justify-center text-white shadow-[0_0_20px_rgba(155,12,12,0.4)] backdrop-blur-sm transition-all pointer-events-auto cursor-pointer border-2 border-[#4A2125]"
+                className={`flex items-center justify-center text-white transition-all pointer-events-auto cursor-pointer ${
+                  isMobileDevice
+                    ? 'drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]'
+                    : 'w-10 h-10 bg-primary/90 hover:bg-primary rounded-full shadow-[0_0_20px_rgba(155,12,12,0.4)] border-2 border-[#4A2125]'
+                }`}
               >
-                <Play className="w-5 h-5 md:w-5 md:h-5 fill-current" />
+                <Play className={`fill-current ${isMobileDevice ? 'w-7 h-7' : 'w-5 h-5'}`} />
               </motion.button>
             </div>
           )}
