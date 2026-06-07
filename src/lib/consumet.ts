@@ -1,6 +1,20 @@
 import { ANIME, META, MANGA, IAnimeInfo } from "@consumet/extensions";
 import { load } from "cheerio";
-import { gotScraping } from "got-scraping";
+async function gotScraping(options: { url: string; http2?: boolean }) {
+  const response = await fetch(options.url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+    }
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${options.url}: ${response.status} ${response.statusText}`);
+  }
+  const body = await response.text();
+  return { body };
+}
+
 
 let anilist: InstanceType<typeof META.Anilist> | null = null;
 let animepahe: InstanceType<typeof ANIME.AnimePahe> | null = null;
