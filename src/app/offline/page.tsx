@@ -78,7 +78,7 @@ export default function OfflinePage() {
           </button>
           
           <Link
-            href="/watchlist"
+            href="/anime/watchlist"
             className="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black uppercase tracking-widest text-xs rounded-xl transition-all flex items-center justify-center gap-2"
           >
             <Bookmark className="w-4 h-4 text-primary" />

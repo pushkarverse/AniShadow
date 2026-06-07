@@ -34,9 +34,9 @@ export function BottomTabBar({ onMenuToggle, isMangaRoute }: BottomTabBarProps) 
     },
     { 
       label: "Library", 
-      href: "/watchlist", 
+      href: "/anime/watchlist", 
       icon: Heart, 
-      active: pathname?.startsWith("/watchlist") 
+      active: pathname?.startsWith("/anime/watchlist") 
     },
     { 
       label: "More", 

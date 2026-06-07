@@ -76,7 +76,7 @@ export function RouteProgress() {
 
     if (isReader) {
       document.documentElement.classList.add("reader-theme");
-    } else if (pathname !== "/watchlist") {
+    } else if (pathname !== "/anime/watchlist") {
       document.documentElement.classList.remove("reader-theme");
     }
   }, [pathname, searchParams]);
