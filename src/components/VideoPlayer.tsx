@@ -321,17 +321,16 @@ export function VideoPlayer({
     const mobile = navigator.maxTouchPoints > 0 || window.innerWidth < 768;
     setIsMobileDevice(mobile);
 
-    // Lock portrait on mobile so physical rotation doesn't rotate the page
-    if (mobile) {
-      try {
-        const orientation = window.screen?.orientation as any;
-        orientation?.lock?.('portrait-primary').catch(() => { });
-      } catch { }
-    }
+    const setVh = () => {
+      document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+    };
+    setVh();
+    window.addEventListener('resize', setVh);
+    window.addEventListener('orientationchange', setVh);
 
     return () => {
-      // Unlock when player unmounts
-      try { (window.screen?.orientation as any)?.unlock?.(); } catch { }
+      window.removeEventListener('resize', setVh);
+      window.removeEventListener('orientationchange', setVh);
     };
   }, []);
 
@@ -591,13 +590,6 @@ export function VideoPlayer({
         (video as any)?.webkitDisplayingFullscreen
       );
       setIsFullscreen(isFs);
-      if (isMobileDevice) {
-        if (isFs) {
-          try { (window.screen?.orientation as any)?.lock?.('landscape').catch(() => { }); } catch { }
-        } else {
-          try { (window.screen?.orientation as any)?.lock?.('portrait-primary').catch(() => { }); } catch { }
-        }
-      }
     };
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
@@ -1046,19 +1038,7 @@ export function VideoPlayer({
   }, [currentVideoUrl, useNative, initialProxiedUrl]);
 
   return (
-    <div className="relative w-full">
-      {/* Portrait Lock Overlay on Mobile Landscape */}
-      {isMobileDevice && !isFullscreen && (
-        <div className="fixed inset-0 bg-[#080808] z-[9999] flex flex-col items-center justify-center p-6 text-center select-none md:hidden orientation-landscape">
-          <div className="w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-white/5 border border-white/10 animate-pulse">
-            <Monitor className="w-8 h-8 text-primary rotate-90" />
-          </div>
-          <h2 className="text-white font-bold text-lg mb-2">Orientation Locked</h2>
-          <p className="text-white/60 text-xs max-w-[280px]">
-            Please rotate your device back to portrait mode. Tap the fullscreen button on the player to rotate and watch in landscape.
-          </p>
-        </div>
-      )}
+    <div className={`relative w-full${isMobileDevice && !isFullscreen ? ' mobile-player-16-9' : ''}`}>
       {/* Real-time blurred ambient backlight glow canvas */}
       {isCinemaGlow && !isIframe && (
         <canvas
@@ -1355,7 +1335,7 @@ export function VideoPlayer({
                           router.back();
                         }
                       }}
-                      className="p-2 rounded-full bg-black/40 border border-white/5 text-white/80 hover:text-white transition-all cursor-pointer"
+                      className="p-2 rounded-full text-white/80 hover:text-white transition-all cursor-pointer"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
@@ -1445,11 +1425,10 @@ export function VideoPlayer({
                           setIsScrubbing(false);
                           scheduleControlsHide();
                         }}
-                        className={`w-full h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 active:h-1.5 transition-all focus:outline-none [&::-webkit-slider-runnable-track]:bg-transparent [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:appearance-none [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-webkit-slider-thumb]:transition-opacity [&::-moz-range-thumb]:transition-opacity ${
-                          showControls
-                            ? "[&::-webkit-slider-thumb]:opacity-100 [&::-moz-range-thumb]:opacity-100"
-                            : "[&::-webkit-slider-thumb]:opacity-0 [&::-moz-range-thumb]:opacity-0"
-                        }`}
+                        className={`w-full h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 active:h-1.5 transition-all focus:outline-none [&::-webkit-slider-runnable-track]:bg-transparent [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:appearance-none [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-webkit-slider-thumb]:transition-opacity [&::-moz-range-thumb]:transition-opacity ${showControls
+                          ? "[&::-webkit-slider-thumb]:opacity-100 [&::-moz-range-thumb]:opacity-100"
+                          : "[&::-webkit-slider-thumb]:opacity-0 [&::-moz-range-thumb]:opacity-0"
+                          }`}
                         style={{
                           background: `linear-gradient(to right, rgb(155, 12, 12) 0%, rgb(155, 12, 12) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) 100%)`
                         }}
@@ -1980,14 +1959,18 @@ export function VideoPlayer({
                       skipBackward();
                       scheduleControlsHide();
                     }}
-                    initial={{ scale: 0.7, opacity: 0 }}
+                    initial={false}
                     animate={
                       !showControls && showSkipOverlay.direction !== "backward"
                         ? { scale: 0.7, opacity: 0 }
                         : { scale: 1, opacity: 1 }
                     }
                     exit={{ scale: 0.7, opacity: 0 }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    transition={
+                      showSkipOverlay.visible && showSkipOverlay.direction === "backward"
+                        ? { duration: 0.25, ease: "easeOut" }
+                        : { opacity: { duration: 0.2 }, scale: { duration: 0 } }
+                    }
                     style={{ pointerEvents: !showControls && showSkipOverlay.direction !== "backward" ? "none" : "auto" }}
                     className="relative w-12 h-12 flex items-center justify-center text-white active:scale-95 cursor-pointer"
                     title="Rewind 10s"
@@ -2052,14 +2035,18 @@ export function VideoPlayer({
                       skipForward();
                       scheduleControlsHide();
                     }}
-                    initial={{ scale: 0.7, opacity: 0 }}
+                    initial={false}
                     animate={
                       !showControls && showSkipOverlay.direction !== "forward"
                         ? { scale: 0.7, opacity: 0 }
                         : { scale: 1, opacity: 1 }
                     }
                     exit={{ scale: 0.7, opacity: 0 }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    transition={
+                      showSkipOverlay.visible && showSkipOverlay.direction === "forward"
+                        ? { duration: 0.25, ease: "easeOut" }
+                        : { opacity: { duration: 0.2 }, scale: { duration: 0 } }
+                    }
                     style={{ pointerEvents: !showControls && showSkipOverlay.direction !== "forward" ? "none" : "auto" }}
                     className="relative w-12 h-12 flex items-center justify-center text-white active:scale-95 cursor-pointer"
                     title="Forward 10s"

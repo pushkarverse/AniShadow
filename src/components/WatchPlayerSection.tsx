@@ -127,16 +127,14 @@ export function WatchPlayerSection({
 
   const renderAudioSwitcher = () => (
     <div className="px-4 md:px-0">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/5 bg-black/80 px-4 py-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] font-black uppercase tracking-[0.25em] text-white/30 mr-1">
-            Switch Audio
-          </span>
+      <div className="grid grid-cols-3 items-center rounded-2xl border border-white/5 bg-black/80 px-4 py-3">
+        {/* Left: Sub button */}
+        <div className="flex items-center justify-start">
           <button
             onClick={() => switchGroup("other")}
             disabled={groupedServers.other.length === 0}
             suppressHydrationWarning={true}
-            className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest border transition-all ${
+            className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest border transition-all ${
               activeServerGroup === "other"
                 ? "bg-primary/15 border-primary text-primary"
                 : "bg-white/5 border-white/10 text-white/35 hover:text-white"
@@ -144,11 +142,22 @@ export function WatchPlayerSection({
           >
             Sub
           </button>
+        </div>
+
+        {/* Center: Label */}
+        <div className="flex items-center justify-center">
+          <span className="text-[10px] font-black uppercase tracking-[0.25em] text-white/30 whitespace-nowrap">
+            Switch Audio
+          </span>
+        </div>
+
+        {/* Right: Dub button */}
+        <div className="flex items-center justify-end">
           <button
             onClick={() => switchGroup("dub")}
             disabled={groupedServers.dub.length === 0}
             suppressHydrationWarning={true}
-            className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest border transition-all ${
+            className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest border transition-all ${
               activeServerGroup === "dub"
                 ? "bg-primary/15 border-primary text-primary"
                 : "bg-white/5 border-white/10 text-white/35 hover:text-white"
@@ -157,17 +166,6 @@ export function WatchPlayerSection({
             Dub
           </button>
         </div>
-        <button
-          disabled={activeGroupServers.length === 0}
-          suppressHydrationWarning={true}
-          className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-all ${
-            activeGroupServers.length > 0
-              ? "bg-white/5 border-white/10 text-white/40 hover:text-white"
-              : "bg-white/5 border-white/10 text-white/20"
-          } ${activeGroupServers.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
-        >
-          {activeServerLabel}
-        </button>
       </div>
     </div>
   );
