@@ -281,7 +281,6 @@ export function VideoPlayer({
   };
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  // Detected once on mount — doesn't flip when phone rotates to landscape
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [useNative, setUseNative] = useState(false);
@@ -315,7 +314,6 @@ export function VideoPlayer({
   const [isMaxView, setIsMaxView] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<'quality' | 'audio-subs' | 'speed'>('quality');
 
-  // Detect mobile device once on mount (stable across orientation changes)
   useEffect(() => {
     const mobile = navigator.maxTouchPoints > 0 || window.innerWidth < 768;
     setIsMobileDevice(mobile);
@@ -506,14 +504,12 @@ export function VideoPlayer({
       clickTimeoutRef.current = setTimeout(() => {
         const isCenter = clickX >= width * 0.33 && clickX <= width * 0.67;
         if (isMobileDevice) {
-          // Mobile: single tap anywhere shows controls; center also toggles play
           if (isCenter) {
             togglePlay();
           }
           setShowControls(true);
           scheduleControlsHide();
         } else {
-          // Desktop: play/pause only when center; sides just reveal controls
           if (isCenter) {
             togglePlay();
           } else {
