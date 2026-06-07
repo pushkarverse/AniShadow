@@ -1033,54 +1033,58 @@ export function VideoPlayer({
           )}
 
           {/* Brightness indicator*/}
-          <AnimatePresence>
-            {gestureHud.visible && gestureHud.type === "brightness" && (
-              <motion.div
-                key="brightness-hud"
-                initial={{ opacity: 0, x: -16 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -16 }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-50 pointer-events-none flex flex-col items-center gap-2"
-              >
-                {/* Track */}
-                <div className="w-1.5 h-28 bg-white/15 rounded-full overflow-hidden flex flex-col justify-end">
-                  <motion.div
-                    className="w-full rounded-full bg-yellow-400"
-                    animate={{ height: `${gestureHud.percentage ?? 100}%` }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                </div>
-                {/* Icon below */}
-                <span className="text-yellow-400 text-[11px] leading-none">☀</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {!isMobileDevice && (
+            <AnimatePresence>
+              {gestureHud.visible && gestureHud.type === "brightness" && (
+                <motion.div
+                  key="brightness-hud"
+                  initial={{ opacity: 0, x: -16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -16 }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-50 pointer-events-none flex flex-col items-center gap-2"
+                >
+                  {/* Track */}
+                  <div className="w-1.5 h-28 bg-white/15 rounded-full overflow-hidden flex flex-col justify-end">
+                    <motion.div
+                      className="w-full rounded-full bg-yellow-400"
+                      animate={{ height: `${gestureHud.percentage ?? 100}%` }}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  </div>
+                  {/* Icon below */}
+                  <span className="text-yellow-400 text-[11px] leading-none">☀</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
 
           {/* Volume indicator — right side vertical bar */}
-          <AnimatePresence>
-            {gestureHud.visible && gestureHud.type === "volume" && (
-              <motion.div
-                key="volume-hud"
-                initial={{ opacity: 0, x: 16 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 16 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-50 pointer-events-none flex flex-col items-center gap-2"
-              >
-                {/* Track */}
-                <div className="w-1.5 h-28 bg-white/15 rounded-full overflow-hidden flex flex-col justify-end">
-                  <motion.div
-                    className="w-full rounded-full bg-primary"
-                    animate={{ height: `${gestureHud.percentage ?? 100}%` }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                </div>
-                {/* Icon below */}
-                <span className="text-primary text-[11px] leading-none">
-                  {isMuted || (gestureHud.percentage ?? 0) === 0 ? "🔇" : "🔊"}
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {!isMobileDevice && (
+            <AnimatePresence>
+              {gestureHud.visible && gestureHud.type === "volume" && (
+                <motion.div
+                  key="volume-hud"
+                  initial={{ opacity: 0, x: 16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 16 }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-50 pointer-events-none flex flex-col items-center gap-2"
+                >
+                  {/* Track */}
+                  <div className="w-1.5 h-28 bg-white/15 rounded-full overflow-hidden flex flex-col justify-end">
+                    <motion.div
+                      className="w-full rounded-full bg-primary"
+                      animate={{ height: `${gestureHud.percentage ?? 100}%` }}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  </div>
+                  {/* Icon below */}
+                  <span className="text-primary text-[11px] leading-none">
+                    {isMuted || (gestureHud.percentage ?? 0) === 0 ? "🔇" : "🔊"}
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
 
           {(isExtracting || isBuffering) && (
             <div className="absolute inset-0 flex items-center justify-center bg-[#080808]/80 backdrop-blur-xs z-20 pointer-events-none">
