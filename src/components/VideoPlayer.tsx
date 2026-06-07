@@ -1042,7 +1042,7 @@ export function VideoPlayer({
             />
           )}
 
-          {/* Brightness indicator — left side vertical bar */}
+          {/* Brightness indicator*/}
           <AnimatePresence>
             {gestureHud.visible && gestureHud.type === "brightness" && (
               <motion.div
@@ -1424,8 +1424,8 @@ export function VideoPlayer({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: isFullscreen ? 0 : 50 }}
                         className={`absolute z-50 pointer-events-auto flex flex-col backdrop-blur-xl transition-all ${isFullscreen
-                            ? "inset-0 bg-black/85 p-6 md:p-12 justify-start gap-8"
-                            : "bottom-0 left-0 right-0 bg-[#0c0c0c]/98 border-t border-white/10 rounded-t-3xl p-5 max-h-[60vh] overflow-y-auto"
+                          ? "inset-0 bg-black/85 p-6 md:p-12 justify-start gap-8"
+                          : "bottom-0 left-0 right-0 bg-[#0c0c0c]/98 border-t border-white/10 rounded-t-3xl p-5 max-h-[60vh] overflow-y-auto"
                           }`}
                       >
                         {/* Top Bar / Header */}
@@ -1438,8 +1438,8 @@ export function VideoPlayer({
                                 setActiveMobileTab('quality');
                               }}
                               className={`text-xs font-black uppercase tracking-wider transition-all pb-1 border-b-2 ${activeMobileTab === 'quality'
-                                  ? "border-primary text-white"
-                                  : "border-transparent text-white/40 hover:text-white/60"
+                                ? "border-primary text-white"
+                                : "border-transparent text-white/40 hover:text-white/60"
                                 }`}
                             >
                               Quality
@@ -1450,8 +1450,8 @@ export function VideoPlayer({
                                 setActiveMobileTab('audio-subs');
                               }}
                               className={`text-xs font-black uppercase tracking-wider transition-all pb-1 border-b-2 ${activeMobileTab === 'audio-subs'
-                                  ? "border-primary text-white"
-                                  : "border-transparent text-white/40 hover:text-white/60"
+                                ? "border-primary text-white"
+                                : "border-transparent text-white/40 hover:text-white/60"
                                 }`}
                             >
                               Audio & Subtitles
@@ -1462,8 +1462,8 @@ export function VideoPlayer({
                                 setActiveMobileTab('speed');
                               }}
                               className={`text-xs font-black uppercase tracking-wider transition-all pb-1 border-b-2 ${activeMobileTab === 'speed'
-                                  ? "border-primary text-white"
-                                  : "border-transparent text-white/40 hover:text-white/60"
+                                ? "border-primary text-white"
+                                : "border-transparent text-white/40 hover:text-white/60"
                                 }`}
                             >
                               Playback Speed
@@ -1514,8 +1514,8 @@ export function VideoPlayer({
                                         setShowMobileSettings(false);
                                       }}
                                       className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${isCurrent
-                                          ? "text-primary bg-primary/10 font-bold"
-                                          : "text-white/60 hover:text-white hover:bg-white/5"
+                                        ? "text-primary bg-primary/10 font-bold"
+                                        : "text-white/60 hover:text-white hover:bg-white/5"
                                         }`}
                                     >
                                       <span className="text-sm">
@@ -1544,8 +1544,8 @@ export function VideoPlayer({
                                       switchAudioGroup('other');
                                     }}
                                     className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${activeAudioGroup === 'other'
-                                        ? "text-primary bg-primary/10 font-bold"
-                                        : "text-white/60 hover:text-white hover:bg-white/5"
+                                      ? "text-primary bg-primary/10 font-bold"
+                                      : "text-white/60 hover:text-white hover:bg-white/5"
                                       }`}
                                   >
                                     <span className="text-sm">Japanese (Sub)</span>
@@ -1558,8 +1558,8 @@ export function VideoPlayer({
                                     }}
                                     disabled={groupedServers.dub.length === 0}
                                     className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${activeAudioGroup === 'dub'
-                                        ? "text-primary bg-primary/10 font-bold"
-                                        : "text-white/60 hover:text-white hover:bg-white/5"
+                                      ? "text-primary bg-primary/10 font-bold"
+                                      : "text-white/60 hover:text-white hover:bg-white/5"
                                       } ${groupedServers.dub.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
                                   >
                                     <span className="text-sm">English (Dub)</span>
@@ -1581,8 +1581,8 @@ export function VideoPlayer({
                                         setIsSubtitlesOn(true);
                                       }}
                                       className={`flex-1 py-2 rounded-xl text-center text-xs font-black uppercase tracking-wider border transition-all ${isSubtitlesOn
-                                          ? "bg-primary border-primary text-white"
-                                          : "bg-white/5 border-white/10 text-white/40 hover:text-white"
+                                        ? "bg-primary border-primary text-white"
+                                        : "bg-white/5 border-white/10 text-white/40 hover:text-white"
                                         }`}
                                     >
                                       On
@@ -1593,8 +1593,8 @@ export function VideoPlayer({
                                         setIsSubtitlesOn(false);
                                       }}
                                       className={`flex-1 py-2 rounded-xl text-center text-xs font-black uppercase tracking-wider border transition-all ${!isSubtitlesOn
-                                          ? "bg-primary border-primary text-white"
-                                          : "bg-white/5 border-white/10 text-white/40 hover:text-white"
+                                        ? "bg-primary border-primary text-white"
+                                        : "bg-white/5 border-white/10 text-white/40 hover:text-white"
                                         }`}
                                     >
                                       Off
@@ -1620,8 +1620,8 @@ export function VideoPlayer({
                                       setShowMobileSettings(false);
                                     }}
                                     className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${isCurrent
-                                        ? "text-primary bg-primary/10 font-bold"
-                                        : "text-white/60 hover:text-white hover:bg-white/5"
+                                      ? "text-primary bg-primary/10 font-bold"
+                                      : "text-white/60 hover:text-white hover:bg-white/5"
                                       }`}
                                   >
                                     <span className="text-sm">
@@ -1822,8 +1822,8 @@ export function VideoPlayer({
                                       setShowSpeedMenu(false);
                                     }}
                                     className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${playbackSpeed === speed
-                                        ? "bg-primary text-white"
-                                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                                      ? "bg-primary text-white"
+                                      : "text-white/70 hover:bg-white/10 hover:text-white"
                                       }`}
                                   >
                                     {speed === 1 ? "Normal" : `${speed}x`}
