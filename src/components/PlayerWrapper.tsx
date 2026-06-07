@@ -14,14 +14,6 @@ const VideoPlayer = dynamic(() => import("./VideoPlayer").then((mod) => mod.Vide
   )
 });
 
-interface PlayerServerEntry {
-  name: string;
-  provider: string;
-  url: string;
-  kind?: "dub" | "other";
-  label?: string;
-}
-
 interface PlayerWrapperProps {
   videoUrl: string;
   title: string;
@@ -29,7 +21,6 @@ interface PlayerWrapperProps {
   poster?: string;
   isTheaterMode?: boolean;
   onTheaterToggle?: () => void;
-  allServers?: PlayerServerEntry[];
 }
 
 export function PlayerWrapper(props: PlayerWrapperProps) {

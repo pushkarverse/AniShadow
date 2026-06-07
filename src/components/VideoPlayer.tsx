@@ -113,8 +113,6 @@ export function VideoPlayer({
   useEffect(() => {
     if (!initialVideoUrl) return;
 
-    isSwitchingSourceRef.current = true;
-
     const urlLower = initialVideoUrl.toLowerCase();
     const isVibe = urlLower.includes("vibeplayer.site");
     const isOtakuHg = urlLower.includes("otakuhg.site");
@@ -184,7 +182,6 @@ export function VideoPlayer({
   const containerRef = useRef<HTMLDivElement>(null);
   const lastTimeRef = useRef<number>(0);
   const wasPlayingRef = useRef<boolean>(false);
-  const isSwitchingSourceRef = useRef<boolean>(false);
 
   // Reset playback timestamp when changing episodes
   useEffect(() => {
@@ -927,10 +924,12 @@ export function VideoPlayer({
   useEffect(() => {
     setIsBuffering(true);
     setBuffered(0);
-    isSwitchingSourceRef.current = true;
-    const wasPlaying = videoRef.current ? !videoRef.current.paused : false;
-    wasPlayingRef.current = wasPlaying;
-    setIsPlaying(wasPlaying);
+    setIsPlaying(false); // Reset playing state on source switch to avoid UI/state desync
+    if (videoRef.current && !videoRef.current.paused) {
+      wasPlayingRef.current = true;
+    } else {
+      wasPlayingRef.current = false;
+    }
   }, [currentVideoUrl]);
 
   useEffect(() => {
@@ -995,14 +994,9 @@ export function VideoPlayer({
           if (wasPlayingRef.current) {
             videoRef.current.play().then(() => {
               setIsPlaying(true);
-              isSwitchingSourceRef.current = false;
             }).catch((err) => {
               console.warn("HLS autoplay failed:", err);
-              setIsPlaying(false);
-              isSwitchingSourceRef.current = false;
             });
-          } else {
-            isSwitchingSourceRef.current = false;
           }
         }
       });
@@ -1217,9 +1211,6 @@ export function VideoPlayer({
                 className={`absolute inset-0 w-full h-full ${isMaxView ? 'object-cover' : 'object-contain'}`}
                 onTimeUpdate={() => {
                   const time = videoRef.current?.currentTime || 0;
-                  if (isSwitchingSourceRef.current) {
-                    return;
-                  }
                   setProgress(time);
                   lastTimeRef.current = time;
                   updateBuffered();
@@ -1237,12 +1228,7 @@ export function VideoPlayer({
                     if (wasPlayingRef.current) {
                       videoRef.current.play().then(() => {
                         setIsPlaying(true);
-                        isSwitchingSourceRef.current = false;
-                      }).catch(() => {
-                        isSwitchingSourceRef.current = false;
-                      });
-                    } else {
-                      isSwitchingSourceRef.current = false;
+                      }).catch(() => { });
                     }
                   }
                   setTimeout(drawGlowFrame, 300);
@@ -1250,7 +1236,6 @@ export function VideoPlayer({
                 onClick={handleVideoClick}
                 onPlay={() => {
                   setIsPlaying(true);
-                  isSwitchingSourceRef.current = false;
                   if ('mediaSession' in navigator) {
                     navigator.mediaSession.playbackState = 'playing';
                   }
@@ -1482,18 +1467,6 @@ export function VideoPlayer({
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setActiveMobileTab('audio-subs');
-                                }}
-                                className={`text-xs font-black uppercase tracking-wider transition-all pb-1 border-b-2 ${activeMobileTab === 'audio-subs'
-                                  ? "border-primary text-white"
-                                  : "border-transparent text-white/40 hover:text-white/60"
-                                  }`}
-                              >
-                                Audio & Subtitles
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
                                   setActiveMobileTab('speed');
                                 }}
                                 className={`text-xs font-black uppercase tracking-wider transition-all pb-1 border-b-2 ${activeMobileTab === 'speed'
@@ -1562,83 +1535,7 @@ export function VideoPlayer({
                                   })
                                 )}
                               </div>
-                            )}
-
-                            {/* Audio & Subtitles Options */}
-                            {activeMobileTab === 'audio-subs' && (
-                              <div className="flex flex-col gap-6">
-                                {/* Audio Section */}
-                                <div className="flex flex-col gap-2">
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-white/30">
-                                    Audio Language
-                                  </span>
-                                  <div className="flex flex-col gap-2">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        switchAudioGroup('other');
-                                      }}
-                                      className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${activeAudioGroup === 'other'
-                                        ? "text-primary bg-primary/10 font-bold"
-                                        : "text-white/60 hover:text-white hover:bg-white/5"
-                                        }`}
-                                    >
-                                      <span className="text-sm">Japanese (Sub)</span>
-                                      {activeAudioGroup === 'other' && <span className="ml-auto text-primary">✓</span>}
-                                    </button>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        switchAudioGroup('dub');
-                                      }}
-                                      disabled={groupedServers.dub.length === 0}
-                                      className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${activeAudioGroup === 'dub'
-                                        ? "text-primary bg-primary/10 font-bold"
-                                        : "text-white/60 hover:text-white hover:bg-white/5"
-                                        } ${groupedServers.dub.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
-                                    >
-                                      <span className="text-sm">English (Dub)</span>
-                                      {activeAudioGroup === 'dub' && <span className="ml-auto text-primary">✓</span>}
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {/* Subtitles Section */}
-                                {proxiedSubtitleUrl && (
-                                  <div className="flex flex-col gap-2 border-t border-white/5 pt-4">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-white/30">
-                                      Subtitles (Captions)
-                                    </span>
-                                    <div className="flex gap-2">
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setIsSubtitlesOn(true);
-                                        }}
-                                        className={`flex-1 py-2 rounded-xl text-center text-xs font-black uppercase tracking-wider border transition-all ${isSubtitlesOn
-                                          ? "bg-primary border-primary text-white"
-                                          : "bg-white/5 border-white/10 text-white/40 hover:text-white"
-                                          }`}
-                                      >
-                                        On
-                                      </button>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setIsSubtitlesOn(false);
-                                        }}
-                                        className={`flex-1 py-2 rounded-xl text-center text-xs font-black uppercase tracking-wider border transition-all ${!isSubtitlesOn
-                                          ? "bg-primary border-primary text-white"
-                                          : "bg-white/5 border-white/10 text-white/40 hover:text-white"
-                                          }`}
-                                      >
-                                        Off
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                            ) }
 
                             {/* Playback Speed Options */}
                             {activeMobileTab === 'speed' && (
@@ -2081,18 +1978,6 @@ export function VideoPlayer({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setActiveMobileTab('audio-subs');
-                    }}
-                    className={`text-xs font-black uppercase tracking-wider transition-all pb-1 border-b-2 ${activeMobileTab === 'audio-subs'
-                      ? "border-primary text-white"
-                      : "border-transparent text-white/40 hover:text-white/60"
-                      }`}
-                  >
-                    Audio & Subtitles
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
                       setActiveMobileTab('speed');
                     }}
                     className={`text-xs font-black uppercase tracking-wider transition-all pb-1 border-b-2 ${activeMobileTab === 'speed'
@@ -2161,83 +2046,7 @@ export function VideoPlayer({
                       })
                     )}
                   </div>
-                )}
-
-                {/* Audio & Subtitles Options */}
-                {activeMobileTab === 'audio-subs' && (
-                  <div className="flex flex-col gap-6">
-                    {/* Audio Section */}
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-white/30">
-                        Audio Language
-                      </span>
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            switchAudioGroup('other');
-                          }}
-                          className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${activeAudioGroup === 'other'
-                            ? "text-primary bg-primary/10 font-bold"
-                            : "text-white/60 hover:text-white hover:bg-white/5"
-                            }`}
-                        >
-                          <span className="text-sm">Japanese (Sub)</span>
-                          {activeAudioGroup === 'other' && <span className="ml-auto text-primary">✓</span>}
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            switchAudioGroup('dub');
-                          }}
-                          disabled={groupedServers.dub.length === 0}
-                          className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${activeAudioGroup === 'dub'
-                            ? "text-primary bg-primary/10 font-bold"
-                            : "text-white/60 hover:text-white hover:bg-white/5"
-                            } ${groupedServers.dub.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
-                        >
-                          <span className="text-sm">English (Dub)</span>
-                          {activeAudioGroup === 'dub' && <span className="ml-auto text-primary">✓</span>}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Subtitles Section */}
-                    {proxiedSubtitleUrl && (
-                      <div className="flex flex-col gap-2 border-t border-white/5 pt-4">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-white/30">
-                          Subtitles (Captions)
-                        </span>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setIsSubtitlesOn(true);
-                            }}
-                            className={`flex-1 py-2 rounded-xl text-center text-xs font-black uppercase tracking-wider border transition-all ${isSubtitlesOn
-                              ? "bg-primary border-primary text-white"
-                              : "bg-white/5 border-white/10 text-white/40 hover:text-white"
-                              }`}
-                          >
-                            On
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setIsSubtitlesOn(false);
-                            }}
-                            className={`flex-1 py-2 rounded-xl text-center text-xs font-black uppercase tracking-wider border transition-all ${!isSubtitlesOn
-                              ? "bg-primary border-primary text-white"
-                              : "bg-white/5 border-white/10 text-white/40 hover:text-white"
-                              }`}
-                          >
-                            Off
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                ) }
 
                 {/* Playback Speed Options */}
                 {activeMobileTab === 'speed' && (

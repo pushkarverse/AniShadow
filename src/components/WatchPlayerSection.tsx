@@ -182,7 +182,6 @@ export function WatchPlayerSection({
           poster={poster}
           isTheaterMode={isTheaterMode}
           onTheaterToggle={handleTheaterToggle}
-          allServers={allServers}
         />
       ) : (
         <div className="aspect-video relative flex items-center justify-center bg-[#080808] overflow-hidden">
