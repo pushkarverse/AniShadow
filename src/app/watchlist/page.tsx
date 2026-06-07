@@ -42,7 +42,7 @@ export default function WatchlistPage() {
   const currentList = activeTab === "anime" ? animeWatchlist : mangaWatchlist;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col pb-20">
+    <div className={`min-h-screen bg-background text-foreground flex flex-col pb-20 ${activeTab === "manga" ? "reader-theme" : ""}`}>
       <Navbar />
       
       <main className="flex-1 container mx-auto px-6 md:px-12 pt-32">
@@ -68,7 +68,7 @@ export default function WatchlistPage() {
                 </button>
                 <button 
                     onClick={() => setActiveTab("manga")}
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "manga" ? 'bg-orange-500 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
+                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "manga" ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
                 >
                     <BookOpen className="w-4 h-4" />
                     Manga

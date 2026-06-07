@@ -183,7 +183,7 @@ export const MangaCard = ({
               <span>★</span>
               <span className="text-white font-bold">{rating ? Number(rating).toFixed(1) : "8.5"}</span>
             </div>
-            <div className="px-1.5 py-0.5 rounded bg-[#ff6600]/25 backdrop-blur-md border border-[#ff6600]/30 text-[9px] font-black text-orange-400 uppercase">
+            <div className="px-1.5 py-0.5 rounded bg-primary/25 backdrop-blur-md border border-primary/30 text-[9px] font-black text-accent uppercase">
               {format || "MANGA"}
             </div>
           </div>
