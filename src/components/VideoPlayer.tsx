@@ -1952,7 +1952,7 @@ export function VideoPlayer({
                       skipBackward();
                       scheduleControlsHide();
                     }}
-                    className={`relative w-12 h-12 flex items-center justify-center text-white active:scale-95 transition-all cursor-pointer ${!showControls && showSkipOverlay.direction !== "backward" ? "opacity-30" : "opacity-100"
+                    className={`relative w-12 h-12 flex items-center justify-center text-white active:scale-95 transition-all cursor-pointer ${!showControls && showSkipOverlay.direction !== "backward" ? "opacity-0 pointer-events-none" : "opacity-100"
                       }`}
                     title="Rewind 10s"
                   >
@@ -1989,7 +1989,7 @@ export function VideoPlayer({
                       togglePlay();
                       scheduleControlsHide();
                     }}
-                    className={`relative w-12 h-12 flex items-center justify-center text-white active:scale-90 transition-all cursor-pointer ${!showControls ? "opacity-30" : "opacity-100"
+                    className={`relative w-12 h-12 flex items-center justify-center text-white active:scale-90 transition-all cursor-pointer ${!showControls ? "opacity-0 pointer-events-none" : "opacity-100"
                       }`}
                   >
                     {isPlaying ? <Pause className="w-7 h-7 fill-current" /> : <Play className="w-7 h-7 fill-current ml-0.5" />}
@@ -2008,7 +2008,7 @@ export function VideoPlayer({
                       skipForward();
                       scheduleControlsHide();
                     }}
-                    className={`relative w-12 h-12 flex items-center justify-center text-white active:scale-95 transition-all cursor-pointer ${!showControls && showSkipOverlay.direction !== "forward" ? "opacity-30" : "opacity-100"
+                    className={`relative w-12 h-12 flex items-center justify-center text-white active:scale-95 transition-all cursor-pointer ${!showControls && showSkipOverlay.direction !== "forward" ? "opacity-0 pointer-events-none" : "opacity-100"
                       }`}
                     title="Forward 10s"
                   >
