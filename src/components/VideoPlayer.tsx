@@ -1464,6 +1464,20 @@ export function VideoPlayer({
                               >
                                 Quality
                               </button>
+                              {proxiedSubtitleUrl && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveMobileTab('audio-subs');
+                                  }}
+                                  className={`text-xs font-black uppercase tracking-wider transition-all pb-1 border-b-2 ${activeMobileTab === 'audio-subs'
+                                    ? "border-primary text-white"
+                                    : "border-transparent text-white/40 hover:text-white/60"
+                                    }`}
+                                >
+                                  Subtitles
+                                </button>
+                              )}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1535,7 +1549,45 @@ export function VideoPlayer({
                                   })
                                 )}
                               </div>
-                            ) }
+                            )}
+
+                            {/* Subtitles Options */}
+                            {activeMobileTab === 'audio-subs' && proxiedSubtitleUrl && (
+                              <div className="flex flex-col gap-6">
+                                {/* Subtitles Section */}
+                                <div className="flex flex-col gap-2">
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-white/30">
+                                    Subtitles (Captions)
+                                  </span>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsSubtitlesOn(true);
+                                      }}
+                                      className={`flex-1 py-2 rounded-xl text-center text-xs font-black uppercase tracking-wider border transition-all ${isSubtitlesOn
+                                        ? "bg-primary border-primary text-white"
+                                        : "bg-white/5 border-white/10 text-white/40 hover:text-white"
+                                        }`}
+                                    >
+                                      On
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsSubtitlesOn(false);
+                                      }}
+                                      className={`flex-1 py-2 rounded-xl text-center text-xs font-black uppercase tracking-wider border transition-all ${!isSubtitlesOn
+                                        ? "bg-primary border-primary text-white"
+                                        : "bg-white/5 border-white/10 text-white/40 hover:text-white"
+                                        }`}
+                                    >
+                                      Off
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
 
                             {/* Playback Speed Options */}
                             {activeMobileTab === 'speed' && (
@@ -1978,6 +2030,18 @@ export function VideoPlayer({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      setActiveMobileTab('audio-subs');
+                    }}
+                    className={`text-xs font-black uppercase tracking-wider transition-all pb-1 border-b-2 ${activeMobileTab === 'audio-subs'
+                      ? "border-primary text-white"
+                      : "border-transparent text-white/40 hover:text-white/60"
+                      }`}
+                  >
+                    Audio & Subtitles
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setActiveMobileTab('speed');
                     }}
                     className={`text-xs font-black uppercase tracking-wider transition-all pb-1 border-b-2 ${activeMobileTab === 'speed'
@@ -2046,7 +2110,83 @@ export function VideoPlayer({
                       })
                     )}
                   </div>
-                ) }
+                )}
+
+                {/* Audio & Subtitles Options */}
+                {activeMobileTab === 'audio-subs' && (
+                  <div className="flex flex-col gap-6">
+                    {/* Audio Section */}
+                    <div className="flex flex-col gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-white/30">
+                        Audio Language
+                      </span>
+                      <div className="flex flex-col gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            switchAudioGroup('other');
+                          }}
+                          className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${activeAudioGroup === 'other'
+                            ? "text-primary bg-primary/10 font-bold"
+                            : "text-white/60 hover:text-white hover:bg-white/5"
+                            }`}
+                        >
+                          <span className="text-sm">Japanese (Sub)</span>
+                          {activeAudioGroup === 'other' && <span className="ml-auto text-primary">✓</span>}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            switchAudioGroup('dub');
+                          }}
+                          disabled={groupedServers.dub.length === 0}
+                          className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${activeAudioGroup === 'dub'
+                            ? "text-primary bg-primary/10 font-bold"
+                            : "text-white/60 hover:text-white hover:bg-white/5"
+                            } ${groupedServers.dub.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
+                        >
+                          <span className="text-sm">English (Dub)</span>
+                          {activeAudioGroup === 'dub' && <span className="ml-auto text-primary">✓</span>}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Subtitles Section */}
+                    {proxiedSubtitleUrl && (
+                      <div className="flex flex-col gap-2 border-t border-white/5 pt-4">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/30">
+                          Subtitles (Captions)
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsSubtitlesOn(true);
+                            }}
+                            className={`flex-1 py-2 rounded-xl text-center text-xs font-black uppercase tracking-wider border transition-all ${isSubtitlesOn
+                              ? "bg-primary border-primary text-white"
+                              : "bg-white/5 border-white/10 text-white/40 hover:text-white"
+                              }`}
+                          >
+                            On
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsSubtitlesOn(false);
+                            }}
+                            className={`flex-1 py-2 rounded-xl text-center text-xs font-black uppercase tracking-wider border transition-all ${!isSubtitlesOn
+                              ? "bg-primary border-primary text-white"
+                              : "bg-white/5 border-white/10 text-white/40 hover:text-white"
+                              }`}
+                          >
+                            Off
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Playback Speed Options */}
                 {activeMobileTab === 'speed' && (
