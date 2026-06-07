@@ -56,6 +56,7 @@ export function WatchPlayerSection({
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [episodeSearch, setEpisodeSearch] = useState<string>("");
   const [isDescExpanded, setIsDescExpanded] = useState(false);
+  const [activeMobileSeason, setActiveMobileSeason] = useState(0);
 
   // Load theater mode preference on mount
   useEffect(() => {
@@ -203,9 +204,96 @@ export function WatchPlayerSection({
     </div>
   );
 
+  const renderMobileEpisodesSection = () => {
+    if (!episodes || episodes.length === 0) return null;
+
+    // Group episodes into season-sized chunks (12 per season)
+    const SEASON_SIZE = 13;
+    const totalSeasons = Math.ceil(episodes.length / SEASON_SIZE);
+    const seasons = Array.from({ length: totalSeasons }, (_, i) =>
+      episodes.slice(i * SEASON_SIZE, (i + 1) * SEASON_SIZE)
+    );
+    const currentSeasonEps = seasons[activeMobileSeason] || [];
+
+    return (
+      <div className="md:hidden flex flex-col gap-4 px-4 pb-4">
+        {/* Heading */}
+        <h2 className="text-xl font-black text-white tracking-tight">Episodes</h2>
+
+        {/* Season Tabs */}
+        <div className="flex items-center gap-6 overflow-x-auto scrollbar-none pb-1">
+          {seasons.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveMobileSeason(i)}
+              className={`text-sm font-bold shrink-0 pb-1 border-b-2 transition-all cursor-pointer ${
+                activeMobileSeason === i
+                  ? "border-white text-white"
+                  : "border-transparent text-white/40 hover:text-white/70"
+              }`}
+            >
+              Season {i + 1}
+            </button>
+          ))}
+        </div>
+
+        {/* Episode List */}
+        <div className="flex flex-col">
+          {currentSeasonEps.map((episode) => {
+            const isActive = episode.number === currentEpisodeNumber;
+            const targetUrl = `/anime/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
+            const seasonNum = activeMobileSeason + 1;
+            const epInSeason = episode.number - activeMobileSeason * SEASON_SIZE;
+
+            return (
+              <Link
+                key={episode.id}
+                href={targetUrl}
+                className={`flex items-center gap-3 py-3 border-b border-white/5 transition-all ${
+                  isActive ? "opacity-100" : "opacity-70 hover:opacity-100"
+                }`}
+              >
+                {/* Thumbnail */}
+                <div className="relative w-28 aspect-video rounded-xl overflow-hidden flex-shrink-0 bg-black">
+                  <img
+                    src={episode.image || poster || ""}
+                    alt={episode.title || `Episode ${episode.number}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Play icon overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center ${
+                      isActive ? "bg-primary" : "bg-white/20"
+                    }`}>
+                      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-white ml-0.5" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Info */}
+                <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                  <span className={`text-sm font-semibold truncate ${
+                    isActive ? "text-white" : "text-white/80"
+                  }`}>
+                    {episode.title || `Episode ${episode.number}`}
+                  </span>
+                  <span className="text-[11px] text-white/40 font-medium">
+                    S{seasonNum} E{epInSeason}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const renderMobileSheetTrigger = () =>
     episodes.length > 0 && (
-      <div className="md:hidden px-4">
+      <div className="hidden">
         <button
           onClick={() => setShowEpisodesSheet(true)}
           className="w-full py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest text-white transition-all active:scale-[0.98] cursor-pointer"
@@ -489,6 +577,7 @@ export function WatchPlayerSection({
           {renderBackButton()}
           {renderPlayer()}
           {renderAudioSwitcher()}
+          {renderMobileEpisodesSection()}
           {renderMobileSheetTrigger()}
           {renderInfoDetails()}
         </div>
