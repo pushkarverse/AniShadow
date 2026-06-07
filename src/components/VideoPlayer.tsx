@@ -1297,10 +1297,38 @@ export function VideoPlayer({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/90 via-transparent to-black/60 p-4 md:p-6 pointer-events-none z-40"
+                className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/90 via-transparent to-black/60 p-4 md:p-6 z-40"
+                onClick={(e) => {
+                  const target = e.target as HTMLElement;
+                  if (
+                    target.closest("button") ||
+                    target.closest("input") ||
+                    target.closest("a") ||
+                    target.closest("select") ||
+                    target.closest(".no-swipe")
+                  ) {
+                    return;
+                  }
+                  e.stopPropagation();
+                  
+                  if (isMobileDevice) {
+                    setShowControls(false);
+                    setShowMobileSettings(false);
+                  } else {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const width = rect.width;
+                    const isCenter = clickX >= width * 0.33 && clickX <= width * 0.67;
+                    if (isCenter) {
+                      togglePlay();
+                    } else {
+                      setShowControls(false);
+                    }
+                  }
+                }}
               >
                 {/* Mobile Controls Overlay — shown on mobile devices regardless of orientation/fullscreen */}
-                <div className={`flex flex-col justify-between h-full w-full pointer-events-none relative ${isMobileDevice ? 'flex' : 'hidden'}`}>
+                <div className={`flex flex-col justify-between h-full w-full relative ${isMobileDevice ? 'flex' : 'hidden'}`}>
                   {/* Top Row: Back (left), Cast (mock), Settings, Fullscreen (right) */}
                   <div className="flex justify-between items-center w-full pointer-events-auto">
                     <button
@@ -1646,7 +1674,7 @@ export function VideoPlayer({
                 </div>
 
                 {/* Desktop Controls Overlay — only shown on non-mobile devices */}
-                <div className={`flex flex-col justify-between h-full w-full pointer-events-none ${isMobileDevice ? 'hidden' : 'flex'}`}>
+                <div className={`flex flex-col justify-between h-full w-full ${isMobileDevice ? 'hidden' : 'flex'}`}>
                   <div className="flex justify-between items-start">
                     <button
                       onClick={(e) => {
