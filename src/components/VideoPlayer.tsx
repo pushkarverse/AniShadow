@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, ReactElement, useMemo } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles, Mic, Gauge, ChevronLeft, Sparkles, Monitor, ChevronsLeft, ChevronsRight, Tv, X } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles, Mic, Gauge, ChevronLeft, Sparkles, Monitor, Tv, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Hls from "hls.js";
 import { useRouter } from "next/navigation";
@@ -1346,20 +1346,8 @@ export function VideoPlayer({
                   </div>
                 </div>
 
-                {/* Center Buttons: Skip backward, Play/Pause, Skip forward */}
-                <div className="absolute inset-0 flex items-center justify-center gap-10 pointer-events-auto z-10">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      skipBackward();
-                      scheduleControlsHide();
-                    }}
-                    className="p-3 rounded-full bg-black/40 border border-white/5 text-white hover:text-primary transition-all active:scale-90 cursor-pointer"
-                    title="Rewind 10s"
-                  >
-                    <ChevronsLeft className="w-6 h-6" />
-                  </button>
-
+                {/* Center Button: Play/Pause only */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-auto z-10">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1369,18 +1357,6 @@ export function VideoPlayer({
                     className="p-5 rounded-full bg-primary text-white shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all cursor-pointer border border-[#4A2125]"
                   >
                     {isPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current ml-0.5" />}
-                  </button>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      skipForward();
-                      scheduleControlsHide();
-                    }}
-                    className="p-3 rounded-full bg-black/40 border border-white/5 text-white hover:text-primary transition-all active:scale-90 cursor-pointer"
-                    title="Forward 10s"
-                  >
-                    <ChevronsRight className="w-6 h-6" />
                   </button>
                 </div>
 
