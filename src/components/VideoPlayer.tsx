@@ -81,6 +81,11 @@ export function VideoPlayer({
     setActiveAudioGroup(kind);
     const nextServer = (kind === "dub" ? groupedServers.dub : groupedServers.other)[0];
     if (nextServer) {
+      if (videoRef.current) {
+        lastTimeRef.current = videoRef.current.currentTime;
+        wasPlayingRef.current = !videoRef.current.paused;
+        setIsPlaying(!videoRef.current.paused);
+      }
       setCurrentVideoUrl(nextServer.url);
     }
     setShowAudioMenu(false);
@@ -924,11 +929,13 @@ export function VideoPlayer({
   useEffect(() => {
     setIsBuffering(true);
     setBuffered(0);
-    setIsPlaying(false); // Reset playing state on source switch to avoid UI/state desync
-    if (videoRef.current && !videoRef.current.paused) {
-      wasPlayingRef.current = true;
-    } else {
-      wasPlayingRef.current = false;
+    if (videoRef.current) {
+      if (videoRef.current.currentTime > 0) {
+        lastTimeRef.current = videoRef.current.currentTime;
+      }
+      const wasPlaying = !videoRef.current.paused;
+      wasPlayingRef.current = wasPlaying;
+      setIsPlaying(wasPlaying);
     }
   }, [currentVideoUrl]);
 
@@ -1929,7 +1936,7 @@ export function VideoPlayer({
 
           {/* Mobile Center Controls with Double-Tap Seek Animations */}
           <AnimatePresence>
-            {isMobileDevice && (showControls || showSkipOverlay.visible) && !showMobileSettings && hasInteracted && !isIframe && (
+            {isMobileDevice && (showControls || showSkipOverlay.visible || isBuffering || isExtracting) && !showMobileSettings && hasInteracted && !isIframe && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
