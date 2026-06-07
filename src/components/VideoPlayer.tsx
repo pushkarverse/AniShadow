@@ -655,13 +655,15 @@ export function VideoPlayer({
         isSwipingRef.current = "horizontal";
         wasSwipingRef.current = true;
       } else if (Math.abs(deltaY) > 15 && Math.abs(deltaY) > Math.abs(deltaX)) {
-        const startXFromLeft = start.x - rect.left;
-        if (startXFromLeft < rect.width / 2) {
-          isSwipingRef.current = "vertical-left";
-        } else {
-          isSwipingRef.current = "vertical-right";
+        if (!isMobileDevice || isFullscreen) {
+          const startXFromLeft = start.x - rect.left;
+          if (startXFromLeft < rect.width / 2) {
+            isSwipingRef.current = "vertical-left";
+          } else {
+            isSwipingRef.current = "vertical-right";
+          }
+          wasSwipingRef.current = true;
         }
-        wasSwipingRef.current = true;
       }
     }
 
@@ -1094,7 +1096,7 @@ export function VideoPlayer({
 
           {/* Brightness indicator*/}
           <AnimatePresence>
-            {gestureHud.visible && gestureHud.type === "brightness" && (
+            {gestureHud.visible && gestureHud.type === "brightness" && (!isMobileDevice || isFullscreen) && (
               <motion.div
                 key="brightness-hud"
                 initial={{ opacity: 0, x: isMobileDevice ? 16 : -16 }}
@@ -1118,7 +1120,7 @@ export function VideoPlayer({
 
           {/* Volume indicator — right side vertical bar */}
           <AnimatePresence>
-            {gestureHud.visible && gestureHud.type === "volume" && (
+            {gestureHud.visible && gestureHud.type === "volume" && (!isMobileDevice || isFullscreen) && (
               <motion.div
                 key="volume-hud"
                 initial={{ opacity: 0, x: isMobileDevice ? -16 : 16 }}
