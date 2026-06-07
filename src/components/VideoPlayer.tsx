@@ -1328,12 +1328,20 @@ export function VideoPlayer({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.back();
+                        if (isFullscreen) {
+                          toggleFullscreen();
+                        } else {
+                          router.back();
+                        }
                       }}
                       onTouchEnd={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        router.back();
+                        if (isFullscreen) {
+                          toggleFullscreen();
+                        } else {
+                          router.back();
+                        }
                       }}
                       className="p-2 rounded-full bg-black/40 border border-white/5 text-white/80 hover:text-white transition-all cursor-pointer"
                     >
@@ -1529,7 +1537,7 @@ export function VideoPlayer({
                                           }`}
                                       >
                                         <span className="text-sm">
-                                          {level.id === -1 && autoQualityLabel ? `Auto (${autoQualityLabel})` : level.name} {level.id === -1 && "(Recommended for best experience)"}
+                                          {level.id === -1 && autoQualityLabel ? `Auto (${autoQualityLabel})` : level.name}
                                         </span>
                                         {isCurrent && <span className="ml-auto text-primary">✓</span>}
                                       </button>
@@ -2128,7 +2136,7 @@ export function VideoPlayer({
                               }`}
                           >
                             <span className="text-sm">
-                              {level.id === -1 && autoQualityLabel ? `Auto (${autoQualityLabel})` : level.name} {level.id === -1 && "(Recommended for best experience)"}
+                              {level.id === -1 && autoQualityLabel ? `Auto (${autoQualityLabel})` : level.name}
                             </span>
                             {isCurrent && <span className="ml-auto text-primary">✓</span>}
                           </button>
