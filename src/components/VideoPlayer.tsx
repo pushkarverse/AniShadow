@@ -568,7 +568,15 @@ export function VideoPlayer({
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!(document.fullscreenElement || (document as any).webkitFullscreenElement));
+      const isFs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+      setIsFullscreen(isFs);
+      if (isMobileDevice) {
+        if (isFs) {
+          try { (window.screen?.orientation as any)?.lock?.('landscape').catch(() => {}); } catch { }
+        } else {
+          try { (window.screen?.orientation as any)?.lock?.('portrait-primary').catch(() => {}); } catch { }
+        }
+      }
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
@@ -578,7 +586,7 @@ export function VideoPlayer({
       if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
       if (skipOverlayTimeoutRef.current) clearTimeout(skipOverlayTimeoutRef.current);
     };
-  }, []);
+  }, [isMobileDevice]);
 
   // Auto-rotate removed intentionally
 
@@ -1336,6 +1344,11 @@ export function VideoPlayer({
                         e.stopPropagation();
                         router.back();
                       }}
+                      onTouchEnd={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        router.back();
+                      }}
                       className="p-2 rounded-full bg-black/40 border border-white/5 text-white/80 hover:text-white transition-all cursor-pointer"
                     >
                       <ChevronLeft className="w-5 h-5" />
@@ -1355,6 +1368,17 @@ export function VideoPlayer({
                             scheduleControlsHide();
                           }
                         }}
+                        onTouchEnd={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          const next = !showMobileSettings;
+                          setShowMobileSettings(next);
+                          if (next) {
+                            if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+                          } else {
+                            scheduleControlsHide();
+                          }
+                        }}
                         className={`p-2 transition-all cursor-pointer ${showMobileSettings ? 'text-primary' : 'text-white/60 hover:text-white'}`}
                       >
                         <Settings className="w-5 h-5" />
@@ -1364,6 +1388,11 @@ export function VideoPlayer({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          toggleFullscreen();
+                        }}
+                        onTouchEnd={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
                           toggleFullscreen();
                         }}
                         className="p-2 text-white/60 hover:text-white transition-all cursor-pointer"
