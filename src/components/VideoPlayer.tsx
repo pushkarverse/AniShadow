@@ -1908,7 +1908,7 @@ export function VideoPlayer({
 
           {/* Mobile Center Controls with Double-Tap Seek Animations */}
           <AnimatePresence>
-            {isMobileDevice && (showControls || showSkipOverlay.visible || showMobileSettings) && hasInteracted && !isIframe && (
+            {isMobileDevice && (showControls || showSkipOverlay.visible) && !showMobileSettings && hasInteracted && !isIframe && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
