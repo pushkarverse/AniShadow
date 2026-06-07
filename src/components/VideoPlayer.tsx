@@ -1405,14 +1405,9 @@ export function VideoPlayer({
                   {/* Center skip buttons removed here; they are managed as a separate overlay below */}
 
                   {/* Bottom Row: timestamp + seekbar */}
-                  <div className="flex flex-col gap-3 w-full pointer-events-auto mt-auto z-20">
-                    <div className="flex items-center justify-end w-full px-2">
-                      <div className="text-white/70 font-mono text-xs font-bold">
-                        {formatTime(progress)}
-                      </div>
-                    </div>
-
-                    <div className="w-full relative flex items-center h-4">
+                  <div className="flex items-center gap-3 w-full pointer-events-auto mt-auto z-20 px-2">
+                    <span className="text-white/80 text-xs font-mono">{formatTime(progress)}</span>
+                    <div className="flex-1 relative flex items-center h-4">
                       <input
                         type="range"
                         min={0}
@@ -1433,12 +1428,13 @@ export function VideoPlayer({
                           setIsScrubbing(false);
                           scheduleControlsHide();
                         }}
-                        className="w-full h-1 appearance-none rounded-full cursor-pointer accent-primary focus:outline-none [&::-webkit-slider-runnable-track]:bg-transparent [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:appearance-none"
+                        className="w-full h-1 appearance-none rounded-full cursor-pointer accent-primary focus:outline-none [&::-webkit-slider-runnable-track]:bg-transparent [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:transition-all active:[&::-webkit-slider-thumb]:scale-125"
                         style={{
-                          background: `linear-gradient(to right, rgb(155, 12, 12) 0%, rgb(155, 12, 12) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.2) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.2) 100%)`
+                          background: `linear-gradient(to right, rgb(155, 12, 12) 0%, rgb(155, 12, 12) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) 100%)`
                         }}
                       />
                     </div>
+                    <span className="text-white/80 text-xs font-mono">{formatTime(duration)}</span>
                   </div>
                   {/* Mobile Settings Bottom Sheet/Dropdown (Fullscreen version) */}
                   <AnimatePresence>
