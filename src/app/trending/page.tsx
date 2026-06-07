@@ -9,8 +9,10 @@ export const dynamic = "force-dynamic";
 
 export default async function TrendingPage({
   searchParams,
+  baseUrl = "/trending",
 }: {
   searchParams: Promise<{ page?: string }>;
+  baseUrl?: string;
 }) {
   const { page } = await searchParams;
   const currentPage = parseInt(page || "1");
@@ -56,7 +58,7 @@ export default async function TrendingPage({
             <Pagination 
               currentPage={currentPage} 
               hasNextPage={hasNextPage} 
-              baseUrl="/trending" 
+              baseUrl={baseUrl} 
             />
           </>
         ) : (

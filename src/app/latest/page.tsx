@@ -10,8 +10,10 @@ export const dynamic = "force-dynamic";
 
 export default async function LatestPage({
   searchParams,
+  baseUrl = "/latest",
 }: {
   searchParams: Promise<{ page?: string }>;
+  baseUrl?: string;
 }) {
   const { page } = await searchParams;
   const currentPage = parseInt(page || "1");
@@ -59,7 +61,7 @@ export default async function LatestPage({
             <Pagination 
               currentPage={currentPage} 
               hasNextPage={hasNextPage} 
-              baseUrl="/latest" 
+              baseUrl={baseUrl} 
             />
           </>
         ) : (
@@ -70,7 +72,7 @@ export default async function LatestPage({
               Please try again in a few moments.
             </p>
             <Link 
-              href={`/latest?page=${currentPage}`}
+              href={`${baseUrl}?page=${currentPage}`}
               className="px-10 py-4 bg-primary text-white font-black rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 uppercase tracking-widest text-sm inline-block"
             >
               RETRY
