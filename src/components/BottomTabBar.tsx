@@ -28,7 +28,7 @@ export function BottomTabBar({ onMenuToggle, isMangaRoute }: BottomTabBarProps) 
     },
     { 
       label: "Search", 
-      href: "/search", 
+      href: isMangaRoute ? "/search?type=MANGA" : "/search", 
       icon: Search, 
       active: pathname?.startsWith("/search") 
     },

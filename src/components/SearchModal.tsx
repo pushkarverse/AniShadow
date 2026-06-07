@@ -40,22 +40,24 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [isMangaMode, setIsMangaMode] = useState(isMangaRoute);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
-  // Focus input on open
+  // Focus input and sync prop mode on open
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
       setFocusedIndex(-1);
+      setIsMangaMode(isMangaRoute);
     } else {
       setQuery("");
       setResults([]);
     }
-  }, [isOpen]);
+  }, [isOpen, isMangaRoute]);
 
   // Debounced Search API call
   useEffect(() => {
@@ -68,7 +70,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
     const delayDebounce = setTimeout(async () => {
       setLoading(true);
       try {
-        const typeParam = isMangaRoute ? "MANGA" : "ANIME";
+        const typeParam = isMangaMode ? "MANGA" : "ANIME";
         const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}&type=${typeParam}`);
         if (res.ok) {
           const data = await res.json();
@@ -86,7 +88,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
     }, 300);
 
     return () => clearTimeout(delayDebounce);
-  }, [query, isMangaRoute]);
+  }, [query, isMangaMode]);
 
   // Keyboard navigation & actions
   useEffect(() => {
@@ -107,12 +109,12 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
           const anime = results[focusedIndex];
           if (anime) {
             const slug = anime.slug || slugify(getDisplayTitle(anime.title));
-            const dest = isMangaRoute ? `/manga/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
+            const dest = isMangaMode ? `/manga/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
             router.push(dest);
             onClose();
           }
         } else if (query.trim()) {
-          const typeParam = isMangaRoute ? "&type=MANGA" : "";
+          const typeParam = isMangaMode ? "&type=MANGA" : "";
           router.push(`/search?q=${encodeURIComponent(query.trim())}${typeParam}`);
           onClose();
         }
@@ -123,7 +125,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, focusedIndex, results, query, isMangaRoute, router, onClose]);
+  }, [isOpen, focusedIndex, results, query, isMangaMode, router, onClose]);
 
   // Scroll focused element into view
   useEffect(() => {
@@ -174,11 +176,30 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
               transition={{ type: "spring", duration: 0.4 }}
               className="w-full bg-[#131620] border border-[#1f2330] rounded-2xl overflow-hidden flex flex-col shadow-[0_25px_60px_rgba(0,0,0,0.85)]"
             >
-              {/* Tabs Row */}
+              {/* Interactive Tabs Row */}
               <div className="flex border-b border-[#1f2330] select-none bg-[#131620]">
-                <div className="py-3.5 px-6 font-bold uppercase tracking-wider text-xs text-primary border-b-2 border-primary">
-                  {isMangaRoute ? "Manga" : "Anime"}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMangaMode(false)}
+                  className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer ${
+                    !isMangaMode
+                      ? "text-primary border-primary"
+                      : "text-white/40 border-transparent hover:text-white"
+                  }`}
+                >
+                  Anime
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsMangaMode(true)}
+                  className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer ${
+                    isMangaMode
+                      ? "text-[#ff6600] border-[#ff6600]"
+                      : "text-white/40 border-transparent hover:text-white"
+                  }`}
+                >
+                  Manga
+                </button>
               </div>
 
               {/* Input Wrapper */}
@@ -188,7 +209,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={isMangaRoute ? "Search Manga..." : "Search Anime..."}
+                  placeholder={isMangaMode ? "Search Manga..." : "Search Anime..."}
                   className="w-full bg-transparent text-white border-0 px-6 py-4 outline-none font-sans text-sm placeholder-white/20"
                 />
               </div>
@@ -205,7 +226,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
                     results.map((anime, idx) => {
                       const isFocused = idx === focusedIndex;
                       const slug = anime.slug || slugify(getDisplayTitle(anime.title));
-                      const dest = isMangaRoute ? `/manga/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
+                      const dest = isMangaMode ? `/manga/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
                       return (
                         <a
                           key={anime.id}

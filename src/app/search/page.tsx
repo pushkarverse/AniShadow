@@ -32,6 +32,19 @@ export default async function SearchPage({
   const currentYear = year ? parseInt(year) : undefined;
   const currentType = (type === "MANGA" ? "MANGA" : "ANIME") as "ANIME" | "MANGA";
 
+  const buildSearchUrl = (targetType: "ANIME" | "MANGA") => {
+    const params: string[] = [];
+    if (query) params.push(`q=${encodeURIComponent(query)}`);
+    if (genres) params.push(`genres=${encodeURIComponent(genres)}`);
+    if (tags) params.push(`tags=${encodeURIComponent(tags)}`);
+    if (status) params.push(`status=${encodeURIComponent(status)}`);
+    if (season) params.push(`season=${encodeURIComponent(season)}`);
+    if (format) params.push(`format=${encodeURIComponent(format)}`);
+    if (year) params.push(`year=${encodeURIComponent(year)}`);
+    params.push(`type=${targetType}`);
+    return `/search?${params.join("&")}`;
+  };
+
   let searchResults: any[] = [];
   let hasNextPage = false;
   let totalResults = 0;
@@ -71,6 +84,30 @@ export default async function SearchPage({
               <h1 className="text-lg font-black text-white uppercase tracking-wider pl-0.5">
                 Search {currentType === "MANGA" ? "Manga" : "Anime"}
               </h1>
+            </div>
+
+            {/* Search Type Switcher */}
+            <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/5 mb-5 select-none">
+              <Link
+                href={buildSearchUrl("ANIME")}
+                className={`flex-1 py-2 rounded-lg text-center text-[10px] font-black uppercase tracking-widest transition-all ${
+                  currentType === "ANIME"
+                    ? "bg-[#ff3333] text-white shadow-lg shadow-red-500/20"
+                    : "text-white/40 hover:text-white"
+                }`}
+              >
+                Anime
+              </Link>
+              <Link
+                href={buildSearchUrl("MANGA")}
+                className={`flex-1 py-2 rounded-lg text-center text-[10px] font-black uppercase tracking-widest transition-all ${
+                  currentType === "MANGA"
+                    ? "bg-[#ff6600] text-white shadow-lg shadow-orange-500/20"
+                    : "text-white/40 hover:text-white"
+                }`}
+              >
+                Manga
+              </Link>
             </div>
 
             <form action="/search" method="GET" className="mb-5 relative w-full group">
