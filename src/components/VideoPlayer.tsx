@@ -1330,7 +1330,13 @@ export function VideoPlayer({
                 {/* Mobile Controls Overlay — shown on mobile devices regardless of orientation/fullscreen */}
                 <div className={`flex flex-col justify-between h-full w-full relative ${isMobileDevice ? 'flex' : 'hidden'}`}>
                   {/* Top Row: Back (left), Cast (mock), Settings, Fullscreen (right) */}
-                  <div className="flex justify-between items-center w-full pointer-events-auto">
+                  <motion.div
+                    initial={{ y: -50, opacity: 0 }}
+                    animate={{ y: showControls ? 0 : -50, opacity: showControls ? 1 : 0 }}
+                    exit={{ y: -50, opacity: 0 }}
+                    transition={{ type: "tween", ease: "easeInOut", duration: 0.35 }}
+                    className="flex justify-between items-center w-full pointer-events-auto"
+                  >
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1400,12 +1406,18 @@ export function VideoPlayer({
                         <Maximize className="w-5 h-5" />
                       </button>
                     </div>
-                  </div>
+                  </motion.div>
 
                   {/* Center skip buttons removed here; they are managed as a separate overlay below */}
 
                   {/* Bottom Row: timestamp + seekbar */}
-                  <div className="flex flex-col gap-3 w-full pointer-events-auto mt-auto z-20">
+                  <motion.div
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: showControls ? 0 : 50, opacity: showControls ? 1 : 0 }}
+                    exit={{ y: 50, opacity: 0 }}
+                    transition={{ type: "tween", ease: "easeInOut", duration: 0.35 }}
+                    className="flex flex-col gap-3 w-full pointer-events-auto mt-auto z-20"
+                  >
                     <div className="flex items-center justify-end w-full px-2">
                       <div className="text-white/70 font-mono text-xs font-bold">
                         {formatTime(progress)}
@@ -1433,13 +1445,17 @@ export function VideoPlayer({
                           setIsScrubbing(false);
                           scheduleControlsHide();
                         }}
-                        className="w-full h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 active:h-1.5 transition-all focus:outline-none [&::-webkit-slider-runnable-track]:bg-transparent [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:opacity-0 hover:[&::-webkit-slider-thumb]:opacity-100 active:[&::-webkit-slider-thumb]:opacity-100 [&::-webkit-slider-thumb]:transition-opacity [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:opacity-0 hover:[&::-moz-range-thumb]:opacity-100 active:[&::-moz-range-thumb]:opacity-100 [&::-moz-range-thumb]:transition-opacity"
+                        className={`w-full h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 active:h-1.5 transition-all focus:outline-none [&::-webkit-slider-runnable-track]:bg-transparent [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:appearance-none [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-webkit-slider-thumb]:transition-opacity [&::-moz-range-thumb]:transition-opacity ${
+                          showControls
+                            ? "[&::-webkit-slider-thumb]:opacity-100 [&::-moz-range-thumb]:opacity-100"
+                            : "[&::-webkit-slider-thumb]:opacity-0 [&::-moz-range-thumb]:opacity-0"
+                        }`}
                         style={{
                           background: `linear-gradient(to right, rgb(155, 12, 12) 0%, rgb(155, 12, 12) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) 100%)`
                         }}
                       />
                     </div>
-                  </div>
+                  </motion.div>
                   {/* Mobile Settings Bottom Sheet/Dropdown (Fullscreen version) */}
                   <AnimatePresence>
                     {showMobileSettings && isFullscreen && (
@@ -1630,7 +1646,13 @@ export function VideoPlayer({
 
                 {/* Desktop Controls Overlay — only shown on non-mobile devices */}
                 <div className={`flex flex-col justify-between h-full w-full ${isMobileDevice ? 'hidden' : 'flex'}`}>
-                  <div className="flex justify-between items-start">
+                  <motion.div
+                    initial={{ y: -50, opacity: 0 }}
+                    animate={{ y: showControls ? 0 : -50, opacity: showControls ? 1 : 0 }}
+                    exit={{ y: -50, opacity: 0 }}
+                    transition={{ type: "tween", ease: "easeInOut", duration: 0.35 }}
+                    className="flex justify-between items-start"
+                  >
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1641,9 +1663,15 @@ export function VideoPlayer({
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
-                  </div>
+                  </motion.div>
 
-                  <div className="flex flex-col gap-4 pointer-events-auto mt-auto">
+                  <motion.div
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: showControls ? 0 : 50, opacity: showControls ? 1 : 0 }}
+                    exit={{ y: 50, opacity: 0 }}
+                    transition={{ type: "tween", ease: "easeInOut", duration: 0.35 }}
+                    className="flex flex-col gap-4 pointer-events-auto mt-auto"
+                  >
                     <div className="flex items-center gap-4">
                       <span className="text-white/80 text-xs font-mono">{formatTime(progress)}</span>
                       <div className="flex-1 relative flex items-center h-6" onMouseMove={handleProgressBarMouseMove} onMouseLeave={handleProgressBarMouseLeave}>
@@ -1923,7 +1951,7 @@ export function VideoPlayer({
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
               </motion.div>
             )}
@@ -1940,7 +1968,7 @@ export function VideoPlayer({
               >
                 <div className="flex items-center justify-center gap-12 pointer-events-auto">
                   {/* Skip Backward Button */}
-                  <button
+                  <motion.button
                     onClick={(e) => {
                       e.stopPropagation();
                       skipBackward();
@@ -1952,8 +1980,16 @@ export function VideoPlayer({
                       skipBackward();
                       scheduleControlsHide();
                     }}
-                    className={`relative w-12 h-12 flex items-center justify-center text-white active:scale-95 transition-all cursor-pointer ${!showControls && showSkipOverlay.direction !== "backward" ? "opacity-0 pointer-events-none" : "opacity-100"
-                      }`}
+                    initial={{ scale: 0.7, opacity: 0 }}
+                    animate={
+                      !showControls && showSkipOverlay.direction !== "backward"
+                        ? { scale: 0.7, opacity: 0 }
+                        : { scale: 1, opacity: 1 }
+                    }
+                    exit={{ scale: 0.7, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    style={{ pointerEvents: !showControls && showSkipOverlay.direction !== "backward" ? "none" : "auto" }}
+                    className="relative w-12 h-12 flex items-center justify-center text-white active:scale-95 cursor-pointer"
                     title="Rewind 10s"
                   >
                     <motion.div
@@ -1974,10 +2010,10 @@ export function VideoPlayer({
                         </motion.span>
                       )}
                     </AnimatePresence>
-                  </button>
+                  </motion.button>
 
                   {/* Play/Pause Button */}
-                  <button
+                  <motion.button
                     onClick={(e) => {
                       e.stopPropagation();
                       togglePlay();
@@ -1989,14 +2025,22 @@ export function VideoPlayer({
                       togglePlay();
                       scheduleControlsHide();
                     }}
-                    className={`relative w-12 h-12 flex items-center justify-center text-white active:scale-90 transition-all cursor-pointer ${!showControls ? "opacity-0 pointer-events-none" : "opacity-100"
-                      }`}
+                    initial={{ scale: 0.7, opacity: 0 }}
+                    animate={
+                      !showControls
+                        ? { scale: 0.7, opacity: 0 }
+                        : { scale: 1, opacity: 1 }
+                    }
+                    exit={{ scale: 0.7, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    style={{ pointerEvents: !showControls ? "none" : "auto" }}
+                    className="relative w-12 h-12 flex items-center justify-center text-white active:scale-90 cursor-pointer"
                   >
                     {isPlaying ? <Pause className="w-7 h-7 fill-current" /> : <Play className="w-7 h-7 fill-current ml-0.5" />}
-                  </button>
+                  </motion.button>
 
                   {/* Skip Forward Button */}
-                  <button
+                  <motion.button
                     onClick={(e) => {
                       e.stopPropagation();
                       skipForward();
@@ -2008,8 +2052,16 @@ export function VideoPlayer({
                       skipForward();
                       scheduleControlsHide();
                     }}
-                    className={`relative w-12 h-12 flex items-center justify-center text-white active:scale-95 transition-all cursor-pointer ${!showControls && showSkipOverlay.direction !== "forward" ? "opacity-0 pointer-events-none" : "opacity-100"
-                      }`}
+                    initial={{ scale: 0.7, opacity: 0 }}
+                    animate={
+                      !showControls && showSkipOverlay.direction !== "forward"
+                        ? { scale: 0.7, opacity: 0 }
+                        : { scale: 1, opacity: 1 }
+                    }
+                    exit={{ scale: 0.7, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    style={{ pointerEvents: !showControls && showSkipOverlay.direction !== "forward" ? "none" : "auto" }}
+                    className="relative w-12 h-12 flex items-center justify-center text-white active:scale-95 cursor-pointer"
                     title="Forward 10s"
                   >
                     <motion.div
@@ -2030,7 +2082,7 @@ export function VideoPlayer({
                         </motion.span>
                       )}
                     </AnimatePresence>
-                  </button>
+                  </motion.button>
                 </div>
               </motion.div>
             )}
