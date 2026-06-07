@@ -487,8 +487,8 @@ export function WatchPlayerSection({
         {/* Left Column: Player & Details */}
         <div className="flex-1 flex flex-col gap-6 min-w-0">
           {renderBackButton()}
-          {renderAudioSwitcher()}
           {renderPlayer()}
+          {renderAudioSwitcher()}
           {renderMobileSheetTrigger()}
           {renderInfoDetails()}
         </div>
@@ -508,8 +508,8 @@ export function WatchPlayerSection({
       {/* Top: Widescreen Video Player */}
       <div className="w-full flex flex-col gap-6">
         {renderBackButton()}
-        {renderAudioSwitcher()}
         {renderPlayer()}
+        {renderAudioSwitcher()}
         {renderMobileSheetTrigger()}
       </div>
 

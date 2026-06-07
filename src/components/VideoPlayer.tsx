@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, ReactElement, useMemo } from "react";
-import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles, Mic, Gauge, ChevronLeft, Sparkles, Monitor } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles, Mic, Gauge, ChevronLeft, Sparkles, Monitor, ChevronsLeft, ChevronsRight, Tv, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Hls from "hls.js";
 import { useRouter } from "next/navigation";
@@ -309,6 +309,8 @@ export function VideoPlayer({
   const [isBuffering, setIsBuffering] = useState<boolean>(true);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const [showSpeedMenu, setShowSpeedMenu] = useState<boolean>(false);
+  const [showMobileSettings, setShowMobileSettings] = useState(false);
+  const [isMaxView, setIsMaxView] = useState(false);
 
   // Sync playback speed when video URL or component changes
   useEffect(() => {
@@ -1154,7 +1156,7 @@ export function VideoPlayer({
               ref={videoRef}
               crossOrigin="anonymous"
               playsInline
-              className="absolute inset-0 w-full h-full object-contain"
+              className={`absolute inset-0 w-full h-full ${isMaxView ? 'object-cover' : 'object-contain'}`}
               onTimeUpdate={() => {
                 const time = videoRef.current?.currentTime || 0;
                 setProgress(time);
@@ -1304,41 +1306,115 @@ export function VideoPlayer({
               exit={{ opacity: 0 }}
               className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/90 via-transparent to-black/60 p-4 md:p-6 pointer-events-none z-40"
             >
-              <div className="flex justify-between items-start">
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    router.back();
-                  }} 
-                  className="md:hidden p-2 rounded-full bg-black/60 border border-white/10 text-white/80 hover:text-white hover:bg-black/80 transition-all cursor-pointer pointer-events-auto"
-                  title="Go Back"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-              </div>
+              {/* Mobile Controls Overlay */}
+              <div className="flex flex-col justify-between h-full w-full md:hidden pointer-events-none relative">
+                {/* Top Row: Back (left), Cast (mock), Settings, Fullscreen (right) */}
+                <div className="flex justify-between items-center w-full pointer-events-auto">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.back();
+                    }}
+                    className="p-2 rounded-full bg-black/40 border border-white/5 text-white/80 hover:text-white transition-all cursor-pointer"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
 
-              <div className="flex flex-col gap-4 pointer-events-auto mt-auto">
-                <div className="flex items-center gap-4">
-                  <span className="text-white/80 text-xs font-mono">{formatTime(progress)}</span>
-                  <div className="flex-1 relative flex items-center h-6" onMouseMove={handleProgressBarMouseMove} onMouseLeave={handleProgressBarMouseLeave}>
-                    {hoverTime !== null && duration > 0 && (
-                      <div
-                        className="absolute bottom-6 bg-zinc-950/95 border border-white/10 rounded-lg overflow-hidden shadow-2xl z-50 pointer-events-none -translate-x-1/2 flex flex-col items-center p-1 w-32 backdrop-blur-xs"
-                        style={{ left: `${hoverPosition}%` }}
-                      >
-                        <div className="w-full aspect-video bg-black rounded-md overflow-hidden relative">
-                          <video
-                            ref={setPreviewVideoElement}
-                            className="w-full h-full object-cover"
-                            muted
-                            playsInline
-                          />
-                        </div>
-                        <span className="text-[10px] font-mono text-white/95 mt-1 font-semibold">
-                          {formatTime(hoverTime)}
-                        </span>
-                      </div>
-                    )}
+                  <div className="flex items-center gap-2">
+                    {/* Mock Cast Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        alert("Chromecast connection requested...");
+                      }}
+                      className="p-2 text-white/60 hover:text-white transition-all cursor-pointer"
+                    >
+                      <Tv className="w-5 h-5" />
+                    </button>
+
+                    {/* Settings Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMobileSettings(!showMobileSettings);
+                      }}
+                      className={`p-2 transition-all cursor-pointer ${showMobileSettings ? 'text-primary' : 'text-white/60 hover:text-white'}`}
+                    >
+                      <Settings className="w-5 h-5" />
+                    </button>
+
+                    {/* Fullscreen Toggle */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFullscreen();
+                      }}
+                      className="p-2 text-white/60 hover:text-white transition-all cursor-pointer"
+                    >
+                      <Maximize className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Center Buttons: Skip backward, Play/Pause, Skip forward */}
+                <div className="absolute inset-0 flex items-center justify-center gap-10 pointer-events-auto z-10">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      skipBackward();
+                      scheduleControlsHide();
+                    }}
+                    className="p-3 rounded-full bg-black/40 border border-white/5 text-white hover:text-primary transition-all active:scale-90 cursor-pointer"
+                    title="Rewind 10s"
+                  >
+                    <ChevronsLeft className="w-6 h-6" />
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      togglePlay();
+                      scheduleControlsHide();
+                    }}
+                    className="p-5 rounded-full bg-primary text-white shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all cursor-pointer border border-[#4A2125]"
+                  >
+                    {isPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current ml-0.5" />}
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      skipForward();
+                      scheduleControlsHide();
+                    }}
+                    className="p-3 rounded-full bg-black/40 border border-white/5 text-white hover:text-primary transition-all active:scale-90 cursor-pointer"
+                    title="Forward 10s"
+                  >
+                    <ChevronsRight className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {/* Bottom Row: Maxview pill, timestamp, seekbar */}
+                <div className="flex flex-col gap-3 w-full pointer-events-auto mt-auto z-20">
+                  <div className="flex items-center justify-between w-full px-2">
+                    <div className="w-20" />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsMaxView(!isMaxView);
+                        scheduleControlsHide();
+                      }}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-white border transition-all cursor-pointer shadow-lg active:scale-95 bg-gradient-to-r from-blue-600/90 to-purple-600/90 border-white/10"
+                    >
+                      <Maximize className="w-3.5 h-3.5" />
+                      <span>Maxview {isMaxView ? "On" : "Off"}</span>
+                    </button>
+                    <div className="text-white/90 font-mono text-xs font-bold w-20 text-right">
+                      {formatTime(progress)}
+                    </div>
+                  </div>
+
+                  <div className="w-full relative flex items-center h-4">
                     <input
                       type="range"
                       min={0}
@@ -1359,215 +1435,372 @@ export function VideoPlayer({
                         setIsScrubbing(false);
                         scheduleControlsHide();
                       }}
-                      className="w-full h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 transition-all focus:outline-none [&::-webkit-slider-runnable-track]:bg-transparent [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:opacity-0 hover:[&::-webkit-slider-thumb]:opacity-100 [&::-moz-range-thumb]:opacity-0 hover:[&::-moz-range-thumb]:opacity-100 [&::-webkit-slider-thumb]:transition-opacity [&::-moz-range-thumb]:transition-opacity"
+                      className="w-full h-1 appearance-none rounded-full cursor-pointer accent-primary focus:outline-none [&::-webkit-slider-runnable-track]:bg-transparent [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:appearance-none"
                       style={{
-                        background: `linear-gradient(to right, rgb(155, 12, 12) 0%, rgb(155, 12, 12) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) 100%)`
+                        background: `linear-gradient(to right, rgb(155, 12, 12) 0%, rgb(155, 12, 12) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.2) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.2) 100%)`
                       }}
                     />
                   </div>
-                  <span className="text-white/80 text-xs font-mono">{formatTime(duration)}</span>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 sm:gap-6">
-                    <button onClick={skipBackward} className="relative w-10 h-10 text-white hover:text-accent transition-all scale-110 active:scale-95 flex items-center justify-center" title="Rewind 10s">
-                      <RotateCcw className="w-6 h-6 sm:w-7 sm:h-7" />
-                      <span className="absolute bottom-0 text-[9px] font-black leading-none text-white/90">10s</span>
-                    </button>
-
-                    <button onClick={togglePlay} className="text-white hover:text-accent transition-all scale-110 active:scale-95">
-                      {isPlaying ? <Pause className="w-6 h-6 sm:w-7 h-7" /> : <Play className="w-6 h-6 sm:w-7 h-7 fill-current" />}
-                    </button>
-
-                    <button onClick={skipForward} className="relative w-10 h-10 text-white hover:text-accent transition-all scale-110 active:scale-95 flex items-center justify-center" title="Forward 10s">
-                      <RotateCw className="w-6 h-6 sm:w-7 sm:h-7" />
-                      <span className="absolute bottom-0 text-[9px] font-black leading-none text-white/90">10s</span>
-                    </button>
-
-                    <button onClick={() => {
-                      if (videoRef.current) {
-                        videoRef.current.muted = !isMuted;
-                        setIsMuted(!isMuted);
-                      }
-                    }} className="text-white hover:text-accent transition-all hidden sm:inline-flex">
-                      {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-3 sm:gap-6 relative">
-                    {proxiedSubtitleUrl && (
-                      <button
-                        onClick={() => setIsSubtitlesOn(!isSubtitlesOn)}
-                        className={`transition-all ${isSubtitlesOn ? 'text-primary' : 'text-white/60 hover:text-white'}`}
-                        title="Toggle Subtitles"
-                      >
-                        <Subtitles className="w-5 h-5 sm:w-6 sm:h-6" />
-                      </button>
-                    )}
-
-                    {/* Audio Group Switcher (Mic button) */}
-                    {hasBothAudioGroups && (
-                      <div className="relative">
+                {/* Mobile Settings Bottom Sheet/Dropdown */}
+                <AnimatePresence>
+                  {showMobileSettings && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      className="absolute top-16 right-0 bg-[#0c0c0c]/95 border border-white/10 rounded-2xl p-4 w-60 shadow-2xl backdrop-blur-xl z-50 pointer-events-auto flex flex-col gap-4 max-h-[70%] overflow-y-auto"
+                    >
+                      <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                        <span className="text-xs font-black uppercase tracking-wider text-primary">Settings</span>
                         <button
-                          onClick={() => { setShowAudioMenu(!showAudioMenu); setShowQualityMenu(false); setShowSpeedMenu(false); }}
-                          className={`transition-all flex items-center gap-1 ${activeAudioGroup === 'dub' ? 'text-primary' : 'text-white hover:text-accent'}`}
-                          title="Switch Audio"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowMobileSettings(false);
+                          }}
+                          className="text-white/40 hover:text-white"
                         >
-                          <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
-                          <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase hidden sm:inline">
-                            {activeAudioGroup === 'dub' ? 'Dub' : 'Sub'}
-                          </span>
+                          <X className="w-4 h-4" />
                         </button>
-
-                        <AnimatePresence>
-                          {showAudioMenu && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: 10 }}
-                              className="absolute bottom-10 right-0 bg-[#0c0c0c]/95 border border-white/10 rounded-xl p-2 w-36 flex flex-col gap-1 shadow-2xl backdrop-blur-md z-50 pointer-events-auto"
-                            >
-                              <button
-                                onClick={() => switchAudioGroup('other')}
-                                className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${activeAudioGroup === 'other'
-                                    ? 'bg-primary text-white'
-                                    : 'text-white/70 hover:bg-white/10 hover:text-white'
-                                  }`}
-                              >
-                                Japanese (Sub)
-                              </button>
-                              <button
-                                onClick={() => switchAudioGroup('dub')}
-                                className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${activeAudioGroup === 'dub'
-                                    ? 'bg-primary text-white'
-                                    : 'text-white/70 hover:bg-white/10 hover:text-white'
-                                  }`}
-                              >
-                                English (Dub)
-                              </button>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
                       </div>
-                    )}
 
-                    {/* Playback Speed settings */}
-                    <div className="relative">
-                      <button
-                        onClick={() => {
-                          setShowSpeedMenu(!showSpeedMenu);
-                          setShowQualityMenu(false);
-                          setShowAudioMenu(false);
-                        }}
-                        className="text-white hover:text-accent transition-all flex items-center gap-1"
-                        title="Playback Speed"
-                      >
-                        <Gauge className="w-5 h-5 sm:w-6 sm:h-6" />
-                        <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase">
-                          {playbackSpeed === 1 ? "1x" : `${playbackSpeed}x`}
-                        </span>
-                      </button>
-
-                      <AnimatePresence>
-                        {showSpeedMenu && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 10 }}
-                            className="absolute bottom-10 right-0 bg-[#0c0c0c]/95 border border-white/10 rounded-xl p-2 w-24 flex flex-col gap-1 shadow-2xl backdrop-blur-md z-50 pointer-events-auto"
-                          >
-                            {[0.75, 1, 1.25, 1.5, 2].map((speed) => (
+                      {levels.length > 1 && (
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-white/30">Quality</span>
+                          <div className="flex flex-wrap gap-1.5 flex-row">
+                            {levels.map((level) => (
                               <button
-                                key={speed}
-                                onClick={() => {
-                                  if (videoRef.current) {
-                                    videoRef.current.playbackRate = speed;
-                                  }
-                                  setPlaybackSpeed(speed);
-                                  setShowSpeedMenu(false);
+                                key={level.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  selectQuality(level.id);
+                                  setShowMobileSettings(false);
                                 }}
-                                className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${
-                                  playbackSpeed === speed
-                                    ? "bg-primary text-white"
-                                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                                className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md border transition-all ${
+                                  currentLevel === level.id
+                                    ? "bg-primary border-primary text-white"
+                                    : "bg-white/5 border-white/10 text-white/50 hover:text-white"
                                 }`}
                               >
-                                {speed === 1 ? "Normal" : `${speed}x`}
+                                {level.name}
                               </button>
                             ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-white/30">Speed</span>
+                        <div className="flex flex-wrap gap-1.5 flex-row">
+                          {[0.75, 1, 1.25, 1.5, 2].map((speed) => (
+                            <button
+                              key={speed}
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (videoRef.current) videoRef.current.playbackRate = speed;
+                                  setPlaybackSpeed(speed);
+                                  setShowMobileSettings(false);
+                              }}
+                              className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md border transition-all ${
+                                playbackSpeed === speed
+                                  ? "bg-primary border-primary text-white"
+                                  : "bg-white/5 border-white/10 text-white/50 hover:text-white"
+                              }`}
+                            >
+                              {speed === 1 ? "1x" : `${speed}x`}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {proxiedSubtitleUrl && (
+                        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-white/30">Subtitles</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsSubtitlesOn(!isSubtitlesOn);
+                              setShowMobileSettings(false);
+                            }}
+                            className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-md border transition-all ${
+                              isSubtitlesOn
+                                ? "bg-primary border-primary text-white"
+                                : "bg-white/5 border-white/10 text-white/50"
+                            }`}
+                          >
+                            {isSubtitlesOn ? "On" : "Off"}
+                          </button>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Desktop Controls Overlay */}
+              <div className="flex flex-col justify-between h-full w-full hidden md:flex pointer-events-none">
+                <div className="flex justify-between items-start">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.back();
+                    }} 
+                    className="md:hidden p-2 rounded-full bg-black/60 border border-white/10 text-white/80 hover:text-white hover:bg-black/80 transition-all cursor-pointer pointer-events-auto"
+                    title="Go Back"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-4 pointer-events-auto mt-auto">
+                  <div className="flex items-center gap-4">
+                    <span className="text-white/80 text-xs font-mono">{formatTime(progress)}</span>
+                    <div className="flex-1 relative flex items-center h-6" onMouseMove={handleProgressBarMouseMove} onMouseLeave={handleProgressBarMouseLeave}>
+                      {hoverTime !== null && duration > 0 && (
+                        <div
+                          className="absolute bottom-6 bg-zinc-950/95 border border-white/10 rounded-lg overflow-hidden shadow-2xl z-50 pointer-events-none -translate-x-1/2 flex flex-col items-center p-1 w-32 backdrop-blur-xs"
+                          style={{ left: `${hoverPosition}%` }}
+                        >
+                          <div className="w-full aspect-video bg-black rounded-md overflow-hidden relative">
+                            <video
+                              ref={setPreviewVideoElement}
+                              className="w-full h-full object-cover"
+                              muted
+                              playsInline
+                            />
+                          </div>
+                          <span className="text-[10px] font-mono text-white/95 mt-1 font-semibold">
+                            {formatTime(hoverTime)}
+                          </span>
+                        </div>
+                      )}
+                      <input
+                        type="range"
+                        min={0}
+                        max={duration || 100}
+                        value={progress}
+                        onChange={(e) => {
+                          const newTime = Number(e.target.value);
+                          setProgress(newTime);
+                          if (videoRef.current) videoRef.current.currentTime = newTime;
+                        }}
+                        onMouseDown={() => setIsScrubbing(true)}
+                        onTouchStart={() => setIsScrubbing(true)}
+                        onMouseUp={() => {
+                          setIsScrubbing(false);
+                          scheduleControlsHide();
+                        }}
+                        onTouchEnd={() => {
+                          setIsScrubbing(false);
+                          scheduleControlsHide();
+                        }}
+                        className="w-full h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 transition-all focus:outline-none [&::-webkit-slider-runnable-track]:bg-transparent [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:opacity-0 hover:[&::-webkit-slider-thumb]:opacity-100 [&::-moz-range-thumb]:opacity-0 hover:[&::-moz-range-thumb]:opacity-100 [&::-webkit-slider-thumb]:transition-opacity [&::-moz-range-thumb]:transition-opacity"
+                        style={{
+                          background: `linear-gradient(to right, rgb(155, 12, 12) 0%, rgb(155, 12, 12) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) 100%)`
+                        }}
+                      />
+                    </div>
+                    <span className="text-white/80 text-xs font-mono">{formatTime(duration)}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 sm:gap-6">
+                      <button onClick={skipBackward} className="relative w-10 h-10 text-white hover:text-accent transition-all scale-110 active:scale-95 flex items-center justify-center" title="Rewind 10s">
+                        <RotateCcw className="w-6 h-6 sm:w-7 sm:h-7" />
+                        <span className="absolute bottom-0 text-[9px] font-black leading-none text-white/90">10s</span>
+                      </button>
+
+                      <button onClick={togglePlay} className="text-white hover:text-accent transition-all scale-110 active:scale-95">
+                        {isPlaying ? <Pause className="w-6 h-6 sm:w-7 h-7" /> : <Play className="w-6 h-6 sm:w-7 h-7 fill-current" />}
+                      </button>
+
+                      <button onClick={skipForward} className="relative w-10 h-10 text-white hover:text-accent transition-all scale-110 active:scale-95 flex items-center justify-center" title="Forward 10s">
+                        <RotateCw className="w-6 h-6 sm:w-7 sm:h-7" />
+                        <span className="absolute bottom-0 text-[9px] font-black leading-none text-white/90">10s</span>
+                      </button>
+
+                      <button onClick={() => {
+                        if (videoRef.current) {
+                          videoRef.current.muted = !isMuted;
+                          setIsMuted(!isMuted);
+                        }
+                      }} className="text-white hover:text-accent transition-all hidden sm:inline-flex">
+                        {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+                      </button>
                     </div>
 
-                    {levels.length > 1 && (
+                    <div className="flex items-center gap-3 sm:gap-6 relative">
+                      {proxiedSubtitleUrl && (
+                        <button
+                          onClick={() => setIsSubtitlesOn(!isSubtitlesOn)}
+                          className={`transition-all ${isSubtitlesOn ? 'text-primary' : 'text-white/60 hover:text-white'}`}
+                          title="Toggle Subtitles"
+                        >
+                          <Subtitles className="w-5 h-5 sm:w-6 sm:h-6" />
+                        </button>
+                      )}
+
+                      {hasBothAudioGroups && (
+                        <div className="relative">
+                          <button
+                            onClick={() => { setShowAudioMenu(!showAudioMenu); setShowQualityMenu(false); setShowSpeedMenu(false); }}
+                            className={`transition-all flex items-center gap-1 ${activeAudioGroup === 'dub' ? 'text-primary' : 'text-white hover:text-accent'}`}
+                            title="Switch Audio"
+                          >
+                            <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
+                            <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase hidden sm:inline">
+                              {activeAudioGroup === 'dub' ? 'Dub' : 'Sub'}
+                            </span>
+                          </button>
+
+                          <AnimatePresence>
+                            {showAudioMenu && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 10 }}
+                                className="absolute bottom-10 right-0 bg-[#0c0c0c]/95 border border-white/10 rounded-xl p-2 w-36 flex flex-col gap-1 shadow-2xl backdrop-blur-md z-50 pointer-events-auto"
+                              >
+                                <button
+                                  onClick={() => switchAudioGroup('other')}
+                                  className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${activeAudioGroup === 'other'
+                                      ? 'bg-primary text-white'
+                                      : 'text-white/70 hover:bg-white/10 hover:text-white'
+                                    }`}
+                                >
+                                  Japanese (Sub)
+                                </button>
+                                <button
+                                  onClick={() => switchAudioGroup('dub')}
+                                  className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${activeAudioGroup === 'dub'
+                                      ? 'bg-primary text-white'
+                                      : 'text-white/70 hover:bg-white/10 hover:text-white'
+                                    }`}
+                                >
+                                  English (Dub)
+                                </button>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      )}
+
                       <div className="relative">
                         <button
-                          onClick={() => { setShowQualityMenu(!showQualityMenu); setShowAudioMenu(false); setShowSpeedMenu(false); }}
+                          onClick={() => {
+                            setShowSpeedMenu(!showSpeedMenu);
+                            setShowQualityMenu(false);
+                            setShowAudioMenu(false);
+                          }}
                           className="text-white hover:text-accent transition-all flex items-center gap-1"
-                          title="Quality Settings"
+                          title="Playback Speed"
                         >
-                          <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
+                          <Gauge className="w-5 h-5 sm:w-6 sm:h-6" />
                           <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase">
-                            {levels.find(l => l.id === currentLevel)?.name || "Auto"}
+                            {playbackSpeed === 1 ? "1x" : `${playbackSpeed}x`}
                           </span>
                         </button>
 
                         <AnimatePresence>
-                          {showQualityMenu && (
+                          {showSpeedMenu && (
                             <motion.div
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: 10 }}
-                              className="absolute bottom-10 right-0 bg-[#0c0c0c]/95 border border-white/10 rounded-xl p-2 w-32 flex flex-col gap-1 shadow-2xl backdrop-blur-md z-50 pointer-events-auto"
+                              className="absolute bottom-10 right-0 bg-[#0c0c0c]/95 border border-white/10 rounded-xl p-2 w-24 flex flex-col gap-1 shadow-2xl backdrop-blur-md z-50 pointer-events-auto"
                             >
-                              {levels.map((level) => (
+                              {[0.75, 1, 1.25, 1.5, 2].map((speed) => (
                                 <button
-                                  key={level.id}
-                                  onClick={() => selectQuality(level.id)}
-                                  className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${currentLevel === level.id
+                                  key={speed}
+                                  onClick={() => {
+                                    if (videoRef.current) {
+                                      videoRef.current.playbackRate = speed;
+                                    }
+                                    setPlaybackSpeed(speed);
+                                    setShowSpeedMenu(false);
+                                  }}
+                                  className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${
+                                    playbackSpeed === speed
                                       ? "bg-primary text-white"
                                       : "text-white/70 hover:bg-white/10 hover:text-white"
-                                    }`}
+                                  }`}
                                 >
-                                  {level.name}
+                                  {speed === 1 ? "Normal" : `${speed}x`}
                                 </button>
                               ))}
                             </motion.div>
                           )}
                         </AnimatePresence>
                       </div>
-                    )}
 
-                    {/* Cinema Glow Toggle */}
-                    {!isIframe && (
-                      <button
-                        onClick={toggleCinemaGlow}
-                        className={`transition-all active:scale-95 cursor-pointer ${
-                          isCinemaGlow ? "text-primary" : "text-white/60 hover:text-white"
-                        }`}
-                        title="Cinema Glow (Ambient Backlight)"
-                      >
-                        <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
+                      {levels.length > 1 && (
+                        <div className="relative">
+                          <button
+                            onClick={() => { setShowQualityMenu(!showQualityMenu); setShowAudioMenu(false); setShowSpeedMenu(false); }}
+                            className="text-white hover:text-accent transition-all flex items-center gap-1"
+                            title="Quality Settings"
+                          >
+                            <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
+                            <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase">
+                              {levels.find(l => l.id === currentLevel)?.name || "Auto"}
+                            </span>
+                          </button>
+
+                          <AnimatePresence>
+                            {showQualityMenu && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 10 }}
+                                className="absolute bottom-10 right-0 bg-[#0c0c0c]/95 border border-white/10 rounded-xl p-2 w-32 flex flex-col gap-1 shadow-2xl backdrop-blur-md z-50 pointer-events-auto"
+                              >
+                                {levels.map((level) => (
+                                  <button
+                                    key={level.id}
+                                    onClick={() => selectQuality(level.id)}
+                                    className={`text-left text-xs px-3 py-2 rounded-lg font-medium transition-all ${currentLevel === level.id
+                                        ? "bg-primary text-white"
+                                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                                      }`}
+                                  >
+                                    {level.name}
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      )}
+
+                      {!isIframe && (
+                        <button
+                          onClick={toggleCinemaGlow}
+                          className={`transition-all active:scale-95 cursor-pointer ${
+                            isCinemaGlow ? "text-primary" : "text-white/60 hover:text-white"
+                          }`}
+                          title="Cinema Glow (Ambient Backlight)"
+                        >
+                          <Sparkles className="w-5 h-5 sm:w-6 sm:h-6" />
+                        </button>
+                      )}
+
+                      {onTheaterToggle && (
+                        <button
+                          onClick={onTheaterToggle}
+                          className={`transition-all hidden md:inline-flex active:scale-95 cursor-pointer ${
+                            isTheaterMode ? "text-primary" : "text-white/60 hover:text-white"
+                          }`}
+                          title="Theater Mode"
+                        >
+                          <Monitor className="w-5 h-5 sm:w-6 sm:h-6" />
+                        </button>
+                      )}
+
+                      <button onClick={toggleFullscreen} className="text-white hover:text-accent transition-all">
+                        <Maximize className="w-5 h-5 sm:w-6 sm:h-6" />
                       </button>
-                    )}
-
-                    {/* Theater Mode Toggle */}
-                    {onTheaterToggle && (
-                      <button
-                        onClick={onTheaterToggle}
-                        className={`transition-all hidden md:inline-flex active:scale-95 cursor-pointer ${
-                          isTheaterMode ? "text-primary" : "text-white/60 hover:text-white"
-                        }`}
-                        title="Theater Mode"
-                      >
-                        <Monitor className="w-5 h-5 sm:w-6 sm:h-6" />
-                      </button>
-                    )}
-
-                    <button onClick={toggleFullscreen} className="text-white hover:text-accent transition-all">
-                      <Maximize className="w-5 h-5 sm:w-6 sm:h-6" />
-                    </button>
+                    </div>
                   </div>
                 </div>
               </div>
