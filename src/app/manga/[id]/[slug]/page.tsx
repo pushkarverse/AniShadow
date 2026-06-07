@@ -38,8 +38,11 @@ export default async function MangaDetailPage({ params }: PageProps) {
   const recommendations = manga.recommendations || [];
   const animeRelation = relations.find((r: any) => r.type === 'ANIME');
 
+  const isNovel = id.startsWith("novelfull-") || getMangaFormat(manga.countryOfOrigin, manga.format || manga.type) === 'Novel';
+  const themeClass = isNovel ? "novel-theme" : "manga-theme";
+
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20 manga-theme">
+    <div className={`min-h-screen bg-background text-foreground pb-20 ${themeClass}`}>
       <Navbar />
 
       {/* Hero Header */}
@@ -77,7 +80,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
                 </h1>
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-4 text-xs font-black uppercase tracking-[0.2em] text-primary/60">
-                    <span>{getMangaFormat(manga.countryOfOrigin)}</span>
+                    <span>{getMangaFormat(manga.countryOfOrigin, manga.format || manga.type)}</span>
                     <div className="w-1 h-1 bg-white/10 rounded-full" />
                     <span>{manga.status?.replace(/_/g, ' ') || "Unknown"}</span>
                     <div className="w-1 h-1 bg-white/10 rounded-full" />

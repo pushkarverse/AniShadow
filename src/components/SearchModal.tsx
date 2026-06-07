@@ -40,7 +40,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [focusedIndex, setFocusedIndex] = useState(-1);
-  const [isMangaMode, setIsMangaMode] = useState(isMangaRoute);
+  const [activeType, setActiveType] = useState<"ANIME" | "MANGA" | "MANHWA" | "NOVEL">("ANIME");
 
   const inputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
@@ -52,7 +52,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
         inputRef.current?.focus();
       }, 100);
       setFocusedIndex(-1);
-      setIsMangaMode(isMangaRoute);
+      setActiveType(isMangaRoute ? "MANGA" : "ANIME");
     } else {
       setQuery("");
       setResults([]);
@@ -70,8 +70,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
     const delayDebounce = setTimeout(async () => {
       setLoading(true);
       try {
-        const typeParam = isMangaMode ? "MANGA" : "ANIME";
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}&type=${typeParam}`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}&type=${activeType}`);
         if (res.ok) {
           const data = await res.json();
           setResults(data.results || []);
@@ -88,7 +87,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
     }, 300);
 
     return () => clearTimeout(delayDebounce);
-  }, [query, isMangaMode]);
+  }, [query, activeType]);
 
   // Keyboard navigation & actions
   useEffect(() => {
@@ -105,16 +104,17 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
         setFocusedIndex((prev) => (prev - 1 < 0 ? itemsLength - 1 : prev - 1));
       } else if (e.key === "Enter") {
         e.preventDefault();
+        const isComic = activeType === "MANGA" || activeType === "MANHWA" || activeType === "NOVEL";
         if (focusedIndex >= 0) {
           const anime = results[focusedIndex];
           if (anime) {
             const slug = anime.slug || slugify(getDisplayTitle(anime.title));
-            const dest = isMangaMode ? `/manga/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
+            const dest = isComic ? `/manga/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
             router.push(dest);
             onClose();
           }
         } else if (query.trim()) {
-          const typeParam = isMangaMode ? "&type=MANGA" : "";
+          const typeParam = activeType !== "ANIME" ? `&type=${activeType}` : "";
           router.push(`/search?q=${encodeURIComponent(query.trim())}${typeParam}`);
           onClose();
         }
@@ -125,7 +125,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, focusedIndex, results, query, isMangaMode, router, onClose]);
+  }, [isOpen, focusedIndex, results, query, activeType, router, onClose]);
 
   // Scroll focused element into view
   useEffect(() => {
@@ -147,7 +147,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-[#060608]/75 backdrop-blur-md cursor-pointer"
+            className="fixed inset-0 bg-[#04020a]/80 backdrop-blur-md cursor-pointer"
           />
 
           {/* Modal Content Wrapper - Vertically & Horizontally Centered */}
@@ -169,54 +169,88 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
             </div>
 
             {/* Main Modal Container */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ type: "spring", duration: 0.4 }}
-              className="w-full bg-[#131620] border border-[#1f2330] rounded-2xl overflow-hidden flex flex-col shadow-[0_25px_60px_rgba(0,0,0,0.85)]"
-            >
-              {/* Interactive Tabs Row */}
-              <div className="flex border-b border-[#1f2330] select-none bg-[#131620]">
-                <button
-                  type="button"
-                  onClick={() => setIsMangaMode(false)}
-                  className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer ${
-                    !isMangaMode
-                      ? "text-primary border-primary"
-                      : "text-white/40 border-transparent hover:text-white"
-                  }`}
+            {(() => {
+              const isComic = activeType === "MANGA" || activeType === "MANHWA" || activeType === "NOVEL";
+              const themeClass = isComic ? "reader-theme" : "";
+              return (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  transition={{ type: "spring", duration: 0.4 }}
+                  className={`w-full bg-[#120c24] border border-[#21163e] rounded-2xl overflow-hidden flex flex-col shadow-[0_25px_60px_rgba(0,0,0,0.85)] ${themeClass}`}
                 >
-                  Anime
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsMangaMode(true)}
-                  className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer ${
-                    isMangaMode
-                      ? "text-[#ff6600] border-[#ff6600]"
-                      : "text-white/40 border-transparent hover:text-white"
-                  }`}
-                >
-                  Manga
-                </button>
-              </div>
+                  {/* Interactive Tabs Row */}
+                  <div className="flex border-b border-[#21163e] select-none bg-[#120c24] overflow-x-auto no-scrollbar">
+                    <button
+                      type="button"
+                      onClick={() => setActiveType("ANIME")}
+                      className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
+                        activeType === "ANIME"
+                          ? "text-primary border-primary"
+                          : "text-white/40 border-transparent hover:text-white"
+                      }`}
+                    >
+                      Anime
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveType("MANGA")}
+                      className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
+                        activeType === "MANGA"
+                          ? "text-primary border-primary"
+                          : "text-white/40 border-transparent hover:text-white"
+                      }`}
+                    >
+                      Manga
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveType("MANHWA")}
+                      className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
+                        activeType === "MANHWA"
+                          ? "text-primary border-primary"
+                          : "text-white/40 border-transparent hover:text-white"
+                      }`}
+                    >
+                      Manhwa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveType("NOVEL")}
+                      className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
+                        activeType === "NOVEL"
+                          ? "text-primary border-primary"
+                          : "text-white/40 border-transparent hover:text-white"
+                      }`}
+                    >
+                      Novels
+                    </button>
+                  </div>
 
               {/* Input Wrapper */}
-              <div className="relative bg-[#131620] border-b border-[#1f2330]/40">
+              <div className="relative bg-[#120c24] border-b border-[#21163e]/40">
                 <input
                   ref={inputRef}
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={isMangaMode ? "Search Manga..." : "Search Anime..."}
+                  placeholder={
+                    activeType === "ANIME" 
+                      ? "Search Anime..." 
+                      : activeType === "MANGA" 
+                      ? "Search Manga..." 
+                      : activeType === "MANHWA" 
+                      ? "Search Manhwa..." 
+                      : "Search Novels..."
+                  }
                   className="w-full bg-transparent text-white border-0 px-6 py-4 outline-none font-sans text-sm placeholder-white/20"
                 />
               </div>
 
               {/* Results List Section - Only visible when text is entered */}
               {query.trim() !== "" && (
-                <div className="border-r-4 border-primary max-h-[360px] overflow-y-auto custom-scrollbar flex flex-col bg-[#131620]">
+                <div className="border-r-4 border-primary max-h-[360px] overflow-y-auto custom-scrollbar flex flex-col bg-[#120c24]">
                   {loading ? (
                     // Rotating spinner circle
                     <div className="py-14 flex items-center justify-center">
@@ -226,7 +260,8 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
                     results.map((anime, idx) => {
                       const isFocused = idx === focusedIndex;
                       const slug = anime.slug || slugify(getDisplayTitle(anime.title));
-                      const dest = isMangaMode ? `/manga/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
+                      const isComic = activeType === "MANGA" || activeType === "MANHWA" || activeType === "NOVEL";
+                      const dest = isComic ? `/manga/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
                       return (
                         <a
                           key={anime.id}
@@ -239,8 +274,8 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
                             router.push(dest);
                             onClose();
                           }}
-                          className={`px-6 py-4 flex items-center justify-between transition-all duration-200 group border-b border-[#1f2330]/50 last:border-b-0 cursor-pointer ${
-                            isFocused ? "bg-[#1d2232]" : "hover:bg-[#181c29]"
+                          className={`px-6 py-4 flex items-center justify-between transition-all duration-200 group border-b border-[#21163e]/50 last:border-b-0 cursor-pointer ${
+                            isFocused ? "bg-[#21163e]" : "hover:bg-[#1a1133]"
                           }`}
                         >
                           <div className="flex items-center gap-4 min-w-0">
@@ -279,7 +314,9 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
                   )}
                 </div>
               )}
-            </motion.div>
+                </motion.div>
+              );
+            })()}
           </div>
         </div>
       )}

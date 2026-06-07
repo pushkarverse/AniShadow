@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: {
-    default: "MangaShadow",
-    template: "MangaShadow | %s"
+    default: "Reader",
+    template: "Reader | %s"
   },
   description: "Immersive, premium manga experience."
 };

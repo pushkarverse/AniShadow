@@ -253,7 +253,7 @@ export function AnimeCard({
                         }
                   }
                   onClick={(e) => e.stopPropagation()}
-                  className={`z-[9999] bg-[#0a0a0a]/95 backdrop-blur-xl border-white/10 p-0 shadow-[-20px_0_50px_rgba(0,0,0,0.5),var(--shadow-primary)] flex flex-col overflow-hidden ring-1 ring-white/5 ${
+                  className={`z-[9999] bg-card/95 backdrop-blur-xl border-white/10 p-0 shadow-[-20px_0_50px_rgba(0,0,0,0.5),var(--shadow-primary)] flex flex-col overflow-hidden ring-1 ring-white/5 ${
                     isMobileViewport 
                       ? 'rounded-t-3xl max-h-[80vh] border-t' 
                       : 'border-l h-screen'

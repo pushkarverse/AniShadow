@@ -31,7 +31,9 @@ const years = Array.from({ length: 27 }, (_, i) => (2026 - i).toString());
 export function SearchFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const currentType = searchParams.get("type") === "MANGA" ? "MANGA" : "ANIME";
+  
+  const rawType = searchParams.get("type") || "ANIME";
+  const currentType = (rawType === "MANGA" || rawType === "MANHWA") ? "MANGA" : (rawType === "NOVEL" ? "NOVEL" : "ANIME");
   const formats = currentType === "MANGA" ? mangaFormats : animeFormats;
 
   // Local state for select inputs
@@ -40,6 +42,7 @@ export function SearchFilters() {
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedFormat, setSelectedFormat] = useState("");
+  const [selectedOrigin, setSelectedOrigin] = useState("");
 
   // Sync state with URL on load/change
   useEffect(() => {
@@ -48,6 +51,7 @@ export function SearchFilters() {
     setSelectedYear(searchParams.get("year") || "");
     setSelectedStatus(searchParams.get("status") || "");
     setSelectedFormat(searchParams.get("format") || "");
+    setSelectedOrigin(searchParams.get("origin") || "");
   }, [searchParams]);
 
   const handleApply = () => {
@@ -68,6 +72,9 @@ export function SearchFilters() {
     if (selectedFormat) params.set("format", selectedFormat);
     else params.delete("format");
 
+    if (selectedOrigin) params.set("origin", selectedOrigin);
+    else params.delete("origin");
+
     params.set("page", "1"); // Reset to page 1 on new filters
     router.push(`/search?${params.toString()}`);
   };
@@ -78,6 +85,7 @@ export function SearchFilters() {
     setSelectedYear("");
     setSelectedStatus("");
     setSelectedFormat("");
+    setSelectedOrigin("");
 
     const params = new URLSearchParams();
     const currentQuery = searchParams.get("q");
@@ -87,6 +95,17 @@ export function SearchFilters() {
     
     router.push(`/search${params.toString() ? `?${params.toString()}` : ""}`);
   };
+
+  if (rawType === "NOVEL") {
+    return (
+      <div className="w-full text-center py-6 px-4 select-none border border-white/5 rounded-2xl bg-white/[0.01]">
+        <p className="text-[10px] font-black uppercase tracking-widest text-white/30">Filters Unavailable</p>
+        <p className="text-[10px] text-white/20 mt-1.5 font-bold leading-normal">
+          WebNovels searches do not support filter refinement.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full select-none">
@@ -180,6 +199,26 @@ export function SearchFilters() {
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
           </div>
         </div>
+
+        {/* Origin (Comic only) */}
+        {currentType === "MANGA" && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-black uppercase tracking-wider text-white/50 pl-0.5">Origin</label>
+            <div className="relative">
+              <select 
+                value={selectedOrigin} 
+                onChange={(e) => setSelectedOrigin(e.target.value)}
+                className="w-full bg-[#161616] border border-white/5 rounded-lg px-3 py-2.5 text-xs text-white/80 focus:outline-none focus:border-primary appearance-none pr-8 cursor-pointer transition-colors hover:border-white/10"
+              >
+                <option value="">Any Origin</option>
+                <option value="JP">Japan (Manga)</option>
+                <option value="KR">Korea (Manhwa)</option>
+                <option value="CN">China (Manhua)</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+            </div>
+          </div>
+        )}
 
         {/* Buttons Block */}
         <div className="flex flex-col gap-1.5">

@@ -8,8 +8,8 @@ import { Metadata } from "next";
 import { MangaLibrarySection } from "@/components/MangaLibrarySection";
 
 export const metadata: Metadata = {
-  title: "MangaShadow - Premium Manga Reading",
-  description: "Explore thousands of high-quality manga titles with our sleek, ad-free reader on MangaShadow.",
+  title: "Reader - Premium Manga & Novel Reading",
+  description: "Explore thousands of high-quality manga and webnovel titles with our sleek, ad-free Reader.",
 };
 
 export default async function MangaPage() {

@@ -1,21 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #080808;
+  --color-background: #090514;
   --color-foreground: #ffffff;
   
-  --color-primary: #cc0000;
+  --color-primary: #9b0c0c;
   --color-primary-foreground: #ffffff;
 
-  --color-accent: #ff3333;
+  --color-accent: #dc2626;
   --color-accent-foreground: #ffffff;
   
-  --color-card: #0f0f0f;
+  --color-card: #120c24;
   --color-card-foreground: #ffffff;
   
-  --color-border: #1a1a1a;
+  --color-border: #21163e;
   
-  --shadow-primary: 0 0 15px rgba(204, 0, 0, 0.4);
+  --shadow-primary: 0 0 15px rgba(155, 12, 12, 0.4);
   
   --radius: 1rem;
   
@@ -23,11 +23,11 @@
   --font-mono: var(--font-geist-mono);
 }
 
-.manga-theme {
-  --color-primary: #ff6600; /* Distinct Orange */
-  --color-accent: #ffa500;
+.manga-theme, .novel-theme, .reader-theme {
+  --color-primary: #7c3aed; /* Dark Violet Accent */
+  --color-accent: #a78bfa;
   --color-primary-foreground: #ffffff;
-  --shadow-primary: 0 0 15px rgba(255, 102, 0, 0.4);
+  --shadow-primary: 0 0 15px rgba(124, 58, 237, 0.4);
 }
 
 @utility glass {
@@ -63,8 +63,8 @@
     scrollbar-color: var(--color-primary) var(--color-background);
   }
   
-  .manga-theme {
-    scrollbar-color: #ff6600 #080808;
+  .manga-theme, .novel-theme, .reader-theme {
+    scrollbar-color: #7c3aed #090514;
   }
 
   ::-webkit-scrollbar {

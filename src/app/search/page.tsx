@@ -3,7 +3,7 @@ import { AnimeCard } from "@/components/AnimeCard";
 import { MangaCard } from "@/components/MangaCard";
 import { SearchFilters } from "@/components/SearchFilters";
 import { Pagination } from "@/components/Pagination";
-import { advancedSearchAnime } from "@/lib/consumet";
+import { advancedSearchAnime, searchNovel } from "@/lib/consumet";
 import { getAnimeTitle } from "@/lib/anime-utils";
 import type { IAnimeResult } from "@consumet/extensions";
 import { Search as SearchIcon } from "lucide-react";
@@ -12,27 +12,28 @@ import Link from "next/link";
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ 
-    q?: string; 
-    page?: string; 
-    genres?: string; 
+  searchParams: Promise<{
+    q?: string;
+    page?: string;
+    genres?: string;
     tags?: string;
-    status?: string; 
-    season?: string; 
+    status?: string;
+    season?: string;
     format?: string;
     type?: string;
     year?: string;
+    origin?: string;
   }>;
 }) {
-  const { q, page, genres, tags, status, season, format, type, year } = await searchParams;
+  const { q, page, genres, tags, status, season, format, type, year, origin } = await searchParams;
   const query = q || "";
   const currentPage = page ? parseInt(page) : 1;
   const selectedGenres = genres ? genres.split(",") : undefined;
   const selectedTags = tags ? tags.split(",") : undefined;
   const currentYear = year ? parseInt(year) : undefined;
-  const currentType = (type === "MANGA" ? "MANGA" : "ANIME") as "ANIME" | "MANGA";
+  const currentType = (type || "ANIME") as "ANIME" | "MANGA" | "MANHWA" | "NOVEL";
 
-  const buildSearchUrl = (targetType: "ANIME" | "MANGA") => {
+  const buildSearchUrl = (targetType: "ANIME" | "MANGA" | "MANHWA" | "NOVEL") => {
     const params: string[] = [];
     if (query) params.push(`q=${encodeURIComponent(query)}`);
     if (genres) params.push(`genres=${encodeURIComponent(genres)}`);
@@ -42,14 +43,17 @@ export default async function SearchPage({
     if (format) {
       const animeFormats = ["TV", "MOVIE", "SPECIAL", "OVA", "ONA"];
       const mangaFormats = ["MANGA", "NOVEL", "ONE_SHOT"];
-      const isValid = targetType === "MANGA" 
-        ? mangaFormats.includes(format) 
+      const isValid = (targetType === "MANGA" || targetType === "MANHWA")
+        ? mangaFormats.includes(format)
         : animeFormats.includes(format);
-      if (isValid) {
+      if (isValid && targetType !== "NOVEL") {
         params.push(`format=${encodeURIComponent(format)}`);
       }
     }
     if (year) params.push(`year=${encodeURIComponent(year)}`);
+    if (origin && (targetType === "MANGA" || targetType === "MANHWA")) {
+      params.push(`origin=${encodeURIComponent(origin)}`);
+    }
     params.push(`type=${targetType}`);
     return `/search?${params.join("&")}`;
   };
@@ -59,70 +63,111 @@ export default async function SearchPage({
   let totalResults = 0;
 
   // Fetch results if there's a query OR any filters selected
-  const hasFilters = genres || tags || status || season || format || year || type;
-  
+  const hasFilters = genres || tags || status || season || format || year || type || origin;
+
   if (query || hasFilters) {
-    const data = await advancedSearchAnime({
-      query,
-      page: currentPage,
-      genres: selectedGenres,
-      tags: selectedTags,
-      status,
-      season,
-      year: currentYear,
-      format,
-      type: currentType
-    });
-    
-    if (data) {
-      searchResults = (data.results || []) as IAnimeResult[];
-      hasNextPage = data.hasNextPage || false;
-      totalResults = data.total || 0;
+    if (currentType === "NOVEL") {
+      const data = await searchNovel(query, currentPage);
+      if (data) {
+        searchResults = data.results || [];
+        hasNextPage = data.hasNextPage || false;
+        totalResults = data.total || 0;
+      }
+    } else {
+      let originParam = origin;
+      if (currentType === "MANHWA") {
+        originParam = "KR";
+      } else if (currentType === "MANGA" && !originParam) {
+        originParam = "JP"; // default to Japan for standard Manga
+      }
+
+      const data = await advancedSearchAnime({
+        query,
+        page: currentPage,
+        genres: selectedGenres,
+        tags: selectedTags,
+        status,
+        season,
+        year: currentYear,
+        format,
+        type: (currentType === "MANGA" || currentType === "MANHWA") ? "MANGA" : "ANIME",
+        countryOfOrigin: originParam
+      });
+
+      if (data) {
+        searchResults = (data.results || []) as IAnimeResult[];
+        hasNextPage = data.hasNextPage || false;
+        totalResults = data.total || 0;
+      }
     }
   }
 
+  const themeClass = (currentType === "MANGA" || currentType === "MANHWA" || currentType === "NOVEL")
+    ? "reader-theme"
+    : "";
+
   return (
-    <div className={`min-h-screen bg-[#070707] text-foreground flex flex-col pb-24 ${currentType === "MANGA" ? "manga-theme" : ""}`}>
+    <div className={`min-h-screen bg-background text-foreground flex flex-col pb-24 ${themeClass}`}>
       <Navbar />
 
       <main className="flex-1 container mx-auto px-4 md:px-8 pt-24 md:pt-32 max-w-6xl">
         <div className="grid gap-8 lg:grid-cols-[320px_1fr] lg:items-start">
           {/* Left: Search + Filters */}
-          <aside className="rounded-2xl border border-white/5 bg-[#0d0d0d] p-5 md:p-6 shadow-2xl">
+          <aside className="rounded-2xl border border-border bg-card p-5 md:p-6 shadow-2xl">
             <div className="flex flex-col gap-1 mb-4">
               <h1 className="text-lg font-black text-white uppercase tracking-wider pl-0.5">
-                Search {currentType === "MANGA" ? "Manga" : "Anime"}
+                Search {currentType.toLowerCase()}
               </h1>
             </div>
 
             {/* Search Type Switcher */}
-            <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/5 mb-5 select-none">
-              <Link
-                href={buildSearchUrl("ANIME")}
-                className={`flex-1 py-2 rounded-lg text-center text-[10px] font-black uppercase tracking-widest transition-all ${
-                  currentType === "ANIME"
-                    ? "bg-[#ff3333] text-white shadow-lg shadow-red-500/20"
-                    : "text-white/40 hover:text-white"
-                }`}
-              >
-                Anime
-              </Link>
-              <Link
-                href={buildSearchUrl("MANGA")}
-                className={`flex-1 py-2 rounded-lg text-center text-[10px] font-black uppercase tracking-widest transition-all ${
-                  currentType === "MANGA"
-                    ? "bg-[#ff6600] text-white shadow-lg shadow-orange-500/20"
-                    : "text-white/40 hover:text-white"
-                }`}
-              >
-                Manga
-              </Link>
+            <div className="flex flex-col gap-1.5 bg-white/5 p-1.5 rounded-2xl border border-white/5 mb-5 select-none">
+              <div className="flex gap-1.5">
+                <Link
+                  href={buildSearchUrl("ANIME")}
+                  className={`flex-1 py-2 rounded-xl text-center text-[10px] font-black uppercase tracking-widest transition-all ${currentType === "ANIME"
+                      ? "bg-primary text-white shadow-lg shadow-primary/20"
+                      : "text-white/40 hover:text-white"
+                    }`}
+                >
+                  Anime
+                </Link>
+                <Link
+                  href={buildSearchUrl("MANGA")}
+                  className={`flex-1 py-2 rounded-xl text-center text-[10px] font-black uppercase tracking-widest transition-all ${currentType === "MANGA"
+                      ? "bg-primary text-white shadow-lg shadow-primary/20"
+                      : "text-white/40 hover:text-white"
+                    }`}
+                >
+                  Manga
+                </Link>
+              </div>
+              <div className="flex gap-1.5">
+                <Link
+                  href={buildSearchUrl("MANHWA")}
+                  className={`flex-1 py-2 rounded-xl text-center text-[10px] font-black uppercase tracking-widest transition-all ${currentType === "MANHWA"
+                      ? "bg-primary text-white shadow-lg shadow-primary/20"
+                      : "text-white/40 hover:text-white"
+                    }`}
+                >
+                  Manhwa
+                </Link>
+                <Link
+                  href={buildSearchUrl("NOVEL")}
+                  className={`flex-1 py-2 rounded-xl text-center text-[10px] font-black uppercase tracking-widest transition-all ${currentType === "NOVEL"
+                      ? "bg-primary text-white shadow-lg shadow-primary/20"
+                      : "text-white/40 hover:text-white"
+                    }`}
+                >
+                  Novels
+                </Link>
+              </div>
             </div>
 
             <form action="/search" method="GET" className="mb-5 relative w-full group">
               <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white/40 group-hover:text-white/60 pointer-events-none transition-colors" />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 name="q"
                 defaultValue={query}
                 placeholder="Type to search..."
@@ -136,6 +181,7 @@ export default async function SearchPage({
               {season && <input type="hidden" name="season" value={season} />}
               {year && <input type="hidden" name="year" value={year} />}
               {format && <input type="hidden" name="format" value={format} />}
+              {origin && <input type="hidden" name="origin" value={origin} />}
               <input type="hidden" name="type" value={currentType} />
             </form>
 
@@ -148,10 +194,10 @@ export default async function SearchPage({
               <div className="text-center py-20 bg-card rounded-2xl border border-white/5 max-w-3xl mx-auto shadow-2xl">
                 <h2 className="text-2xl font-black text-accent mb-3 uppercase tracking-wider italic">No Masterpieces Found</h2>
                 <p className="text-white/40 mb-8 leading-relaxed max-w-md mx-auto text-sm">
-                  Your search for &quot;{query || "these filters"}&quot; didn&apos;t return any results. 
+                  Your search for &quot;{query || "these filters"}&quot; didn&apos;t return any results.
                   Try adjusted parameters or check your spelling.
                 </p>
-                <Link 
+                <Link
                   href="/search"
                   className="px-8 py-3 bg-primary text-white font-black uppercase tracking-wider rounded-xl hover:bg-primary/95 transition-all shadow-lg inline-block text-xs"
                 >
@@ -166,9 +212,10 @@ export default async function SearchPage({
                       {totalResults.toLocaleString()} results found
                     </div>
 
-                    <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-8 ${currentType === "MANGA" ? "manga-theme" : ""}`}>
+                    <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-8 ${themeClass}`}>
                       {searchResults.map((anime) => {
-                        const Card = currentType === "MANGA" ? MangaCard : AnimeCard;
+                        const isComicOrBook = currentType === "MANGA" || currentType === "MANHWA" || currentType === "NOVEL";
+                        const Card = isComicOrBook ? MangaCard : AnimeCard;
                         return (
                           <Card
                             key={anime.id}
@@ -177,9 +224,9 @@ export default async function SearchPage({
                             title={getAnimeTitle(anime.title)}
                             image={anime.image && anime.image !== "" ? anime.image : "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop"}
                             rating={anime.rating ? anime.rating / 10 : undefined}
-                            type={currentType === "MANGA" ? "MANGA" : ((anime as any).type || "TV")}
+                            type={currentType}
                             slug={anime.slug}
-                            {...(currentType === "MANGA" ? { 
+                            {...(isComicOrBook ? {
                               chapterNumber: (anime as any).episodeNumber,
                               countryOfOrigin: (anime as any).countryOfOrigin,
                               chapters: (anime as any).episodeNumber
@@ -198,10 +245,10 @@ export default async function SearchPage({
 
                 {searchResults.length > 0 && (
                   <div className="mt-12">
-                    <Pagination 
-                      currentPage={currentPage} 
-                      hasNextPage={hasNextPage} 
-                      baseUrl="/search" 
+                    <Pagination
+                      currentPage={currentPage}
+                      hasNextPage={hasNextPage}
+                      baseUrl="/search"
                     />
                   </div>
                 )}

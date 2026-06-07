@@ -7,9 +7,10 @@ export function getAnimeTitle(title: string | { english?: string; romaji?: strin
     return title.english || title.romaji || title.native || "Unknown Anime";
 }
 /**
- * Maps country code to manga format
+ * Maps country code and format type to manga/novel format
  */
-export function getMangaFormat(country?: string): string {
+export function getMangaFormat(country?: string, formatOrType?: string): string {
+    if (formatOrType === 'NOVEL' || formatOrType?.toLowerCase() === 'novel') return 'Novel';
     if (country === 'KR') return 'Manhwa';
     if (country === 'CN') return 'Manhua';
     return 'Manga';

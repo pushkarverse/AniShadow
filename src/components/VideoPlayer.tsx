@@ -1097,7 +1097,7 @@ export function VideoPlayer({
             )}
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 backdrop-blur-[2px]">
               <motion.button
-                className="w-20 h-20 md:w-24 md:h-24 bg-primary/90 group-hover/preview:bg-primary group-hover/preview:scale-110 rounded-full flex items-center justify-center text-white shadow-[0_0_40px_rgba(220,38,38,0.5)] backdrop-blur-sm transition-all pointer-events-none"
+                className="w-20 h-20 md:w-24 md:h-24 bg-primary/90 group-hover/preview:bg-primary group-hover/preview:scale-110 rounded-full flex items-center justify-center text-white shadow-[0_0_40px_rgba(155,12,12,0.5)] backdrop-blur-sm transition-all pointer-events-none"
               >
                 <Play className="w-10 h-10 md:w-12 md:h-12 ml-2 fill-current" />
               </motion.button>
@@ -1116,7 +1116,7 @@ export function VideoPlayer({
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               onClick={togglePlay}
-              className="w-14 h-14 md:w-16 md:h-16 bg-primary/90 hover:bg-primary rounded-full flex items-center justify-center text-white shadow-[0_0_20px_rgba(220,38,38,0.4)] backdrop-blur-sm transition-all pointer-events-auto cursor-pointer"
+              className="w-14 h-14 md:w-16 md:h-16 bg-primary/90 hover:bg-primary rounded-full flex items-center justify-center text-white shadow-[0_0_20px_rgba(155,12,12,0.4)] backdrop-blur-sm transition-all pointer-events-auto cursor-pointer"
             >
               <Play className="w-6 h-6 md:w-7 h-7 ml-1 fill-current" />
             </motion.button>
@@ -1237,7 +1237,7 @@ export function VideoPlayer({
                   initial={{ rotate: 0 }}
                   animate={{ rotate: -360 }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="w-20 h-20 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-md border border-white/10 shadow-[0_0_35px_rgba(204,0,0,0.35)]"
+                  className="w-20 h-20 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-md border border-white/10 shadow-[0_0_35px_rgba(155,12,12,0.35)]"
                 >
                   <RotateCcw className="w-9 h-9 text-white" />
                 </motion.div>
@@ -1271,7 +1271,7 @@ export function VideoPlayer({
                   initial={{ rotate: 0 }}
                   animate={{ rotate: 360 }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="w-20 h-20 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-md border border-white/10 shadow-[0_0_35px_rgba(204,0,0,0.35)]"
+                  className="w-20 h-20 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-md border border-white/10 shadow-[0_0_35px_rgba(155,12,12,0.35)]"
                 >
                   <RotateCw className="w-9 h-9 text-white" />
                 </motion.div>
@@ -1354,7 +1354,7 @@ export function VideoPlayer({
                       onMouseLeave={handleProgressBarMouseLeave}
                       className="w-full h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 transition-all focus:outline-none [&::-webkit-slider-runnable-track]:bg-transparent [&::-moz-range-track]:bg-transparent"
                       style={{
-                        background: `linear-gradient(to right, rgb(220, 38, 38) 0%, rgb(220, 38, 38) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) 100%)`
+                        background: `linear-gradient(to right, rgb(155, 12, 12) 0%, rgb(155, 12, 12) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) 100%)`
                       }}
                     />
                   </div>

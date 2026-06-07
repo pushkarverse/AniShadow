@@ -21,7 +21,7 @@ export function MangaTrendingSidebar({ initialData }: MangaTrendingSidebarProps)
         </h2>
       </div>
       
-      <div className="flex flex-col bg-[#0a0a0a]/50 rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden backdrop-blur-sm">
+      <div className="flex flex-col bg-[#120c24]/50 rounded-[2rem] border border-border shadow-2xl overflow-hidden backdrop-blur-sm">
         {trendingManga.length > 0 ? trendingManga.slice(0, 10).map((manga: any, idx: number) => {
           const title = getAnimeTitle(manga.title);
           const slug = manga.slug || slugify(title);
@@ -36,7 +36,7 @@ export function MangaTrendingSidebar({ initialData }: MangaTrendingSidebarProps)
               <div className="flex flex-col flex-1 min-w-0 pr-2">
                 <h4 className="text-xs font-bold text-white group-hover:text-primary transition-colors line-clamp-2 leading-snug mb-1">{title}</h4>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[8px] text-white/40 font-black bg-white/5 py-0.5 px-1.5 rounded uppercase tracking-wider">{getMangaFormat(manga.countryOfOrigin)}</span>
+                  <span className="text-[8px] text-white/40 font-black bg-white/5 py-0.5 px-1.5 rounded uppercase tracking-wider">{getMangaFormat(manga.countryOfOrigin, manga.type)}</span>
                   {manga.chapters && (
                     <span className="flex items-center text-[8px] text-primary font-black py-0.5 px-1.5 rounded uppercase tracking-wider bg-primary/10 border border-primary/20">
                       CH {manga.chapters}

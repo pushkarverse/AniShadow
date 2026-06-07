@@ -1,5 +1,6 @@
 import { ANIME, META, MANGA, IAnimeInfo } from "@consumet/extensions";
 import { load } from "cheerio";
+import { gotScraping } from "got-scraping";
 
 let anilist: InstanceType<typeof META.Anilist> | null = null;
 let animepahe: InstanceType<typeof ANIME.AnimePahe> | null = null;
@@ -669,7 +670,8 @@ export async function advancedSearchAnime({
   format,
   sort = "POPULARITY_DESC",
   type = "ANIME",
-  exact = false
+  exact = false,
+  countryOfOrigin
 }: {
   query?: string;
   page?: number;
@@ -682,12 +684,13 @@ export async function advancedSearchAnime({
   sort?: string;
   type?: "ANIME" | "MANGA";
   exact?: boolean;
+  countryOfOrigin?: string;
 }) {
   const gqlQuery = `
-    query ($page: Int, $search: String, $genres: [String], $tags: [String], $status: MediaStatus, $season: MediaSeason, $seasonYear: Int, $format: MediaFormat, $sort: [MediaSort], $type: MediaType) {
+    query ($page: Int, $search: String, $genres: [String], $tags: [String], $status: MediaStatus, $season: MediaSeason, $seasonYear: Int, $format: MediaFormat, $sort: [MediaSort], $type: MediaType, $countryOfOrigin: CountryCode) {
       Page (page: $page, perPage: 24) {
         pageInfo { total hasNextPage }
-        media (search: $search, genre_in: $genres, tag_in: $tags, status: $status, season: $season, seasonYear: $seasonYear, format: $format, type: $type, sort: $sort, isAdult: false) {
+        media (search: $search, genre_in: $genres, tag_in: $tags, status: $status, season: $season, seasonYear: $seasonYear, format: $format, type: $type, sort: $sort, countryOfOrigin: $countryOfOrigin, isAdult: false) {
           id
           title { romaji english native }
           coverImage { large }
@@ -724,7 +727,8 @@ export async function advancedSearchAnime({
             seasonYear: year || undefined,
             format: format || undefined,
             sort: [sort],
-            type
+            type,
+            countryOfOrigin: countryOfOrigin || undefined
           }
         })
       });
@@ -1625,6 +1629,95 @@ async function fetchComicKAllChapters(hid: string): Promise<any[]> {
 }
 
 export async function getMangaDetails(id: string) {
+  if (id.startsWith("novelfull-")) {
+    const realId = id.replace("novelfull-", "");
+    try {
+      console.log(`[MangaDetails] Fetching novel details for: ${realId}`);
+      const url = `https://novelfull.com/${realId}.html`;
+      const res = await gotScraping({ url });
+      const $ = load(res.body);
+
+      const title = $('.desc h3.title').text().trim() || realId.replace(/-/g, ' ');
+      let image = $('.info-holder .book img').attr('src') || "";
+      if (image && image.startsWith('/')) {
+        image = `https://novelfull.com${image}`;
+      }
+
+      let author = '';
+      let genres: string[] = [];
+      let status = 'RELEASING';
+      let source = 'Webnovel';
+
+      $('.info-holder .info > div').each((idx, el) => {
+        const h3Text = $(el).find('h3').text().trim().toLowerCase();
+        if (h3Text.includes('author')) {
+          author = $(el).find('a').text().trim() || $(el).text().replace("Author:", "").trim();
+        } else if (h3Text.includes('genre')) {
+          $(el).find('a').each((i, a) => {
+            genres.push($(a).text().trim());
+          });
+        } else if (h3Text.includes('status')) {
+          const statusText = $(el).text().replace("Status:", "").trim().toLowerCase();
+          if (statusText.includes('ongoing') || statusText.includes('releasing')) {
+            status = 'RELEASING';
+          } else {
+            status = 'FINISHED';
+          }
+        } else if (h3Text.includes('source')) {
+          source = $(el).text().replace("Source:", "").trim();
+        }
+      });
+
+      const ratingVal = parseFloat($('input#rateVal').val() as string) * 10 || 85;
+      const description = $('.desc-text').html() || $('.desc-text').text() || "No description available.";
+
+      const truyenId = $('#truyen-id').val() || '';
+      let chapters: any[] = [];
+
+      if (truyenId) {
+        const ajaxUrl = `https://novelfull.com/ajax/chapter-option?novelId=${truyenId}`;
+        const ajaxRes = await gotScraping({ url: ajaxUrl });
+        const ajax$ = load(ajaxRes.body);
+        
+        ajax$('option').each((idx, optionEl) => {
+          const href = ajax$(optionEl).attr('value') || "";
+          const text = ajax$(optionEl).text().trim();
+          const cleanHref = href.replace(/^\//, '');
+          
+          const match = text.match(/chapter\s+(\d+(\.\d+)?)/i);
+          const chapNum = match ? match[1] : (idx + 1).toString();
+
+          chapters.push({
+            id: `novelfull:${cleanHref}`,
+            title: text,
+            number: chapNum,
+            releaseDate: ""
+          });
+        });
+      }
+
+      return {
+        id,
+        title,
+        slug: slugify(title),
+        description,
+        image,
+        cover: image,
+        status,
+        releaseDate: "2024",
+        genres,
+        rating: ratingVal,
+        chapters: chapters.reverse(), // reverse to return latest first (descending) as AniShadow expects
+        type: "NOVEL",
+        format: "NOVEL",
+        countryOfOrigin: "US"
+      };
+    } catch (err) {
+      console.error("Error scraping novel details:", err);
+      return null;
+    }
+  }
+
   try {
     const mangaInfo = await fetchAnilistDirect(id);
     if (!mangaInfo) return null;
@@ -1775,6 +1868,23 @@ export async function getMangaChapterPages(chapterId: string) {
     }
 
     console.log(`[MangaChapterPages] Fetching pages. Provider: ${providerName}, Chapter: ${realChapterId}`);
+
+    if (providerName === "novelfull") {
+      console.log(`[NovelChapterText] Fetching chapter text for: ${realChapterId}`);
+      const url = `https://novelfull.com/${realChapterId}`;
+      const res = await gotScraping({ url });
+      const $ = load(res.body);
+
+      const contentEl = $('#chapter-content');
+      contentEl.find('script, style, iframe, ads, .ads, .adsbygoogle, div[class*="ads"], div[id*="ads"]').remove();
+      
+      const htmlText = contentEl.html() || contentEl.text() || "Content load failed.";
+      
+      return [{
+        page: 1,
+        text: htmlText
+      }];
+    }
 
     if (providerName === "mangareader") {
       const reader = getMangaReader();
@@ -1936,3 +2046,68 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
     return { results: [], hasNextPage: false };
   }
 };
+
+export async function searchNovel(query: string, page: number = 1) {
+  const url = `https://novelfull.com/search?keyword=${encodeURIComponent(query)}&page=${page}`;
+  try {
+    const res = await gotScraping({ url });
+    const $ = load(res.body);
+    const results: any[] = [];
+
+    $('.list-truyen .row').each((idx, el) => {
+      const titleEl = $(el).find('h3.truyen-title a');
+      if (titleEl.length > 0) {
+        const title = titleEl.text().trim();
+        const href = titleEl.attr('href') || "";
+        const id = href.replace(/^\//, '').replace(/\.html$/, '');
+
+        let img = $(el).find('img.cover').attr('src') || $(el).find('img').attr('src') || "";
+        if (img && img.startsWith('/')) {
+          img = `https://novelfull.com${img}`;
+        }
+
+        const chapterText = $(el).find('.col-xs-2 a.chapter-text, .col-xs-2 a').text().trim();
+        const chapMatch = chapterText.match(/chapter\s+(\d+(\.\d+)?)/i);
+        const latestChapter = chapMatch ? parseFloat(chapMatch[1]) : 0;
+
+        results.push({
+          id: `novelfull-${id}`,
+          title,
+          slug: slugify(title),
+          image: img,
+          cover: img,
+          type: "NOVEL",
+          rating: 85,
+          episodeNumber: latestChapter,
+          subEpisodes: latestChapter,
+          format: "NOVEL",
+          status: "RELEASING",
+          year: new Date().getFullYear(),
+          countryOfOrigin: "US"
+        });
+      }
+    });
+
+    let hasNextPage = false;
+    const nextLi = $('.pagination li.next');
+    if (nextLi.length > 0 && !nextLi.hasClass('disabled')) {
+      hasNextPage = true;
+    } else {
+      $('.pagination li a').each((i, aEl) => {
+        const text = $(aEl).text().trim();
+        if (text === '>' || text.toLowerCase().includes('next')) {
+          hasNextPage = true;
+        }
+      });
+    }
+
+    return {
+      results,
+      hasNextPage,
+      total: results.length
+    };
+  } catch (err) {
+    console.error("Error searching novel:", err);
+    return { results: [], hasNextPage: false, total: 0 };
+  }
+}

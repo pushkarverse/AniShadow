@@ -378,7 +378,7 @@ export function WatchPlayerSection({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 220 }}
-            className="fixed bottom-0 left-0 right-0 z-[9999] bg-[#0c0c0c] border-t border-white/10 rounded-t-3xl max-h-[75vh] flex flex-col overflow-hidden md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
+            className="fixed bottom-0 left-0 right-0 z-[9999] bg-[#120c24] border-t border-[#21163e] rounded-t-3xl max-h-[75vh] flex flex-col overflow-hidden md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
           >
             <div className="flex justify-between items-center p-5 border-b border-white/5 shrink-0 bg-gradient-to-b from-white/[0.02] to-transparent">
               <div className="flex flex-col gap-0.5">

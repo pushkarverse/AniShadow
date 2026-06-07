@@ -52,7 +52,7 @@ export function TrendingSidebar({ initialData }: TrendingSidebarProps) {
         <TrendingSelector value={period} onChange={setPeriod} />
       </div>
       
-      <div className={`flex flex-col gap-3 bg-[#0a0a0a] rounded-2xl border border-white/5 shadow-2xl p-3 transition-opacity duration-300 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
+      <div className={`flex flex-col gap-3 bg-[#120c24] rounded-2xl border border-border shadow-2xl p-3 transition-opacity duration-300 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
         {trendingAnime.length > 0 ? (trendingAnime).slice(0, 10).map((anime: HeroResult, idx: number) => (
           <Link
             href={`/anime/${anime.id}`}

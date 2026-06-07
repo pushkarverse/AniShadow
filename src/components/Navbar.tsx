@@ -87,7 +87,7 @@ export function Navbar() {
   ];
 
   return (
-    <header className="relative w-full z-50 py-4 bg-[#080808] border-b border-white/5 shadow-2xl">
+    <header className="relative w-full z-50 py-4 bg-card border-b border-border shadow-2xl">
       <div className="container mx-auto px-4 md:px-8 flex items-center justify-between gap-4">
         {/* Left: Logo & Menu Toggle */}
         <div className="flex items-center gap-4">
@@ -115,15 +115,15 @@ export function Navbar() {
           <div className="hidden sm:flex items-center bg-white/5 p-1 rounded-full border border-white/5 ml-2">
             <Link 
               href="/" 
-              className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter transition-all ${!isMangaRoute ? 'bg-[#ff4a4a] text-white shadow-lg shadow-red-500/20' : 'text-white/40 hover:text-white'}`}
+              className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter transition-all ${!isMangaRoute ? 'bg-[#9b0c0c] text-white shadow-lg shadow-[#9b0c0c]/20' : 'text-white/40 hover:text-white'}`}
             >
               Anime
             </Link>
             <Link 
               href="/manga" 
-              className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter transition-all ${isMangaRoute ? 'bg-[#ff6600] text-white shadow-lg shadow-orange-500/20' : 'text-white/40 hover:text-white'}`}
+              className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter transition-all ${isMangaRoute ? 'bg-[#7c3aed] text-white shadow-lg shadow-[#7c3aed]/20' : 'text-white/40 hover:text-white'}`}
             >
-              Manga
+              Reader
             </Link>
           </div>
         </div>
@@ -140,7 +140,7 @@ export function Navbar() {
             <input
               type="text"
               readOnly
-              placeholder={isMangaRoute ? "Search manga..." : "Search anime..."}
+              placeholder={isMangaRoute ? "Search reader..." : "Search anime..."}
               suppressHydrationWarning
               className="w-full h-11 bg-white/5 border border-white/10 rounded-full pl-11 pr-20 text-sm cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all outline-none select-none"
             />
@@ -206,7 +206,7 @@ export function Navbar() {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute top-full right-0 mt-4 w-80 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 z-50"
+                  className="absolute top-full right-0 mt-4 w-80 bg-card/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl p-4 z-50"
                 >
                   <div className="flex items-center justify-between mb-4 px-1">
                     <h3 className="text-xs font-black uppercase tracking-widest">Notifications</h3>
@@ -287,21 +287,21 @@ export function Navbar() {
                 <Link 
                   href="/" 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex-1 py-3 rounded-xl text-center text-[10px] font-black uppercase tracking-widest transition-all ${!isMangaRoute ? 'bg-[#ff4a4a] text-white shadow-xl' : 'text-white/40'}`}
+                  className={`flex-1 py-3 rounded-xl text-center text-[10px] font-black uppercase tracking-widest transition-all ${!isMangaRoute ? 'bg-[#9b0c0c] text-white shadow-xl' : 'text-white/40'}`}
                 >
-                  AniShadow
+                  Anime
                 </Link>
                 <Link 
                   href="/manga" 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex-1 py-3 rounded-xl text-center text-[10px] font-black uppercase tracking-widest transition-all ${isMangaRoute ? 'bg-[#ff6600] text-white shadow-xl' : 'text-white/40'}`}
+                  className={`flex-1 py-3 rounded-xl text-center text-[10px] font-black uppercase tracking-widest transition-all ${isMangaRoute ? 'bg-[#7c3aed] text-white shadow-xl' : 'text-white/40'}`}
                 >
-                  MangaShadow
+                  Reader
                 </Link>
               </div>
 
               <div className="flex flex-col gap-2">
-                <Link href="/manga" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all uppercase tracking-widest text-xs">MANGA</Link>
+                <Link href="/manga" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all uppercase tracking-widest text-xs">READER</Link>
                 <Link href="/search" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">GENRES</Link>
                 <Link href="/trending" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">TYPES</Link>
                 <Link href="/popular" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">NEW RELEASES</Link>
@@ -320,7 +320,7 @@ export function Navbar() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="md:hidden border-t border-white/5 bg-[#0a0a0a] px-4 py-3 relative z-40 overflow-hidden"
+            className="md:hidden border-t border-border bg-card px-4 py-3 relative z-40 overflow-hidden"
           >
             <form onSubmit={handleSearch} className="relative w-full flex gap-2">
               <div className="relative flex-1 group">
@@ -329,7 +329,7 @@ export function Navbar() {
                 </div>
                 <input
                   type="text"
-                  placeholder={isMangaRoute ? "Search manga..." : "Search anime..."}
+                  placeholder={isMangaRoute ? "Search reader..." : "Search anime..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   suppressHydrationWarning
@@ -359,7 +359,7 @@ export function Navbar() {
                   exit={{ opacity: 0, y: 10 }}
                   className="mt-3 w-full z-50 pointer-events-auto"
                 >
-                  <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl shadow-2xl p-2 max-h-[60vh] overflow-y-auto no-scrollbar">
+                  <div className="bg-card border border-border rounded-2xl shadow-2xl p-2 max-h-[60vh] overflow-y-auto no-scrollbar">
                     <Suspense fallback={<div className="p-4 text-xs font-bold text-white/20 animate-pulse">Loading filters...</div>}>
                       <SearchFilters />
                     </Suspense>
