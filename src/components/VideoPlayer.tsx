@@ -81,11 +81,6 @@ export function VideoPlayer({
     setActiveAudioGroup(kind);
     const nextServer = (kind === "dub" ? groupedServers.dub : groupedServers.other)[0];
     if (nextServer) {
-      if (videoRef.current) {
-        lastTimeRef.current = videoRef.current.currentTime;
-        wasPlayingRef.current = !videoRef.current.paused;
-        setIsPlaying(!videoRef.current.paused);
-      }
       setCurrentVideoUrl(nextServer.url);
     }
     setShowAudioMenu(false);
@@ -117,6 +112,8 @@ export function VideoPlayer({
   // Update internal URL or extract direct stream if it's an embed provider
   useEffect(() => {
     if (!initialVideoUrl) return;
+
+    isSwitchingSourceRef.current = true;
 
     const urlLower = initialVideoUrl.toLowerCase();
     const isVibe = urlLower.includes("vibeplayer.site");
@@ -187,6 +184,7 @@ export function VideoPlayer({
   const containerRef = useRef<HTMLDivElement>(null);
   const lastTimeRef = useRef<number>(0);
   const wasPlayingRef = useRef<boolean>(false);
+  const isSwitchingSourceRef = useRef<boolean>(false);
 
   // Reset playback timestamp when changing episodes
   useEffect(() => {
@@ -929,14 +927,10 @@ export function VideoPlayer({
   useEffect(() => {
     setIsBuffering(true);
     setBuffered(0);
-    if (videoRef.current) {
-      if (videoRef.current.currentTime > 0) {
-        lastTimeRef.current = videoRef.current.currentTime;
-      }
-      const wasPlaying = !videoRef.current.paused;
-      wasPlayingRef.current = wasPlaying;
-      setIsPlaying(wasPlaying);
-    }
+    isSwitchingSourceRef.current = true;
+    const wasPlaying = videoRef.current ? !videoRef.current.paused : false;
+    wasPlayingRef.current = wasPlaying;
+    setIsPlaying(wasPlaying);
   }, [currentVideoUrl]);
 
   useEffect(() => {
@@ -1001,9 +995,14 @@ export function VideoPlayer({
           if (wasPlayingRef.current) {
             videoRef.current.play().then(() => {
               setIsPlaying(true);
+              isSwitchingSourceRef.current = false;
             }).catch((err) => {
               console.warn("HLS autoplay failed:", err);
+              setIsPlaying(false);
+              isSwitchingSourceRef.current = false;
             });
+          } else {
+            isSwitchingSourceRef.current = false;
           }
         }
       });
@@ -1218,6 +1217,9 @@ export function VideoPlayer({
                 className={`absolute inset-0 w-full h-full ${isMaxView ? 'object-cover' : 'object-contain'}`}
                 onTimeUpdate={() => {
                   const time = videoRef.current?.currentTime || 0;
+                  if (isSwitchingSourceRef.current) {
+                    return;
+                  }
                   setProgress(time);
                   lastTimeRef.current = time;
                   updateBuffered();
@@ -1235,7 +1237,12 @@ export function VideoPlayer({
                     if (wasPlayingRef.current) {
                       videoRef.current.play().then(() => {
                         setIsPlaying(true);
-                      }).catch(() => { });
+                        isSwitchingSourceRef.current = false;
+                      }).catch(() => {
+                        isSwitchingSourceRef.current = false;
+                      });
+                    } else {
+                      isSwitchingSourceRef.current = false;
                     }
                   }
                   setTimeout(drawGlowFrame, 300);
@@ -1243,6 +1250,7 @@ export function VideoPlayer({
                 onClick={handleVideoClick}
                 onPlay={() => {
                   setIsPlaying(true);
+                  isSwitchingSourceRef.current = false;
                   if ('mediaSession' in navigator) {
                     navigator.mediaSession.playbackState = 'playing';
                   }
@@ -1936,7 +1944,7 @@ export function VideoPlayer({
 
           {/* Mobile Center Controls with Double-Tap Seek Animations */}
           <AnimatePresence>
-            {isMobileDevice && (showControls || showSkipOverlay.visible || isBuffering || isExtracting) && !showMobileSettings && hasInteracted && !isIframe && (
+            {isMobileDevice && (showControls || showSkipOverlay.visible) && !showMobileSettings && hasInteracted && !isIframe && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
