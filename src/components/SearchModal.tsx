@@ -147,7 +147,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-[#04020a]/80 backdrop-blur-md cursor-pointer"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md cursor-pointer"
           />
 
           {/* Modal Content Wrapper - Vertically & Horizontally Centered */}
@@ -178,10 +178,10 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 10 }}
                   transition={{ type: "spring", duration: 0.4 }}
-                  className={`w-full bg-[#120c24] border border-[#21163e] rounded-2xl overflow-hidden flex flex-col shadow-[0_25px_60px_rgba(0,0,0,0.85)] ${themeClass}`}
+                  className={`w-full bg-black border border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-[0_25px_60px_rgba(0,0,0,0.95)] ${themeClass}`}
                 >
                   {/* Interactive Tabs Row */}
-                  <div className="flex border-b border-[#21163e] select-none bg-[#120c24] overflow-x-auto no-scrollbar">
+                  <div className="flex border-b border-white/10 select-none bg-black overflow-x-auto no-scrollbar">
                     {!isMangaRoute && (
                       <button
                         type="button"
@@ -235,7 +235,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
                   </div>
 
               {/* Input Wrapper */}
-              <div className="relative bg-[#120c24] border-b border-[#21163e]/40">
+              <div className="relative bg-black border-b border-white/5">
                 <input
                   ref={inputRef}
                   type="text"
@@ -256,7 +256,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
 
               {/* Results List Section - Only visible when text is entered */}
               {query.trim() !== "" && (
-                <div className="max-h-[360px] overflow-y-auto custom-scrollbar flex flex-col bg-[#120c24]">
+                <div className="max-h-[360px] overflow-y-auto custom-scrollbar flex flex-col bg-black">
                   {loading ? (
                     // Rotating spinner circle
                     <div className="py-14 flex items-center justify-center">
@@ -280,8 +280,8 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
                             router.push(dest);
                             onClose();
                           }}
-                          className={`px-6 py-4 flex items-center justify-between transition-all duration-200 group border-b border-[#21163e]/50 last:border-b-0 cursor-pointer ${
-                            isFocused ? "bg-[#21163e]" : "hover:bg-[#1a1133]"
+                          className={`px-6 py-4 flex items-center justify-between transition-all duration-200 group border-b border-white/5 last:border-b-0 cursor-pointer ${
+                            isFocused ? "bg-white/10" : "hover:bg-white/5"
                           }`}
                         >
                           <div className="flex items-center gap-4 min-w-0">
