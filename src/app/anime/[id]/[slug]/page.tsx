@@ -90,7 +90,7 @@ export default async function AnimeDetailsPage({ params }: PageProps) {
             <Link href={`/anime/${id}/${slug}`} className="px-8 py-3 bg-primary text-white rounded-lg font-bold shadow-lg hover:bg-primary/90 transition-all border border-accent/20">
               Check Again
             </Link>
-            <Link href="/" className="px-8 py-3 bg-card text-white/70 rounded-lg font-medium border border-white/5 hover:bg-card/80 transition-all">
+            <Link href="/anime" className="px-8 py-3 bg-card text-white/70 rounded-lg font-medium border border-white/5 hover:bg-card/80 transition-all">
               Return Home
             </Link>
           </div>
@@ -442,7 +442,7 @@ export default async function AnimeDetailsPage({ params }: PageProps) {
           <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
           <p className="mb-6 text-white/70">We encountered an unexpected error while rendering this page. Try reloading or check back shortly.</p>
           <div className="flex gap-4 justify-center">
-            <Link href="/" className="px-6 py-2 bg-primary text-white rounded-lg">Home</Link>
+            <Link href="/anime" className="px-6 py-2 bg-primary text-white rounded-lg">Home</Link>
             <Link href="#" onClick={() => {}} className="px-6 py-2 bg-card text-white/80 rounded-lg">Retry</Link>
           </div>
         </div>

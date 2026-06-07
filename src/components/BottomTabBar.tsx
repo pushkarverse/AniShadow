@@ -16,9 +16,9 @@ export function BottomTabBar({ onMenuToggle, isMangaRoute }: BottomTabBarProps) 
   const tabs = [
     { 
       label: "Home", 
-      href: "/", 
+      href: isMangaRoute ? "/reader" : "/anime", 
       icon: Home, 
-      active: pathname === "/" 
+      active: pathname === "/anime" || pathname === "/reader" || pathname === "/"
     },
     { 
       label: "Reader", 

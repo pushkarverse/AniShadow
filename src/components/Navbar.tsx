@@ -22,7 +22,6 @@ export function Navbar() {
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
 
-  // Shortcut CTRL + S / CMD + S to open search modal
   useEffect(() => {
     function handleGlobalShortcut(e: KeyboardEvent) {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
@@ -69,10 +68,10 @@ export function Navbar() {
     setIsShuffling(true);
     try {
       const res = await fetch("/api/random");
-        if (res.ok) {
-          const data = await res.json();
-          router.push(`/anime/watch/${data.id}/${data.slug || 'anime'}`);
-        }
+      if (res.ok) {
+        const data = await res.json();
+        router.push(`/anime/watch/${data.id}/${data.slug || 'anime'}`);
+      }
     } catch (error) {
       console.error("Failed to fetch random anime:", error);
     } finally {
@@ -91,18 +90,18 @@ export function Navbar() {
       <div className="container mx-auto px-4 md:px-8 flex items-center justify-between gap-4">
         {/* Left: Logo & Menu Toggle */}
         <div className="flex items-center gap-4">
-          <button 
+          <button
             className="p-2 hover:bg-white/5 rounded-full transition-colors hidden"
             onClick={() => setIsMobileMenuOpen(true)}
           >
             <Menu className="w-6 h-6" />
           </button>
-          
-          <Link href="/" className="flex items-center group">
+
+          <Link href={isMangaRoute ? "/reader" : "/anime"} className="flex items-center group">
             <div className="relative w-36 h-8 md:w-44 md:h-10 shrink-0 transition-transform duration-300 group-hover:scale-105">
               <Image
                 src="/logo.png"
-                alt="AniShadow Logo"
+                alt="Ani Shadow Logo"
                 fill
                 priority
                 sizes="(max-width: 768px) 144px, 176px"
@@ -113,14 +112,14 @@ export function Navbar() {
 
           {/* Brand Switcher */}
           <div className="hidden sm:flex items-center bg-white/5 p-0.5 rounded-full border border-white/5 ml-2">
-            <Link 
-              href="/" 
+            <Link
+              href="/anime"
               className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter transition-all ${!isMangaRoute ? 'bg-[#5c0606] text-white shadow-lg shadow-[#5c0606]/20' : 'text-white/40 hover:text-white'}`}
             >
               Anime
             </Link>
-            <Link 
-              href="/reader" 
+            <Link
+              href="/reader"
               className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter transition-all ${isMangaRoute ? 'bg-[#5b128c] text-white shadow-lg shadow-[#5b128c]/20' : 'text-white/40 hover:text-white'}`}
             >
               Reader
@@ -130,7 +129,7 @@ export function Navbar() {
 
         {/* Center: Search Bar (Desktop) */}
         <div className="hidden md:flex flex-1 max-w-2xl px-4 relative">
-          <div 
+          <div
             onClick={() => setIsSearchModalOpen(true)}
             className="relative w-full group cursor-pointer"
           >
@@ -154,19 +153,19 @@ export function Navbar() {
         {/* Right: Actions */}
         <div className="flex items-center gap-1 md:gap-3">
           <div className="hidden lg:flex items-center gap-1 mr-4">
-            <Link 
-              href="/community" 
-              title="Community" 
+            <Link
+              href="/community"
+              title="Community"
               className="p-2.5 text-white/60 hover:text-white hover:bg-white/5 rounded-full transition-all"
             >
               <Users className="w-5 h-5" />
             </Link>
             {!isMangaRoute && (
-              <button 
+              <button
                 onClick={handleRandom}
                 disabled={isShuffling}
                 suppressHydrationWarning
-                title="Random Anime" 
+                title="Random Anime"
                 className={`p-2.5 text-white/60 hover:text-white hover:bg-white/5 rounded-full transition-all ${isShuffling ? "animate-spin opacity-50" : ""}`}
               >
                 <Shuffle className="w-5 h-5" />
@@ -180,9 +179,8 @@ export function Navbar() {
               setIsMobileSearchOpen(!isMobileSearchOpen);
               setIsMobileMenuOpen(false);
             }}
-            className={`p-2.5 rounded-full transition-all hidden relative ${
-              isMobileSearchOpen ? "text-primary bg-white/5" : "text-white/60 hover:text-white"
-            }`}
+            className={`p-2.5 rounded-full transition-all hidden relative ${isMobileSearchOpen ? "text-primary bg-white/5" : "text-white/60 hover:text-white"
+              }`}
             title="Search"
           >
             <Search className="w-5 h-5" />
@@ -191,7 +189,7 @@ export function Navbar() {
 
 
           <div className="relative" ref={notificationRef}>
-            <button 
+            <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
               suppressHydrationWarning
               className={`p-2.5 transition-colors relative ml-2 ${isNotificationsOpen ? "text-primary" : "text-white/60 hover:text-white"}`}
@@ -236,9 +234,9 @@ export function Navbar() {
           </div>
 
           <button suppressHydrationWarning className="w-10 h-10 ml-2 rounded-full overflow-hidden border border-white/10 hover:border-primary/50 transition-colors relative">
-            <Image 
-              src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80" 
-              alt="Profile" 
+            <Image
+              src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80"
+              alt="Profile"
               fill
               sizes="40px"
               className="object-cover"
@@ -276,7 +274,7 @@ export function Navbar() {
                     className="object-contain object-left"
                   />
                 </div>
-                <button 
+                <button
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="p-2 hover:bg-white/5 rounded-full transition-colors"
                 >
@@ -286,15 +284,15 @@ export function Navbar() {
 
               {/* Mobile Brand Switcher */}
               <div className="flex items-center bg-white/5 p-0.5 rounded-xl border border-white/5 mb-8">
-                <Link 
-                  href="/" 
+                <Link
+                  href="/anime"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex-1 py-2 rounded-lg text-center text-[9px] font-black uppercase tracking-widest transition-all ${!isMangaRoute ? 'bg-[#5c0606] text-white shadow-xl' : 'text-white/40'}`}
                 >
                   Anime
                 </Link>
-                <Link 
-                  href="/reader" 
+                <Link
+                  href="/reader"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex-1 py-2 rounded-lg text-center text-[9px] font-black uppercase tracking-widest transition-all ${isMangaRoute ? 'bg-[#5b128c] text-white shadow-xl' : 'text-white/40'}`}
                 >
@@ -305,9 +303,9 @@ export function Navbar() {
               <div className="flex flex-col gap-2">
                 <Link href="/reader" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all uppercase tracking-widest text-xs">READER</Link>
                 <Link href="/anime/search" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">GENRES</Link>
-                  <Link href="/anime/trending" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">TYPES</Link>
-                  <Link href="/anime/popular" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">NEW RELEASES</Link>
-                  <Link href="/anime/trending" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">UPDATES</Link>
+                <Link href="/anime/trending" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">TYPES</Link>
+                <Link href="/anime/popular" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">NEW RELEASES</Link>
+                <Link href="/anime/trending" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">UPDATES</Link>
                 <Link href="/anime/search?status=RELEASING" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">ONGOING</Link>
               </div>
             </motion.div>
@@ -338,15 +336,14 @@ export function Navbar() {
                   className="w-full h-11 bg-white/5 border border-white/10 rounded-full pl-11 pr-4 text-sm focus:bg-white/10 focus:border-primary/50 focus:ring-0 transition-all outline-none"
                 />
               </div>
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
                 suppressHydrationWarning
-                className={`h-11 px-4 rounded-full flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-all border ${
-                  isFilterOpen 
-                    ? "bg-primary text-white border-primary" 
-                    : "bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border-white/5"
-                }`}
+                className={`h-11 px-4 rounded-full flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-all border ${isFilterOpen
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border-white/5"
+                  }`}
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
               </button>
@@ -375,15 +372,15 @@ export function Navbar() {
 
       {/* Bottom Tab Bar (Mobile) */}
       {!(pathname === '/anime/watch' || pathname?.startsWith('/anime/watch/')) && (
-        <BottomTabBar 
-          onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-          isMangaRoute={isMangaRoute} 
+        <BottomTabBar
+          onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          isMangaRoute={isMangaRoute}
         />
       )}
 
-      <SearchModal 
-        isOpen={isSearchModalOpen} 
-        onClose={() => setIsSearchModalOpen(false)} 
+      <SearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
         isMangaRoute={isMangaRoute}
       />
     </header>
