@@ -1271,7 +1271,7 @@ export function VideoPlayer({
           </AnimatePresence>
 
           <AnimatePresence>
-            {(showControls || isBuffering || isExtracting) && hasInteracted && !isIframe && (
+            {(showControls || isBuffering || isExtracting || showMobileSettings) && hasInteracted && !isIframe && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -1297,7 +1297,14 @@ export function VideoPlayer({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setShowMobileSettings(!showMobileSettings);
+                          const next = !showMobileSettings;
+                          setShowMobileSettings(next);
+                          if (next) {
+                            // Cancel auto-hide while settings is open
+                            if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+                          } else {
+                            scheduleControlsHide();
+                          }
                         }}
                         className={`p-2 transition-all cursor-pointer ${showMobileSettings ? 'text-primary' : 'text-white/60 hover:text-white'}`}
                       >
