@@ -121,6 +121,7 @@ export default function Home() {
 
         {/* Footer Credit */}
         <motion.div
+          suppressHydrationWarning
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 0.6 }}
