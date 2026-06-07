@@ -86,6 +86,22 @@ export function VideoPlayer({
     setShowAudioMenu(false);
   };
 
+  useEffect(() => {
+    if (!allServers || allServers.length === 0 || !initialVideoUrl) return;
+    const matchedServer = allServers.find(s => s.url === initialVideoUrl);
+    if (matchedServer) {
+      setActiveAudioGroup(matchedServer.kind === "dub" ? "dub" : "other");
+    } else {
+      const hasDub = allServers.some(s => s.kind === "dub");
+      const hasSub = allServers.some(s => s.kind !== "dub");
+      if (hasSub) {
+        setActiveAudioGroup("other");
+      } else if (hasDub) {
+        setActiveAudioGroup("dub");
+      }
+    }
+  }, [initialVideoUrl, allServers]);
+
   // Responsive auto-hide delay
   const getControlsTimeout = () => typeof window !== 'undefined' && window.innerWidth < 768 ? 6000 : 4000;
 
@@ -1553,22 +1569,23 @@ export function VideoPlayer({
                             {activeMobileTab === 'audio-subs' && (
                               <div className="flex flex-col gap-6">
                                 {/* Audio Section */}
-                                <div className="flex items-center justify-between bg-white/5 border border-white/5 rounded-2xl p-4 gap-4">
-                                  <span className="text-xs font-black uppercase tracking-widest text-white/80">
-                                    Switch Audio
+                                <div className="flex flex-col gap-2">
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-white/30">
+                                    Audio Language
                                   </span>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex flex-col gap-2">
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         switchAudioGroup('other');
                                       }}
-                                      className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border transition-all ${activeAudioGroup === 'other'
-                                        ? "bg-primary/10 border-primary text-primary font-bold"
-                                        : "bg-white/5 border-white/10 text-white/40 hover:text-white"
+                                      className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${activeAudioGroup === 'other'
+                                        ? "text-primary bg-primary/10 font-bold"
+                                        : "text-white/60 hover:text-white hover:bg-white/5"
                                         }`}
                                     >
-                                      SUB
+                                      <span className="text-sm">Japanese (Sub)</span>
+                                      {activeAudioGroup === 'other' && <span className="ml-auto text-primary">✓</span>}
                                     </button>
                                     <button
                                       onClick={(e) => {
@@ -1576,12 +1593,13 @@ export function VideoPlayer({
                                         switchAudioGroup('dub');
                                       }}
                                       disabled={groupedServers.dub.length === 0}
-                                      className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border transition-all ${activeAudioGroup === 'dub'
-                                        ? "bg-primary/10 border-primary text-primary font-bold"
-                                        : "bg-white/5 border-white/10 text-white/40 hover:text-white"
-                                        } ${groupedServers.dub.length === 0 ? "opacity-30 cursor-not-allowed" : ""}`}
+                                      className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${activeAudioGroup === 'dub'
+                                        ? "text-primary bg-primary/10 font-bold"
+                                        : "text-white/60 hover:text-white hover:bg-white/5"
+                                        } ${groupedServers.dub.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
                                     >
-                                      DUB
+                                      <span className="text-sm">English (Dub)</span>
+                                      {activeAudioGroup === 'dub' && <span className="ml-auto text-primary">✓</span>}
                                     </button>
                                   </div>
                                 </div>
@@ -2150,22 +2168,23 @@ export function VideoPlayer({
                 {activeMobileTab === 'audio-subs' && (
                   <div className="flex flex-col gap-6">
                     {/* Audio Section */}
-                    <div className="flex items-center justify-between bg-white/5 border border-white/5 rounded-2xl p-4 gap-4">
-                      <span className="text-xs font-black uppercase tracking-widest text-white/80">
-                        Switch Audio
+                    <div className="flex flex-col gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-white/30">
+                        Audio Language
                       </span>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col gap-2">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             switchAudioGroup('other');
                           }}
-                          className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border transition-all ${activeAudioGroup === 'other'
-                            ? "bg-primary/10 border-primary text-primary font-bold"
-                            : "bg-white/5 border-white/10 text-white/40 hover:text-white"
+                          className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${activeAudioGroup === 'other'
+                            ? "text-primary bg-primary/10 font-bold"
+                            : "text-white/60 hover:text-white hover:bg-white/5"
                             }`}
                         >
-                          SUB
+                          <span className="text-sm">Japanese (Sub)</span>
+                          {activeAudioGroup === 'other' && <span className="ml-auto text-primary">✓</span>}
                         </button>
                         <button
                           onClick={(e) => {
@@ -2173,12 +2192,13 @@ export function VideoPlayer({
                             switchAudioGroup('dub');
                           }}
                           disabled={groupedServers.dub.length === 0}
-                          className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider border transition-all ${activeAudioGroup === 'dub'
-                            ? "bg-primary/10 border-primary text-primary font-bold"
-                            : "bg-white/5 border-white/10 text-white/40 hover:text-white"
-                            } ${groupedServers.dub.length === 0 ? "opacity-30 cursor-not-allowed" : ""}`}
+                          className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${activeAudioGroup === 'dub'
+                            ? "text-primary bg-primary/10 font-bold"
+                            : "text-white/60 hover:text-white hover:bg-white/5"
+                            } ${groupedServers.dub.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
                         >
-                          DUB
+                          <span className="text-sm">English (Dub)</span>
+                          {activeAudioGroup === 'dub' && <span className="ml-auto text-primary">✓</span>}
                         </button>
                       </div>
                     </div>
