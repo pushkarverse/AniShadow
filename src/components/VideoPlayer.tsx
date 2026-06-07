@@ -311,6 +311,7 @@ export function VideoPlayer({
   const [showSpeedMenu, setShowSpeedMenu] = useState<boolean>(false);
   const [showMobileSettings, setShowMobileSettings] = useState(false);
   const [isMaxView, setIsMaxView] = useState(false);
+  const [activeMobileTab, setActiveMobileTab] = useState<'quality' | 'audio-subs' | 'speed'>('quality');
 
   // Sync playback speed when video URL or component changes
   useEffect(() => {
@@ -1321,17 +1322,6 @@ export function VideoPlayer({
                   </button>
 
                   <div className="flex items-center gap-2">
-                    {/* Mock Cast Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        alert("Chromecast connection requested...");
-                      }}
-                      className="p-2 text-white/60 hover:text-white transition-all cursor-pointer"
-                    >
-                      <Tv className="w-5 h-5" />
-                    </button>
-
                     {/* Settings Button */}
                     <button
                       onClick={(e) => {
@@ -1447,92 +1437,230 @@ export function VideoPlayer({
                 <AnimatePresence>
                   {showMobileSettings && (
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                      className="absolute top-16 right-0 bg-[#0c0c0c]/95 border border-white/10 rounded-2xl p-4 w-60 shadow-2xl backdrop-blur-xl z-50 pointer-events-auto flex flex-col gap-4 max-h-[70%] overflow-y-auto"
+                      initial={{ opacity: 0, y: isFullscreen ? 0 : 50 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: isFullscreen ? 0 : 50 }}
+                      className={`absolute z-50 pointer-events-auto flex flex-col backdrop-blur-xl transition-all ${
+                        isFullscreen
+                          ? "inset-0 bg-black/85 p-6 md:p-12 justify-start gap-8"
+                          : "bottom-0 left-0 right-0 bg-[#0c0c0c]/98 border-t border-white/10 rounded-t-3xl p-5 max-h-[60vh] overflow-y-auto"
+                      }`}
                     >
-                      <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                        <span className="text-xs font-black uppercase tracking-wider text-primary">Settings</span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowMobileSettings(false);
-                          }}
-                          className="text-white/40 hover:text-white"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      {levels.length > 1 && (
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-white/30">Quality</span>
-                          <div className="flex flex-wrap gap-1.5 flex-row">
-                            {levels.map((level) => (
-                              <button
-                                key={level.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  selectQuality(level.id);
-                                  setShowMobileSettings(false);
-                                }}
-                                className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md border transition-all ${
-                                  currentLevel === level.id
-                                    ? "bg-primary border-primary text-white"
-                                    : "bg-white/5 border-white/10 text-white/50 hover:text-white"
-                                }`}
-                              >
-                                {level.name}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-white/30">Speed</span>
-                        <div className="flex flex-wrap gap-1.5 flex-row">
-                          {[0.75, 1, 1.25, 1.5, 2].map((speed) => (
-                            <button
-                              key={speed}
-                              onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (videoRef.current) videoRef.current.playbackRate = speed;
-                                  setPlaybackSpeed(speed);
-                                  setShowMobileSettings(false);
-                              }}
-                              className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md border transition-all ${
-                                playbackSpeed === speed
-                                  ? "bg-primary border-primary text-white"
-                                  : "bg-white/5 border-white/10 text-white/50 hover:text-white"
-                              }`}
-                            >
-                              {speed === 1 ? "1x" : `${speed}x`}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {proxiedSubtitleUrl && (
-                        <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-white/30">Subtitles</span>
+                      {/* Top Bar / Header */}
+                      <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                        {/* Tabs list */}
+                        <div className="flex items-center gap-6 overflow-x-auto scrollbar-none">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setIsSubtitlesOn(!isSubtitlesOn);
-                              setShowMobileSettings(false);
+                              setActiveMobileTab('quality');
                             }}
-                            className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-md border transition-all ${
-                              isSubtitlesOn
-                                ? "bg-primary border-primary text-white"
-                                : "bg-white/5 border-white/10 text-white/50"
+                            className={`text-xs font-black uppercase tracking-wider transition-all pb-1 border-b-2 ${
+                              activeMobileTab === 'quality'
+                                ? "border-primary text-white"
+                                : "border-transparent text-white/40 hover:text-white/60"
                             }`}
                           >
-                            {isSubtitlesOn ? "On" : "Off"}
+                            Quality
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMobileTab('audio-subs');
+                            }}
+                            className={`text-xs font-black uppercase tracking-wider transition-all pb-1 border-b-2 ${
+                              activeMobileTab === 'audio-subs'
+                                ? "border-primary text-white"
+                                : "border-transparent text-white/40 hover:text-white/60"
+                            }`}
+                          >
+                            Audio & Subtitles
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMobileTab('speed');
+                            }}
+                            className={`text-xs font-black uppercase tracking-wider transition-all pb-1 border-b-2 ${
+                              activeMobileTab === 'speed'
+                                ? "border-primary text-white"
+                                : "border-transparent text-white/40 hover:text-white/60"
+                            }`}
+                          >
+                            Playback Speed
                           </button>
                         </div>
-                      )}
+
+                        {/* Top-Right Mock link & Close icon */}
+                        <div className="flex items-center gap-4 shrink-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              alert("Feedback submitted. Thank you!");
+                            }}
+                            className="hidden xs:inline-block text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all"
+                          >
+                            Report an Issue
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowMobileSettings(false);
+                            }}
+                            className="p-2 text-white/60 hover:text-white transition-all rounded-full hover:bg-white/5"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Tab Contents */}
+                      <div className="flex-1 py-4 overflow-y-auto min-h-[150px]">
+                        {/* Quality Options */}
+                        {activeMobileTab === 'quality' && (
+                          <div className="flex flex-col gap-3">
+                            {levels.length <= 1 ? (
+                              <div className="text-white/40 text-xs py-2">
+                                Default quality level is auto-selected.
+                              </div>
+                            ) : (
+                              levels.map((level) => {
+                                const isCurrent = currentLevel === level.id;
+                                return (
+                                  <button
+                                    key={level.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      selectQuality(level.id);
+                                      setShowMobileSettings(false);
+                                    }}
+                                    className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${
+                                      isCurrent
+                                        ? "text-primary bg-primary/10 font-bold"
+                                        : "text-white/60 hover:text-white hover:bg-white/5"
+                                    }`}
+                                  >
+                                    <span className="text-sm">
+                                      {level.name} {level.id === -1 && "(Recommended for best experience)"}
+                                    </span>
+                                    {isCurrent && <span className="ml-auto text-primary">✓</span>}
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        )}
+
+                        {/* Audio & Subtitles Options */}
+                        {activeMobileTab === 'audio-subs' && (
+                          <div className="flex flex-col gap-6">
+                            {/* Audio Section */}
+                            <div className="flex flex-col gap-2">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-white/30">
+                                Audio Language
+                              </span>
+                              <div className="flex flex-col gap-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    switchAudioGroup('other');
+                                  }}
+                                  className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${
+                                    activeAudioGroup === 'other'
+                                      ? "text-primary bg-primary/10 font-bold"
+                                      : "text-white/60 hover:text-white hover:bg-white/5"
+                                  }`}
+                                >
+                                  <span className="text-sm">Japanese (Sub)</span>
+                                  {activeAudioGroup === 'other' && <span className="ml-auto text-primary">✓</span>}
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    switchAudioGroup('dub');
+                                  }}
+                                  disabled={groupedServers.dub.length === 0}
+                                  className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${
+                                    activeAudioGroup === 'dub'
+                                      ? "text-primary bg-primary/10 font-bold"
+                                      : "text-white/60 hover:text-white hover:bg-white/5"
+                                  } ${groupedServers.dub.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
+                                >
+                                  <span className="text-sm">English (Dub)</span>
+                                  {activeAudioGroup === 'dub' && <span className="ml-auto text-primary">✓</span>}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Subtitles Section */}
+                            {proxiedSubtitleUrl && (
+                              <div className="flex flex-col gap-2 border-t border-white/5 pt-4">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-white/30">
+                                  Subtitles (Captions)
+                                </span>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setIsSubtitlesOn(true);
+                                    }}
+                                    className={`flex-1 py-2 rounded-xl text-center text-xs font-black uppercase tracking-wider border transition-all ${
+                                      isSubtitlesOn
+                                        ? "bg-primary border-primary text-white"
+                                        : "bg-white/5 border-white/10 text-white/40 hover:text-white"
+                                    }`}
+                                  >
+                                    On
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setIsSubtitlesOn(false);
+                                    }}
+                                    className={`flex-1 py-2 rounded-xl text-center text-xs font-black uppercase tracking-wider border transition-all ${
+                                      !isSubtitlesOn
+                                        ? "bg-primary border-primary text-white"
+                                        : "bg-white/5 border-white/10 text-white/40 hover:text-white"
+                                    }`}
+                                  >
+                                    Off
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Playback Speed Options */}
+                        {activeMobileTab === 'speed' && (
+                          <div className="flex flex-col gap-2">
+                            {[0.75, 1, 1.25, 1.5, 2].map((speed) => {
+                              const isCurrent = playbackSpeed === speed;
+                              return (
+                                <button
+                                  key={speed}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (videoRef.current) videoRef.current.playbackRate = speed;
+                                    setPlaybackSpeed(speed);
+                                    setShowMobileSettings(false);
+                                  }}
+                                  className={`flex items-center gap-3 w-full text-left py-2 px-3 rounded-xl transition-all ${
+                                    isCurrent
+                                      ? "text-primary bg-primary/10 font-bold"
+                                      : "text-white/60 hover:text-white hover:bg-white/5"
+                                  }`}
+                                >
+                                  <span className="text-sm">
+                                    {speed === 1 ? "1x (Normal)" : `${speed}x`}
+                                  </span>
+                                  {isCurrent && <span className="ml-auto text-primary">✓</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
