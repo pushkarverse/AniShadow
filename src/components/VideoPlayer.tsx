@@ -314,6 +314,8 @@ export function VideoPlayer({
   const [isMaxView, setIsMaxView] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<'quality' | 'audio-subs' | 'speed'>('quality');
   const [autoQualityLabel, setAutoQualityLabel] = useState<string>("");
+  const [backwardSpin, setBackwardSpin] = useState(0);
+  const [forwardSpin, setForwardSpin] = useState(0);
 
   useEffect(() => {
     const mobile = navigator.maxTouchPoints > 0 || window.innerWidth < 768;
@@ -428,31 +430,16 @@ export function VideoPlayer({
     }
   };
 
-  const skipBackward = () => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
-    }
-  };
-
-  const skipForward = () => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = Math.min(duration, videoRef.current.currentTime + 10);
-    }
-  };
-
-  const selectQuality = (levelId: number) => {
-    if (hlsRef.current) {
-      setIsBuffering(true);
-      hlsRef.current.currentLevel = levelId;
-      setCurrentLevel(levelId);
-    }
-    setShowQualityMenu(false);
-  };
-
   const triggerDoubleTapSeek = (direction: "forward" | "backward") => {
     if (videoRef.current) {
       const skipAmount = direction === "forward" ? 10 : -10;
       videoRef.current.currentTime = Math.max(0, Math.min(duration, videoRef.current.currentTime + skipAmount));
+    }
+
+    if (direction === "backward") {
+      setBackwardSpin((prev) => prev + 1);
+    } else {
+      setForwardSpin((prev) => prev + 1);
     }
 
     setShowSkipOverlay((prev) => {
@@ -468,6 +455,23 @@ export function VideoPlayer({
     skipOverlayTimeoutRef.current = setTimeout(() => {
       setShowSkipOverlay({ visible: false, direction: "forward", count: 0 });
     }, 800);
+  };
+
+  const skipBackward = () => {
+    triggerDoubleTapSeek("backward");
+  };
+
+  const skipForward = () => {
+    triggerDoubleTapSeek("forward");
+  };
+
+  const selectQuality = (levelId: number) => {
+    if (hlsRef.current) {
+      setIsBuffering(true);
+      hlsRef.current.currentLevel = levelId;
+      setCurrentLevel(levelId);
+    }
+    setShowQualityMenu(false);
   };
 
   const handleVideoClick = (e: React.MouseEvent<HTMLElement>) => {
@@ -1693,17 +1697,51 @@ export function VideoPlayer({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 sm:gap-6">
                         <button onClick={skipBackward} className="relative w-10 h-10 text-white hover:text-accent transition-all scale-110 active:scale-95 flex items-center justify-center" title="Rewind 10s">
-                          <RotateCcw className="w-6 h-6 sm:w-7 sm:h-7" />
-                          <span className="absolute bottom-0 text-[9px] font-black leading-none text-white/90">10s</span>
+                          <motion.div
+                            animate={{ rotate: backwardSpin * -360 }}
+                            transition={{ duration: 0.4, ease: "easeOut" }}
+                            className="flex items-center justify-center"
+                          >
+                            <RotateCcw className="w-6 h-6 sm:w-7 sm:h-7" />
+                          </motion.div>
+                          <AnimatePresence>
+                            {showSkipOverlay.visible && showSkipOverlay.direction === "backward" && (
+                              <motion.span
+                                initial={{ opacity: 0, scale: 0.8, y: -2 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.8, y: 2 }}
+                                className="absolute -bottom-3 text-[9px] font-black leading-none text-white/90 whitespace-nowrap"
+                              >
+                                -{showSkipOverlay.count}s
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
                         </button>
 
-                        <button onClick={togglePlay} className="text-white hover:text-accent transition-all scale-110 active:scale-95">
+                        <button onClick={togglePlay} className="relative w-10 h-10 text-white hover:text-accent transition-all scale-110 active:scale-95 flex items-center justify-center" title={isPlaying ? "Pause" : "Play"}>
                           {isPlaying ? <Pause className="w-6 h-6 sm:w-7 h-7" /> : <Play className="w-6 h-6 sm:w-7 h-7 fill-current" />}
                         </button>
 
                         <button onClick={skipForward} className="relative w-10 h-10 text-white hover:text-accent transition-all scale-110 active:scale-95 flex items-center justify-center" title="Forward 10s">
-                          <RotateCw className="w-6 h-6 sm:w-7 sm:h-7" />
-                          <span className="absolute bottom-0 text-[9px] font-black leading-none text-white/90">10s</span>
+                          <motion.div
+                            animate={{ rotate: forwardSpin * 360 }}
+                            transition={{ duration: 0.4, ease: "easeOut" }}
+                            className="flex items-center justify-center"
+                          >
+                            <RotateCw className="w-6 h-6 sm:w-7 sm:h-7" />
+                          </motion.div>
+                          <AnimatePresence>
+                            {showSkipOverlay.visible && showSkipOverlay.direction === "forward" && (
+                              <motion.span
+                                initial={{ opacity: 0, scale: 0.8, y: -2 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.8, y: 2 }}
+                                className="absolute -bottom-3 text-[9px] font-black leading-none text-white/90 whitespace-nowrap"
+                              >
+                                +{showSkipOverlay.count}s
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
                         </button>
 
                         <button onClick={() => {
@@ -1919,17 +1957,23 @@ export function VideoPlayer({
                     title="Rewind 10s"
                   >
                     <motion.div
-                      animate={showSkipOverlay.visible && showSkipOverlay.direction === "backward" ? { rotate: -360 } : { rotate: 0 }}
-                      transition={{ duration: 0.5, ease: "easeOut" }}
+                      animate={{ rotate: backwardSpin * -360 }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
                     >
                       <RotateCcw className="w-7 h-7" />
                     </motion.div>
-                    <span className="absolute -bottom-4 text-[10px] font-black text-white/80 whitespace-nowrap">
-                      {showSkipOverlay.visible && showSkipOverlay.direction === "backward"
-                        ? `-${showSkipOverlay.count}s`
-                        : "10s"
-                      }
-                    </span>
+                    <AnimatePresence>
+                      {showSkipOverlay.visible && showSkipOverlay.direction === "backward" && (
+                        <motion.span
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          className="absolute -bottom-4 text-[10px] font-black text-white/80 whitespace-nowrap"
+                        >
+                          -{showSkipOverlay.count}s
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
                   </button>
 
                   {/* Play/Pause Button */}
@@ -1945,7 +1989,7 @@ export function VideoPlayer({
                       togglePlay();
                       scheduleControlsHide();
                     }}
-                    className={`text-white active:scale-90 transition-all cursor-pointer ${!showControls ? "opacity-30" : "opacity-100"
+                    className={`relative w-12 h-12 flex items-center justify-center text-white active:scale-90 transition-all cursor-pointer ${!showControls ? "opacity-30" : "opacity-100"
                       }`}
                   >
                     {isPlaying ? <Pause className="w-7 h-7 fill-current" /> : <Play className="w-7 h-7 fill-current ml-0.5" />}
@@ -1969,17 +2013,23 @@ export function VideoPlayer({
                     title="Forward 10s"
                   >
                     <motion.div
-                      animate={showSkipOverlay.visible && showSkipOverlay.direction === "forward" ? { rotate: 360 } : { rotate: 0 }}
-                      transition={{ duration: 0.5, ease: "easeOut" }}
+                      animate={{ rotate: forwardSpin * 360 }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
                     >
                       <RotateCw className="w-7 h-7" />
                     </motion.div>
-                    <span className="absolute -bottom-4 text-[10px] font-black text-white/80 whitespace-nowrap">
-                      {showSkipOverlay.visible && showSkipOverlay.direction === "forward"
-                        ? `+${showSkipOverlay.count}s`
-                        : "10s"
-                      }
-                    </span>
+                    <AnimatePresence>
+                      {showSkipOverlay.visible && showSkipOverlay.direction === "forward" && (
+                        <motion.span
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          className="absolute -bottom-4 text-[10px] font-black text-white/80 whitespace-nowrap"
+                        >
+                          +{showSkipOverlay.count}s
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
                   </button>
                 </div>
               </motion.div>
