@@ -313,6 +313,7 @@ export function VideoPlayer({
   const [showMobileSettings, setShowMobileSettings] = useState(false);
   const [isMaxView, setIsMaxView] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<'quality' | 'audio-subs' | 'speed'>('quality');
+  const [autoQualityLabel, setAutoQualityLabel] = useState<string>("");
 
   useEffect(() => {
     const mobile = navigator.maxTouchPoints > 0 || window.innerWidth < 768;
@@ -875,6 +876,7 @@ export function VideoPlayer({
   useEffect(() => {
     setLevels([]);
     setCurrentLevel(-1);
+    setAutoQualityLabel("");
     setShowQualityMenu(false);
     setIsBuffering(true);
     setBuffered(0);
@@ -965,6 +967,15 @@ export function VideoPlayer({
       hls.on(Hls.Events.MANIFEST_LOADED, () => {
         setError(null);
         errorCountRef.current = 0;
+      });
+
+      hls.on(Hls.Events.LEVEL_SWITCHED, (_event, data) => {
+        const levelIdx = data.level;
+        const levelObj = hls.levels[levelIdx];
+        if (levelObj) {
+          const name = levelObj.name || (levelObj.height ? `${levelObj.height}p` : `Quality ${levelIdx}`);
+          setAutoQualityLabel(name);
+        }
       });
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -1423,8 +1434,8 @@ export function VideoPlayer({
                           initial={{ opacity: 0, y: 100 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 100 }}
-                          transition={{ type: "spring", damping: 25, stiffness: 250 }}
-                          className="pointer-events-auto flex flex-col backdrop-blur-xl transition-all absolute inset-0 bg-black/40 p-6 md:p-12 justify-start gap-8 z-50"
+                          transition={{ type: "tween", ease: "easeOut", duration: 0.2 }}
+                          className="pointer-events-auto flex flex-col backdrop-blur-xl transition-all fixed inset-0 bg-black/40 p-6 md:p-12 justify-start gap-8 z-50"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {/* Top Bar / Header */}
@@ -1518,7 +1529,7 @@ export function VideoPlayer({
                                           }`}
                                       >
                                         <span className="text-sm">
-                                          {level.name} {level.id === -1 && "(Recommended for best experience)"}
+                                          {level.id === -1 && autoQualityLabel ? `Auto (${autoQualityLabel})` : level.name} {level.id === -1 && "(Recommended for best experience)"}
                                         </span>
                                         {isCurrent && <span className="ml-auto text-primary">✓</span>}
                                       </button>
@@ -1843,7 +1854,7 @@ export function VideoPlayer({
                             >
                               <Settings className="w-5 h-5 sm:w-6 sm:h-6" />
                               <span className="text-[10px] font-bold bg-white/10 px-1.5 py-0.5 rounded uppercase">
-                                {levels.find(l => l.id === currentLevel)?.name || "Auto"}
+                                {currentLevel === -1 && autoQualityLabel ? `Auto (${autoQualityLabel})` : (levels.find(l => l.id === currentLevel)?.name || "Auto")}
                               </span>
                             </button>
 
@@ -1864,7 +1875,7 @@ export function VideoPlayer({
                                         : "text-white/70 hover:bg-white/10 hover:text-white"
                                         }`}
                                     >
-                                      {level.name}
+                                      {level.id === -1 && autoQualityLabel ? `Auto (${autoQualityLabel})` : level.name}
                                     </button>
                                   ))}
                                 </motion.div>
@@ -2022,7 +2033,7 @@ export function VideoPlayer({
               initial={{ opacity: 0, y: 100 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 100 }}
-              transition={{ type: "spring", damping: 25, stiffness: 250 }}
+              transition={{ type: "tween", ease: "easeOut", duration: 0.2 }}
               className="fixed bottom-0 left-0 right-0 bg-[#0c0c0c]/98 border-t border-white/10 rounded-t-3xl p-5 max-h-[60vh] overflow-y-auto z-[9999] pointer-events-auto flex flex-col backdrop-blur-xl transition-all"
               onClick={(e) => e.stopPropagation()}
             >
@@ -2117,7 +2128,7 @@ export function VideoPlayer({
                               }`}
                           >
                             <span className="text-sm">
-                              {level.name} {level.id === -1 && "(Recommended for best experience)"}
+                              {level.id === -1 && autoQualityLabel ? `Auto (${autoQualityLabel})` : level.name} {level.id === -1 && "(Recommended for best experience)"}
                             </span>
                             {isCurrent && <span className="ml-auto text-primary">✓</span>}
                           </button>
