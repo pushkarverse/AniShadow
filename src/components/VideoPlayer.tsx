@@ -645,11 +645,7 @@ export function VideoPlayer({
       
       const diff = Math.round(newTime - start.time);
       const sign = diff >= 0 ? "+" : "";
-      setGestureHud({
-        visible: true,
-        type: "seek",
-        value: `${formatTime(newTime)} (${sign}${diff}s)`
-      });
+      // seek HUD suppressed — no popup shown
       video.currentTime = newTime;
     } else if (isSwipingRef.current === "vertical-left") {
       e.preventDefault();
@@ -1057,15 +1053,6 @@ export function VideoPlayer({
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none"
             >
               <div className="bg-black/85 border border-white/10 rounded-2xl px-6 py-4 flex flex-col items-center gap-3 backdrop-blur-md shadow-2xl min-w-[140px]">
-                {gestureHud.type === "seek" && (
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
-                      <Gauge className="w-6 h-6 text-primary" />
-                    </div>
-                    <span className="text-white text-xs font-black tracking-widest uppercase">Seek</span>
-                    <span className="text-white font-mono text-sm font-black">{gestureHud.value}</span>
-                  </div>
-                )}
                 {gestureHud.type === "brightness" && (
                   <div className="flex flex-col items-center gap-2">
                     <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
@@ -1346,36 +1333,50 @@ export function VideoPlayer({
                   </div>
                 </div>
 
-                {/* Center Button: Play/Pause only */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-auto z-10">
+                {/* Center Buttons: Skip back, Play/Pause, Skip forward — no backgrounds */}
+                <div className="absolute inset-0 flex items-center justify-center gap-10 pointer-events-auto z-10">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      skipBackward();
+                      scheduleControlsHide();
+                    }}
+                    className="relative w-8 h-8 flex items-center justify-center text-white/80 hover:text-white active:scale-90 transition-all cursor-pointer"
+                    title="Rewind 10s"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                    <span className="absolute bottom-0 text-[8px] font-black leading-none text-white/80">10s</span>
+                  </button>
+
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       togglePlay();
                       scheduleControlsHide();
                     }}
-                    className="p-5 rounded-full bg-primary text-white shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all cursor-pointer border border-[#4A2125]"
+                    className="text-white hover:text-white/80 active:scale-90 transition-all cursor-pointer"
                   >
-                    {isPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current ml-0.5" />}
+                    {isPlaying ? <Pause className="w-7 h-7 fill-current" /> : <Play className="w-7 h-7 fill-current ml-0.5" />}
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      skipForward();
+                      scheduleControlsHide();
+                    }}
+                    className="relative w-8 h-8 flex items-center justify-center text-white/80 hover:text-white active:scale-90 transition-all cursor-pointer"
+                    title="Forward 10s"
+                  >
+                    <RotateCw className="w-5 h-5" />
+                    <span className="absolute bottom-0 text-[8px] font-black leading-none text-white/80">10s</span>
                   </button>
                 </div>
 
-                {/* Bottom Row: Maxview pill, timestamp, seekbar */}
+                {/* Bottom Row: timestamp + seekbar */}
                 <div className="flex flex-col gap-3 w-full pointer-events-auto mt-auto z-20">
-                  <div className="flex items-center justify-between w-full px-2">
-                    <div className="w-20" />
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsMaxView(!isMaxView);
-                        scheduleControlsHide();
-                      }}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-white border transition-all cursor-pointer shadow-lg active:scale-95 bg-gradient-to-r from-blue-600/90 to-purple-600/90 border-white/10"
-                    >
-                      <Maximize className="w-3.5 h-3.5" />
-                      <span>Maxview {isMaxView ? "On" : "Off"}</span>
-                    </button>
-                    <div className="text-white/90 font-mono text-xs font-bold w-20 text-right">
+                  <div className="flex items-center justify-end w-full px-2">
+                    <div className="text-white/70 font-mono text-xs font-bold">
                       {formatTime(progress)}
                     </div>
                   </div>
