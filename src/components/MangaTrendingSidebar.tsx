@@ -36,7 +36,7 @@ export function MangaTrendingSidebar({ initialData }: MangaTrendingSidebarProps)
                 {(idx + 1).toString().padStart(2, '0')}
               </div>
               <div className="w-[50px] h-[75px] rounded-lg overflow-hidden relative shadow-lg shrink-0">
-                <Image unoptimized fill sizes="50px" src={manga.image || ""} alt={title} className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                <Image unoptimized fill sizes="50px" src={manga.image || "https://images.unsplash.com/photo-1578632292335-df3abbb0d586?q=80&w=2000&auto=format&fit=crop"} alt={title} className="object-cover group-hover:scale-110 transition-transform duration-500" />
               </div>
               <div className="flex flex-col flex-1 min-w-0 pr-2">
                 <h4 className="text-xs font-bold text-white group-hover:text-primary transition-colors line-clamp-2 leading-snug mb-1">{title}</h4>

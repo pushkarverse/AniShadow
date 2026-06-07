@@ -65,7 +65,7 @@ export function TrendingSidebar({ initialData }: TrendingSidebarProps) {
                   unoptimized
                   fill
                   sizes="320px"
-                  src={anime.cover || anime.image || ""}
+                  src={anime.cover || anime.image || "https://images.unsplash.com/photo-1578632292335-df3abbb0d586?q=80&w=2000&auto=format&fit=crop"}
                   alt={getAnimeTitle(anime.title)}
                   className="object-cover opacity-20 group-hover:opacity-30 transition-opacity duration-500"
                   priority={idx < 2}

@@ -147,7 +147,7 @@ export function ReaderLibrarySection() {
                 <Link href={readUrl} className="block">
                   <div className="relative aspect-[2/3] w-full overflow-hidden rounded-2xl bg-[#121212] border border-white/5 shadow-2xl transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-primary/20 group-hover:-translate-y-1">
                     <Image
-                      src={item.image || ""}
+                      src={item.image || "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop"}
                       alt={item.title}
                       fill
                       sizes="180px"
