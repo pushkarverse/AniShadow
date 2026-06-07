@@ -76,7 +76,7 @@ export function SearchFilters() {
     else params.delete("origin");
 
     params.set("page", "1"); // Reset to page 1 on new filters
-    router.push(`/search?${params.toString()}`);
+    router.push(`/anime/search?${params.toString()}`);
   };
 
   const handleReset = () => {
@@ -93,7 +93,7 @@ export function SearchFilters() {
     if (currentQuery) params.set("q", currentQuery);
     if (currentType) params.set("type", currentType);
     
-    router.push(`/search${params.toString() ? `?${params.toString()}` : ""}`);
+    router.push(`/anime/search${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
   if (rawType === "NOVEL") {

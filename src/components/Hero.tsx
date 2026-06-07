@@ -173,7 +173,7 @@ export function Hero({ items = [] }: HeroProps) {
                 className="flex items-center gap-3 w-full justify-center md:justify-start"
               >
                 <Link 
-                  href={`/watch/${currentItem.id}/${currentItem.slug || slugify(currentItem.title)}?ep=1`} 
+                  href={`/anime/watch/${currentItem.id}/${currentItem.slug || slugify(currentItem.title)}?ep=1`} 
                   className="flex items-center justify-center h-11 md:h-14 px-6 md:px-12 bg-primary hover:bg-accent text-white font-black rounded-xl transition-all shadow-lg shadow-primary/20 active:scale-95 text-xs md:text-sm uppercase tracking-widest gap-2 cursor-pointer"
                 >
                   <Play className="w-4 h-4 fill-current shrink-0" />

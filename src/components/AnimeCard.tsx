@@ -114,7 +114,7 @@ export function AnimeCard({
   const isManga = type === 'MANGA' || (infoData?.type === 'MANGA');
   const animeSlug = slug || slugify(title);
   const detailsUrl = href || `/anime/${id}/${animeSlug}`;
-  const actionUrl = href || (isManga ? `/anime/${id}/${animeSlug}` : `/watch/${id}/${animeSlug}?ep=1`);
+  const actionUrl = href || (isManga ? `/anime/${id}/${animeSlug}` : `/anime/watch/${id}/${animeSlug}?ep=1`);
 
   const displayTitle = getDisplayTitle(title);
 

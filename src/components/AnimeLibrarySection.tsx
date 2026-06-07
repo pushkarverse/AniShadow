@@ -119,7 +119,7 @@ export function AnimeLibrarySection() {
           className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0 scroll-smooth snap-x md:overflow-visible md:pb-0 md:snap-none"
         >
           {history.map((item, index) => {
-            const watchUrl = `/watch/${item.animeId}/${item.slug || "anime"}?ep=${item.episodeNumber}`;
+            const watchUrl = `/anime/watch/${item.animeId}/${item.slug || "anime"}?ep=${item.episodeNumber}`;
 
             return (
               <motion.div

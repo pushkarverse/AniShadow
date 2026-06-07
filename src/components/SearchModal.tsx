@@ -109,13 +109,13 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
           const anime = results[focusedIndex];
           if (anime) {
             const slug = anime.slug || slugify(getDisplayTitle(anime.title));
-            const dest = isComic ? `/reader/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
+            const dest = isComic ? `/reader/${anime.id}/${slug}` : `/anime/watch/${anime.id}/${slug}?ep=1`;
             router.push(dest);
             onClose();
           }
         } else if (query.trim()) {
           const typeParam = activeType !== "ANIME" ? `&type=${activeType}` : "";
-          router.push(`/search?q=${encodeURIComponent(query.trim())}${typeParam}`);
+          router.push(`/anime/search?q=${encodeURIComponent(query.trim())}${typeParam}`);
           onClose();
         }
       } else if (e.key === "Escape") {
@@ -267,7 +267,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
                       const isFocused = idx === focusedIndex;
                       const slug = anime.slug || slugify(getDisplayTitle(anime.title));
                       const isComic = activeType === "MANGA" || activeType === "MANHWA" || activeType === "NOVEL";
-                      const dest = isComic ? `/reader/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
+                      const dest = isComic ? `/reader/${anime.id}/${slug}` : `/anime/watch/${anime.id}/${slug}?ep=1`;
                       return (
                         <a
                           key={`${anime.id || 'search'}-${idx}`}

@@ -68,9 +68,9 @@ export function RouteProgress() {
     if (typeof window === "undefined") return;
 
     const isMangaPath = pathname?.startsWith("/reader") || false;
-    const isMangaSearch = pathname?.startsWith("/search") && searchParams?.get("type") === "MANGA";
-    const isManhwaSearch = pathname?.startsWith("/search") && searchParams?.get("type") === "MANHWA";
-    const isNovelSearch = pathname?.startsWith("/search") && searchParams?.get("type") === "NOVEL";
+    const isMangaSearch = pathname?.startsWith("/anime/search") && searchParams?.get("type") === "MANGA";
+    const isManhwaSearch = pathname?.startsWith("/anime/search") && searchParams?.get("type") === "MANHWA";
+    const isNovelSearch = pathname?.startsWith("/anime/search") && searchParams?.get("type") === "NOVEL";
     
     const isReader = isMangaPath || isMangaSearch || isManhwaSearch || isNovelSearch;
 

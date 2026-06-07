@@ -270,7 +270,7 @@ export default async function AnimeDetailsPage({ params }: PageProps) {
                   </button>
                 ) : episodes.length > 0 ? (
                   <Link
-                    href={`/watch/${id}/${anime.slug}?ep=1`} 
+                    href={`/anime/watch/${id}/${anime.slug}?ep=1`} 
                     className="flex items-center justify-between gap-8 w-full sm:w-[280px] px-8 py-5 bg-primary text-white font-black rounded-2xl shadow-lg shadow-primary/20 group transition-all active:scale-95"
                   >
                     <span className="text-lg uppercase tracking-[0.15em] ml-2">Watch now</span>

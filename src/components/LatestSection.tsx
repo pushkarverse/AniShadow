@@ -25,7 +25,7 @@ export function LatestSection({
         </div>
 
         <Link 
-          href="/latest" 
+          href="/anime/latest" 
           className="text-[10px] font-black text-white/40 hover:text-primary transition-all uppercase tracking-[0.2em] bg-white/5 px-4 py-2 rounded-lg border border-white/5 self-start sm:self-center"
         >
           View All

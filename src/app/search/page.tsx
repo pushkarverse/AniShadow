@@ -55,7 +55,7 @@ export default async function SearchPage({
       params.push(`origin=${encodeURIComponent(origin)}`);
     }
     params.push(`type=${targetType}`);
-    return `/search?${params.join("&")}`;
+    return `/anime/search?${params.join("&")}`;
   };
 
   let searchResults: any[] = [];
@@ -164,7 +164,7 @@ export default async function SearchPage({
               </div>
             </div>
 
-            <form action="/search" method="GET" className="mb-5 relative w-full group">
+            <form action="/anime/search" method="GET" className="mb-5 relative w-full group">
               <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-white/40 group-hover:text-white/60 pointer-events-none transition-colors" />
               <input
                 type="text"
@@ -198,7 +198,7 @@ export default async function SearchPage({
                   Try adjusted parameters or check your spelling.
                 </p>
                 <Link
-                  href="/search"
+                  href="/anime/search"
                   className="px-8 py-3 bg-primary text-white font-black uppercase tracking-wider rounded-xl hover:bg-primary/95 transition-all shadow-lg inline-block text-xs"
                 >
                   Reset Discovery
@@ -248,7 +248,7 @@ export default async function SearchPage({
                     <Pagination
                       currentPage={currentPage}
                       hasNextPage={hasNextPage}
-                      baseUrl="/search"
+                      baseUrl="/anime/search"
                     />
                   </div>
                 )}

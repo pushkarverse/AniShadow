@@ -40,7 +40,7 @@ export function Navbar() {
     if (typeof window === "undefined") return;
     const isMangaPath = window.location.pathname.startsWith('/reader');
     const params = new URLSearchParams(window.location.search);
-    const isMangaSearch = window.location.pathname.startsWith('/search') && params.get('type') === 'MANGA';
+    const isMangaSearch = window.location.pathname.startsWith('/anime/search') && params.get('type') === 'MANGA';
     setIsMangaRoute(isMangaPath || isMangaSearch);
   });
 
@@ -59,7 +59,7 @@ export function Navbar() {
     e?.preventDefault();
     if (searchQuery.trim()) {
       const typeParam = isMangaRoute ? "&type=MANGA" : "";
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}${typeParam}`);
+      router.push(`/anime/search?q=${encodeURIComponent(searchQuery.trim())}${typeParam}`);
       setIsFilterOpen(false);
       setIsMobileSearchOpen(false);
     }
@@ -71,7 +71,7 @@ export function Navbar() {
       const res = await fetch("/api/random");
         if (res.ok) {
           const data = await res.json();
-          router.push(`/watch/${data.id}/${data.slug || 'anime'}`);
+          router.push(`/anime/watch/${data.id}/${data.slug || 'anime'}`);
         }
     } catch (error) {
       console.error("Failed to fetch random anime:", error);
@@ -304,11 +304,11 @@ export function Navbar() {
 
               <div className="flex flex-col gap-2">
                 <Link href="/reader" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all uppercase tracking-widest text-xs">READER</Link>
-                <Link href="/search" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">GENRES</Link>
-                <Link href="/trending" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">TYPES</Link>
-                <Link href="/popular" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">NEW RELEASES</Link>
-                <Link href="/trending" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">UPDATES</Link>
-                <Link href="/search?status=RELEASING" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">ONGOING</Link>
+                <Link href="/anime/search" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">GENRES</Link>
+                  <Link href="/anime/trending" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">TYPES</Link>
+                  <Link href="/anime/popular" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">NEW RELEASES</Link>
+                  <Link href="/anime/trending" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">UPDATES</Link>
+                <Link href="/anime/search?status=RELEASING" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">ONGOING</Link>
               </div>
             </motion.div>
           </>
@@ -374,7 +374,7 @@ export function Navbar() {
       </AnimatePresence>
 
       {/* Bottom Tab Bar (Mobile) */}
-      {!(pathname === '/watch' || pathname?.startsWith('/watch/')) && (
+      {!(pathname === '/anime/watch' || pathname?.startsWith('/anime/watch/')) && (
         <BottomTabBar 
           onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
           isMangaRoute={isMangaRoute} 

@@ -351,7 +351,7 @@ export function WatchPlayerSection({
           })
           .map((episode) => {
           const isActive = episode.number === currentEpisodeNumber;
-          const targetUrl = `/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
+          const targetUrl = `/anime/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
 
           return (
             <Link
@@ -438,7 +438,7 @@ export function WatchPlayerSection({
                   })
                   .map((episode) => {
                   const isActive = episode.number === currentEpisodeNumber;
-                  const targetUrl = `/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
+                  const targetUrl = `/anime/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
 
                   return (
                     <Link
