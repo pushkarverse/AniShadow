@@ -23,13 +23,16 @@ const statuses = [
   { label: "Hiatus", value: "HIATUS" }
 ];
 
-const formats = ["TV", "MOVIE", "SPECIAL", "OVA", "ONA"];
+const animeFormats = ["TV", "MOVIE", "SPECIAL", "OVA", "ONA"];
+const mangaFormats = ["MANGA", "NOVEL", "ONE_SHOT"];
 
 const years = Array.from({ length: 27 }, (_, i) => (2026 - i).toString());
 
 export function SearchFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const currentType = searchParams.get("type") === "MANGA" ? "MANGA" : "ANIME";
+  const formats = currentType === "MANGA" ? mangaFormats : animeFormats;
 
   // Local state for select inputs
   const [selectedGenre, setSelectedGenre] = useState("");

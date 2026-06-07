@@ -38,8 +38,17 @@ export default async function SearchPage({
     if (genres) params.push(`genres=${encodeURIComponent(genres)}`);
     if (tags) params.push(`tags=${encodeURIComponent(tags)}`);
     if (status) params.push(`status=${encodeURIComponent(status)}`);
-    if (season) params.push(`season=${encodeURIComponent(season)}`);
-    if (format) params.push(`format=${encodeURIComponent(format)}`);
+    if (season && targetType === "ANIME") params.push(`season=${encodeURIComponent(season)}`);
+    if (format) {
+      const animeFormats = ["TV", "MOVIE", "SPECIAL", "OVA", "ONA"];
+      const mangaFormats = ["MANGA", "NOVEL", "ONE_SHOT"];
+      const isValid = targetType === "MANGA" 
+        ? mangaFormats.includes(format) 
+        : animeFormats.includes(format);
+      if (isValid) {
+        params.push(`format=${encodeURIComponent(format)}`);
+      }
+    }
     if (year) params.push(`year=${encodeURIComponent(year)}`);
     params.push(`type=${targetType}`);
     return `/search?${params.join("&")}`;
@@ -73,7 +82,7 @@ export default async function SearchPage({
   }
 
   return (
-    <div className="min-h-screen bg-[#070707] text-foreground flex flex-col pb-24">
+    <div className={`min-h-screen bg-[#070707] text-foreground flex flex-col pb-24 ${currentType === "MANGA" ? "manga-theme" : ""}`}>
       <Navbar />
 
       <main className="flex-1 container mx-auto px-4 md:px-8 pt-24 md:pt-32 max-w-6xl">
