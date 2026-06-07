@@ -16,7 +16,7 @@ export function LatestSection({
   return (
     <section className="mb-12 md:mb-24">
       {/* Header Row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-row items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-6">
           <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white relative inline-block uppercase shrink-0">
             Latest
@@ -26,7 +26,7 @@ export function LatestSection({
 
         <Link 
           href="/anime/latest" 
-          className="text-[10px] font-black text-white/40 hover:text-primary transition-all uppercase tracking-[0.2em] bg-white/5 px-4 py-2 rounded-lg border border-white/5 self-start sm:self-center"
+          className="text-[10px] font-black text-white/40 hover:text-primary transition-all uppercase tracking-[0.2em] bg-white/5 px-4 py-2 rounded-lg border border-white/5 shrink-0"
         >
           View All
         </Link>
