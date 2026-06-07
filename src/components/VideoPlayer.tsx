@@ -498,16 +498,15 @@ export function VideoPlayer({
       clickTimeoutRef.current = setTimeout(() => {
         const isCenter = clickX >= width * 0.33 && clickX <= width * 0.67;
         if (window.innerWidth < 768) {
+          // Mobile: single tap center = play/pause, sides = always SHOW controls (so double-tap seek always fires)
           if (isCenter) {
             togglePlay();
             setShowControls(true);
             scheduleControlsHide();
           } else {
-            setShowControls((prev) => {
-              const next = !prev;
-              if (next) scheduleControlsHide();
-              return next;
-            });
+            // Just show controls — never hide on single side tap
+            setShowControls(true);
+            scheduleControlsHide();
           }
         } else {
           // Desktop: play/pause only when center; sides just reveal controls
@@ -523,73 +522,52 @@ export function VideoPlayer({
   };
 
   const toggleFullscreen = async () => {
-    if (!document.fullscreenElement) {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Already fullscreen — exit
+    const isFs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+    if (isFs) {
       try {
-        await containerRef.current?.requestFullscreen();
-        if (window.screen && (window.screen as any).orientation && (window.screen as any).orientation.lock) {
-          await (window.screen as any).orientation.lock("landscape").catch(() => { });
-        }
-      } catch (err) {
-        console.error("Error enabling fullscreen:", err);
-      }
-    } else {
-      try {
-        if (window.screen && (window.screen as any).orientation && (window.screen as any).orientation.unlock) {
-          (window.screen as any).orientation.unlock();
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          (document as any).webkitExitFullscreen();
         }
       } catch { }
-      await document.exitFullscreen();
+      return;
+    }
+
+    // Enter fullscreen
+    try {
+      if (container.requestFullscreen) {
+        await container.requestFullscreen();
+      } else if ((container as any).webkitRequestFullscreen) {
+        (container as any).webkitRequestFullscreen();
+      } else if ((container as any).webkitEnterFullscreen) {
+        // iOS video element fallback
+        (videoRef.current as any)?.webkitEnterFullscreen?.();
+      }
+    } catch (err) {
+      console.error("Fullscreen failed:", err);
     }
   };
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      setIsFullscreen(!!(document.fullscreenElement || (document as any).webkitFullscreenElement));
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
       if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
       if (skipOverlayTimeoutRef.current) clearTimeout(skipOverlayTimeoutRef.current);
     };
   }, []);
 
-  // Auto-fullscreen on rotation for mobile viewports
-  useEffect(() => {
-    const handleOrientationChange = async (e: MediaQueryListEvent) => {
-      const isMobileSize = window.innerWidth < 768 || window.innerHeight < 768;
-      if (!isMobileSize || isIframe) return;
-
-      if (e.matches) {
-        if (!document.fullscreenElement && containerRef.current) {
-          try {
-            await containerRef.current.requestFullscreen();
-            if (window.screen && (window.screen as any).orientation && (window.screen as any).orientation.lock) {
-              await (window.screen as any).orientation.lock("landscape").catch(() => { });
-            }
-          } catch (err) {
-            console.error("Auto-fullscreen on landscape failed:", err);
-          }
-        }
-      } else {
-        if (document.fullscreenElement) {
-          try {
-            if (window.screen && (window.screen as any).orientation && (window.screen as any).orientation.unlock) {
-              (window.screen as any).orientation.unlock();
-            }
-          } catch { }
-          await document.exitFullscreen().catch(() => { });
-        }
-      }
-    };
-
-    const mediaQueryList = window.matchMedia("(orientation: landscape)");
-    mediaQueryList.addEventListener("change", handleOrientationChange);
-
-    return () => {
-      mediaQueryList.removeEventListener("change", handleOrientationChange);
-    };
-  }, [isIframe]);
+  // Auto-rotate removed intentionally
 
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     if (isIframe) return;

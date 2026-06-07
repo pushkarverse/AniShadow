@@ -207,43 +207,42 @@ export function WatchPlayerSection({
   const renderMobileEpisodesSection = () => {
     if (!episodes || episodes.length === 0) return null;
 
-    // Group episodes into season-sized chunks (12 per season)
-    const SEASON_SIZE = 13;
-    const totalSeasons = Math.ceil(episodes.length / SEASON_SIZE);
-    const seasons = Array.from({ length: totalSeasons }, (_, i) =>
-      episodes.slice(i * SEASON_SIZE, (i + 1) * SEASON_SIZE)
-    );
-    const currentSeasonEps = seasons[activeMobileSeason] || [];
+    const q = episodeSearch.toLowerCase();
+    const filteredEps = episodeSearch
+      ? episodes.filter((ep) => {
+          const t = (ep.title || `Episode ${ep.number}`).toLowerCase();
+          return t.includes(q) || ep.number.toString() === episodeSearch;
+        })
+      : episodes;
 
     return (
       <div className="md:hidden flex flex-col gap-4 px-4 pb-4">
         {/* Heading */}
         <h2 className="text-xl font-black text-white tracking-tight">Episodes</h2>
 
-        {/* Season Tabs */}
-        <div className="flex items-center gap-6 overflow-x-auto scrollbar-none pb-1">
-          {seasons.map((_, i) => (
+        {/* Search bar */}
+        <div className="relative">
+          <input
+            value={episodeSearch}
+            onChange={(e) => setEpisodeSearch(e.target.value)}
+            placeholder="Search episodes…"
+            className="w-full bg-white/5 text-white/80 placeholder-white/30 px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-primary/50 text-sm transition-all"
+          />
+          {episodeSearch && (
             <button
-              key={i}
-              onClick={() => setActiveMobileSeason(i)}
-              className={`text-sm font-bold shrink-0 pb-1 border-b-2 transition-all cursor-pointer ${
-                activeMobileSeason === i
-                  ? "border-white text-white"
-                  : "border-transparent text-white/40 hover:text-white/70"
-              }`}
+              onClick={() => setEpisodeSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white transition-all text-xs"
             >
-              Season {i + 1}
+              ✕
             </button>
-          ))}
+          )}
         </div>
 
         {/* Episode List */}
         <div className="flex flex-col">
-          {currentSeasonEps.map((episode) => {
+          {filteredEps.map((episode) => {
             const isActive = episode.number === currentEpisodeNumber;
             const targetUrl = `/anime/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
-            const seasonNum = activeMobileSeason + 1;
-            const epInSeason = episode.number - activeMobileSeason * SEASON_SIZE;
 
             return (
               <Link
@@ -280,12 +279,15 @@ export function WatchPlayerSection({
                     {episode.title || `Episode ${episode.number}`}
                   </span>
                   <span className="text-[11px] text-white/40 font-medium">
-                    S{seasonNum} E{epInSeason}
+                    Episode {episode.number}
                   </span>
                 </div>
               </Link>
             );
           })}
+          {filteredEps.length === 0 && (
+            <p className="text-white/30 text-sm py-6 text-center">No episodes found</p>
+          )}
         </div>
       </div>
     );
