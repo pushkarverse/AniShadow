@@ -1406,7 +1406,6 @@ export function VideoPlayer({
 
                   {/* Bottom Row: timestamp + seekbar */}
                   <div className="flex items-center gap-3 w-full pointer-events-auto mt-auto z-20 px-2">
-                    <span className="text-white/80 text-xs font-mono">{formatTime(progress)}</span>
                     <div className="flex-1 relative flex items-center h-4">
                       <input
                         type="range"
