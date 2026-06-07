@@ -313,7 +313,6 @@ export function VideoPlayer({
   const [showMobileSettings, setShowMobileSettings] = useState(false);
   const [isMaxView, setIsMaxView] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<'quality' | 'audio-subs' | 'speed'>('quality');
-  const [isPhysicalLandscape, setIsPhysicalLandscape] = useState(false);
 
   useEffect(() => {
     const mobile = navigator.maxTouchPoints > 0 || window.innerWidth < 768;
@@ -323,18 +322,11 @@ export function VideoPlayer({
     if (mobile) {
       try {
         const orientation = window.screen?.orientation as any;
-        orientation?.lock?.('portrait-primary').catch(() => { });
+        orientation?.lock?.('portrait-primary').catch(() => {});
       } catch { }
     }
 
-    const handleResize = () => {
-      setIsPhysicalLandscape(window.innerWidth > window.innerHeight);
-    };
-    window.addEventListener("resize", handleResize);
-    handleResize();
-
     return () => {
-      window.removeEventListener("resize", handleResize);
       // Unlock when player unmounts
       try { (window.screen?.orientation as any)?.unlock?.(); } catch { }
     };
@@ -544,16 +536,26 @@ export function VideoPlayer({
 
   const toggleFullscreen = async () => {
     const container = containerRef.current;
+    const video = videoRef.current;
     if (!container) return;
 
     // Already fullscreen — exit
-    const isFs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+    const isFs = !!(
+      document.fullscreenElement || 
+      (document as any).webkitFullscreenElement || 
+      (video as any)?.webkitDisplayingFullscreen
+    );
+    
     if (isFs) {
       try {
         if (document.exitFullscreen) {
           await document.exitFullscreen();
         } else if ((document as any).webkitExitFullscreen) {
           (document as any).webkitExitFullscreen();
+        } else if ((video as any).webkitExitFullscreen) {
+          (video as any).webkitExitFullscreen();
+        } else if ((video as any).webkitExitFullScreen) {
+          (video as any).webkitExitFullScreen();
         }
       } catch { }
       return;
@@ -565,9 +567,11 @@ export function VideoPlayer({
         await container.requestFullscreen();
       } else if ((container as any).webkitRequestFullscreen) {
         (container as any).webkitRequestFullscreen();
-      } else if ((videoRef.current as any)?.webkitEnterFullscreen) {
-        // iOS video element fallback
-        (videoRef.current as any).webkitEnterFullscreen();
+      } else if (video && (video as any).webkitEnterFullscreen) {
+        // iOS Safari HTML5 video element standard fallback
+        (video as any).webkitEnterFullscreen();
+      } else if (video && (video as any).webkitEnterFullScreen) {
+        (video as any).webkitEnterFullScreen();
       }
     } catch (err) {
       console.error("Fullscreen failed:", err);
@@ -576,21 +580,38 @@ export function VideoPlayer({
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      const isFs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+      const video = videoRef.current;
+      const isFs = !!(
+        document.fullscreenElement || 
+        (document as any).webkitFullscreenElement || 
+        (video as any)?.webkitDisplayingFullscreen
+      );
       setIsFullscreen(isFs);
       if (isMobileDevice) {
         if (isFs) {
-          try { (window.screen?.orientation as any)?.lock?.('landscape').catch(() => { }); } catch { }
+          try { (window.screen?.orientation as any)?.lock?.('landscape').catch(() => {}); } catch { }
         } else {
-          try { (window.screen?.orientation as any)?.lock?.('portrait-primary').catch(() => { }); } catch { }
+          try { (window.screen?.orientation as any)?.lock?.('portrait-primary').catch(() => {}); } catch { }
         }
       }
     };
+    
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    
+    const video = videoRef.current;
+    if (video) {
+      video.addEventListener("webkitbeginfullscreen", handleFullscreenChange);
+      video.addEventListener("webkitendfullscreen", handleFullscreenChange);
+    }
+
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
       document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      if (video) {
+        video.removeEventListener("webkitbeginfullscreen", handleFullscreenChange);
+        video.removeEventListener("webkitendfullscreen", handleFullscreenChange);
+      }
       if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
       if (skipOverlayTimeoutRef.current) clearTimeout(skipOverlayTimeoutRef.current);
     };
@@ -1010,22 +1031,18 @@ export function VideoPlayer({
 
   return (
     <div className="relative w-full">
-      {/* Landscape Rotation Lock Overlay for Mobile Devices*/}
-      {isMobileDevice && isPhysicalLandscape && !isFullscreen && (
-        <div className="fixed inset-0 bg-[#080808] z-[99999] flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 animate-pulse">
-            <svg className="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <rect x="5" y="2" width="14" height="20" rx="2" transform="rotate(90 12 12)" />
-              <path d="M12 5v2M12 17v2" strokeLinecap="round" />
-            </svg>
+      {/* Portrait Lock Overlay on Mobile Landscape */}
+      {isMobileDevice && !isFullscreen && (
+        <div className="fixed inset-0 bg-[#080808] z-[9999] flex flex-col items-center justify-center p-6 text-center select-none md:hidden orientation-landscape">
+          <div className="w-16 h-16 mb-4 flex items-center justify-center rounded-full bg-white/5 border border-white/10 animate-pulse">
+            <Monitor className="w-8 h-8 text-primary rotate-90" />
           </div>
-          <h3 className="text-white font-black text-lg tracking-tight mb-2">Portrait Mode Required</h3>
-          <p className="text-white/50 text-xs max-w-[240px] leading-relaxed">
-            Please rotate your phone to portrait. To watch in landscape, tap the player's fullscreen button.
+          <h2 className="text-white font-bold text-lg mb-2">Orientation Locked</h2>
+          <p className="text-white/60 text-xs max-w-[280px]">
+            Please rotate your device back to portrait mode. Tap the fullscreen button on the player to rotate and watch in landscape.
           </p>
         </div>
       )}
-
       {/* Real-time blurred ambient backlight glow canvas */}
       {isCinemaGlow && !isIframe && (
         <canvas
@@ -1133,10 +1150,11 @@ export function VideoPlayer({
               )}
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 backdrop-blur-[2px]">
                 <motion.button
-                  className={`flex items-center justify-center text-white transition-all pointer-events-none ${isMobileDevice
+                  className={`flex items-center justify-center text-white transition-all pointer-events-none ${
+                    isMobileDevice
                       ? 'drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]'
                       : 'w-14 h-14 bg-primary/90 group-hover/preview:bg-primary group-hover/preview:scale-105 rounded-full shadow-[0_0_40px_rgba(155,12,12,0.5)] backdrop-blur-sm border-2 border-[#4A2125]'
-                    }`}
+                  }`}
                 >
                   <Play className={`fill-current ${isMobileDevice ? 'w-10 h-10' : 'w-7 h-7'}`} />
                 </motion.button>
@@ -1155,10 +1173,11 @@ export function VideoPlayer({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={togglePlay}
-                className={`flex items-center justify-center text-white transition-all pointer-events-auto cursor-pointer ${isMobileDevice
+                className={`flex items-center justify-center text-white transition-all pointer-events-auto cursor-pointer ${
+                  isMobileDevice
                     ? 'drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]'
                     : 'w-10 h-10 bg-primary/90 hover:bg-primary rounded-full shadow-[0_0_20px_rgba(155,12,12,0.4)] border-2 border-[#4A2125]'
-                  }`}
+                }`}
               >
                 <Play className={`fill-current ${isMobileDevice ? 'w-7 h-7' : 'w-5 h-5'}`} />
               </motion.button>
@@ -1340,7 +1359,7 @@ export function VideoPlayer({
                     return;
                   }
                   e.stopPropagation();
-
+                  
                   if (isMobileDevice) {
                     setShowControls(false);
                     setShowMobileSettings(false);

@@ -166,5 +166,17 @@
   display: none;
 }
 
+/* Portrait orientation lock styles on mobile */
+@media (orientation: landscape) {
+  .orientation-landscape {
+    display: flex !important;
+  }
+}
+@media (orientation: portrait) {
+  .orientation-landscape {
+    display: none !important;
+  }
+}
+
 
 
