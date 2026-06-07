@@ -321,13 +321,14 @@ export function VideoPlayer({
     // Lock portrait on mobile so physical rotation doesn't rotate the page
     if (mobile) {
       try {
-        window.screen?.orientation?.lock?.('portrait-primary').catch(() => {});
+        const orientation = window.screen?.orientation as any;
+        orientation?.lock?.('portrait-primary').catch(() => {});
       } catch { }
     }
 
     return () => {
       // Unlock when player unmounts
-      try { window.screen?.orientation?.unlock?.(); } catch { }
+      try { (window.screen?.orientation as any)?.unlock?.(); } catch { }
     };
   }, []);
 
