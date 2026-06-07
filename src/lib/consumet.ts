@@ -352,6 +352,14 @@ async function enrichAnimeResultsWithSubDub<T extends {
   subEpisodes?: number;
   dubEpisodes?: number;
 }>(results: T[]): Promise<T[]> {
+  if (
+    process.env.VERCEL === "1" || 
+    process.env.NODE_ENV === "production" || 
+    process.env.DISABLE_ENRICHMENT === "true"
+  ) {
+    return results;
+  }
+
   if (!results.length) return results;
 
   const enriched = [...results];
