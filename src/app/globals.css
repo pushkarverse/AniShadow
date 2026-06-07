@@ -1,21 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #090514;
+  --color-background: #000000;
   --color-foreground: #ffffff;
   
-  --color-primary: #9b0c0c;
+  --color-primary: #5c0606; /* Rich Deep Burgundy/Maroon */
   --color-primary-foreground: #ffffff;
 
-  --color-accent: #dc2626;
+  --color-accent: #991b1b;
   --color-accent-foreground: #ffffff;
   
-  --color-card: #120c24;
+  --color-card: #080808;
   --color-card-foreground: #ffffff;
   
-  --color-border: #21163e;
+  --color-border: #1a0808;
   
-  --shadow-primary: 0 0 15px rgba(155, 12, 12, 0.4);
+  --shadow-primary: 0 0 15px rgba(92, 6, 6, 0.4);
   
   --radius: 1rem;
   
@@ -24,10 +24,13 @@
 }
 
 .manga-theme, .novel-theme, .reader-theme {
-  --color-primary: #7c3aed; /* Dark Violet Accent */
-  --color-accent: #a78bfa;
+  --color-background: #000000;
+  --color-card: #080808;
+  --color-border: #14081c;
+  --color-primary: #5b128c; /* Rich Silk Royal Purple */
+  --color-accent: #9d4edd;
   --color-primary-foreground: #ffffff;
-  --shadow-primary: 0 0 15px rgba(124, 58, 237, 0.4);
+  --shadow-primary: 0 0 15px rgba(91, 18, 140, 0.4);
 }
 
 @utility glass {
@@ -64,20 +67,19 @@
   }
   
   .manga-theme, .novel-theme, .reader-theme {
-    scrollbar-color: #7c3aed #090514;
+    scrollbar-color: #5b128c #000000;
   }
 
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: var(--color-background);
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--color-primary) 30%, transparent);
-    border-radius: 20px;
-    border: 3px solid var(--color-background);
+    background: color-mix(in srgb, var(--color-primary) 35%, transparent);
+    border-radius: 10px;
     transition: all 0.3s ease;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -87,18 +89,18 @@
 
 /* Specific elements that might need it */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.01);
+  background: transparent;
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.05);
+  background: color-mix(in srgb, var(--color-primary) 25%, transparent);
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-primary);
 }
 
 /* Video Player Range Styling - Removed Neon */

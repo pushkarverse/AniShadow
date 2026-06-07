@@ -64,5 +64,22 @@ export function RouteProgress() {
     NProgress.done(true);
   }, [pathname, searchParams]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const isMangaPath = pathname?.startsWith("/reader") || false;
+    const isMangaSearch = pathname?.startsWith("/search") && searchParams?.get("type") === "MANGA";
+    const isManhwaSearch = pathname?.startsWith("/search") && searchParams?.get("type") === "MANHWA";
+    const isNovelSearch = pathname?.startsWith("/search") && searchParams?.get("type") === "NOVEL";
+    
+    const isReader = isMangaPath || isMangaSearch || isManhwaSearch || isNovelSearch;
+
+    if (isReader) {
+      document.documentElement.classList.add("reader-theme");
+    } else if (pathname !== "/watchlist") {
+      document.documentElement.classList.remove("reader-theme");
+    }
+  }, [pathname, searchParams]);
+
   return null;
 }

@@ -35,9 +35,9 @@ export function LatestSection({
       {/* Grid Container */}
       <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
         {filteredItems.length > 0 ? (
-          filteredItems.slice(0, 15).map((anime: any) => (
+          filteredItems.slice(0, 15).map((anime: any, idx: number) => (
             <AnimeCard
-              key={anime.id}
+              key={`latest-${anime.id || idx}`}
               id={anime.id}
               title={getAnimeTitle(anime.title)}
               slug={anime.slug}
@@ -52,6 +52,7 @@ export function LatestSection({
               dubEpisodes={anime.dubEpisodes}
               type={anime.type || "TV"}
               duration={anime.duration}
+              priority={idx < 4}
             />
           ))
         ) : (

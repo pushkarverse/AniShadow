@@ -52,7 +52,7 @@ export function TrendingSidebar({ initialData }: TrendingSidebarProps) {
         <TrendingSelector value={period} onChange={setPeriod} />
       </div>
       
-      <div className={`flex flex-col gap-3 bg-[#120c24] rounded-2xl border border-border shadow-2xl p-3 transition-opacity duration-300 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
+      <div className={`flex flex-col gap-3 bg-black/40 backdrop-blur-md rounded-2xl border border-border shadow-2xl p-3 transition-opacity duration-300 ${isLoading ? 'opacity-50' : 'opacity-100'}`}>
         {trendingAnime.length > 0 ? (trendingAnime).slice(0, 10).map((anime: HeroResult, idx: number) => (
           <Link
             href={`/anime/${anime.id}`}
@@ -68,12 +68,18 @@ export function TrendingSidebar({ initialData }: TrendingSidebarProps) {
                   src={anime.cover || anime.image || ""}
                   alt={getAnimeTitle(anime.title)}
                   className="object-cover opacity-20 group-hover:opacity-30 transition-opacity duration-500"
+                  priority={idx < 2}
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/70 to-transparent" />
               </div>
 
               <div className="relative z-10 w-16 text-center">
-                <span className={`text-3xl font-black tracking-tight ${idx < 3 ? 'text-primary' : 'text-white/30'}`}>
+                <span className={`text-3xl font-black tracking-tight ${
+                  idx === 0 ? 'text-[#ffd700]' : 
+                  idx === 1 ? 'text-[#c0c0c0]' : 
+                  idx === 2 ? 'text-[#cd7f32]' : 
+                  'text-white/20'
+                }`}>
                   {idx + 1}
                 </span>
               </div>

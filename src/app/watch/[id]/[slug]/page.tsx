@@ -74,6 +74,7 @@ export default async function WatchPage({ params, searchParams }: WatchPageProps
             currentEpisodeNumber={episodeNumber}
             animeId={id}
             animeSlug={animeSlug}
+            anime={anime}
           />
         </main>
       </div>

@@ -130,8 +130,8 @@ export const MangaCard = ({
   };
 
   const mangaSlug = slug || slugify(title);
-  const detailsUrl = href || `/manga/${id}/${mangaSlug}`;
-  const actionUrl = href || `/manga/${id}/${mangaSlug}`;
+  const detailsUrl = href || `/reader/${id}/${mangaSlug}`;
+  const actionUrl = href || `/reader/${id}/${mangaSlug}`;
   const displayTitle = getDisplayTitle(title);
 
   const toggleLibrary = () => {

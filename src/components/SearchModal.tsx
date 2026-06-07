@@ -109,7 +109,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
           const anime = results[focusedIndex];
           if (anime) {
             const slug = anime.slug || slugify(getDisplayTitle(anime.title));
-            const dest = isComic ? `/manga/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
+            const dest = isComic ? `/reader/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
             router.push(dest);
             onClose();
           }
@@ -182,50 +182,56 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
                 >
                   {/* Interactive Tabs Row */}
                   <div className="flex border-b border-[#21163e] select-none bg-[#120c24] overflow-x-auto no-scrollbar">
-                    <button
-                      type="button"
-                      onClick={() => setActiveType("ANIME")}
-                      className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
-                        activeType === "ANIME"
-                          ? "text-primary border-primary"
-                          : "text-white/40 border-transparent hover:text-white"
-                      }`}
-                    >
-                      Anime
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveType("MANGA")}
-                      className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
-                        activeType === "MANGA"
-                          ? "text-primary border-primary"
-                          : "text-white/40 border-transparent hover:text-white"
-                      }`}
-                    >
-                      Manga
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveType("MANHWA")}
-                      className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
-                        activeType === "MANHWA"
-                          ? "text-primary border-primary"
-                          : "text-white/40 border-transparent hover:text-white"
-                      }`}
-                    >
-                      Manhwa
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveType("NOVEL")}
-                      className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
-                        activeType === "NOVEL"
-                          ? "text-primary border-primary"
-                          : "text-white/40 border-transparent hover:text-white"
-                      }`}
-                    >
-                      Novels
-                    </button>
+                    {!isMangaRoute && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveType("ANIME")}
+                        className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
+                          activeType === "ANIME"
+                            ? "text-primary border-primary"
+                            : "text-white/40 border-transparent hover:text-white"
+                        }`}
+                      >
+                        Anime
+                      </button>
+                    )}
+                    {isMangaRoute && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setActiveType("MANGA")}
+                          className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
+                            activeType === "MANGA"
+                              ? "text-primary border-primary"
+                              : "text-white/40 border-transparent hover:text-white"
+                          }`}
+                        >
+                          Manga
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveType("MANHWA")}
+                          className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
+                            activeType === "MANHWA"
+                              ? "text-primary border-primary"
+                              : "text-white/40 border-transparent hover:text-white"
+                          }`}
+                        >
+                          Manhwa
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveType("NOVEL")}
+                          className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
+                            activeType === "NOVEL"
+                              ? "text-primary border-primary"
+                              : "text-white/40 border-transparent hover:text-white"
+                          }`}
+                        >
+                          Novels
+                        </button>
+                      </>
+                    )}
                   </div>
 
               {/* Input Wrapper */}
@@ -250,7 +256,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
 
               {/* Results List Section - Only visible when text is entered */}
               {query.trim() !== "" && (
-                <div className="border-r-4 border-primary max-h-[360px] overflow-y-auto custom-scrollbar flex flex-col bg-[#120c24]">
+                <div className="max-h-[360px] overflow-y-auto custom-scrollbar flex flex-col bg-[#120c24]">
                   {loading ? (
                     // Rotating spinner circle
                     <div className="py-14 flex items-center justify-center">
@@ -261,10 +267,10 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
                       const isFocused = idx === focusedIndex;
                       const slug = anime.slug || slugify(getDisplayTitle(anime.title));
                       const isComic = activeType === "MANGA" || activeType === "MANHWA" || activeType === "NOVEL";
-                      const dest = isComic ? `/manga/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
+                      const dest = isComic ? `/reader/${anime.id}/${slug}` : `/watch/${anime.id}/${slug}?ep=1`;
                       return (
                         <a
-                          key={anime.id}
+                          key={`${anime.id || 'search'}-${idx}`}
                           href={dest}
                           ref={(el) => {
                             itemRefs.current[idx] = el;
@@ -324,7 +330,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
       {/* Scoped Scrollbar styling */}
       <style dangerouslySetInnerHTML={{__html: `
         .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
+          width: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;

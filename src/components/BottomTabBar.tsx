@@ -22,9 +22,9 @@ export function BottomTabBar({ onMenuToggle, isMangaRoute }: BottomTabBarProps) 
     },
     { 
       label: "Reader", 
-      href: "/manga", 
+      href: "/reader", 
       icon: BookOpen, 
-      active: pathname?.startsWith("/manga") 
+      active: pathname?.startsWith("/reader") 
     },
     { 
       label: "Search", 
@@ -47,8 +47,8 @@ export function BottomTabBar({ onMenuToggle, isMangaRoute }: BottomTabBarProps) 
   ];
 
   // Active theme color
-  const activeColorClass = isMangaRoute ? "text-[#7c3aed]" : "text-[#9b0c0c]";
-  const activeBgClass = isMangaRoute ? "bg-[#7c3aed]/10" : "bg-[#9b0c0c]/10";
+  const activeColorClass = isMangaRoute ? "text-[#9d4edd]" : "text-[#991b1b]";
+  const activeBgClass = isMangaRoute ? "bg-[#5b128c]/10" : "bg-[#5c0606]/10";
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-[#080808]/90 backdrop-blur-xl border-t border-white/5 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] px-4 shadow-[0_-8px_30px_rgba(0,0,0,0.7)] flex items-center justify-around">
@@ -87,7 +87,7 @@ export function BottomTabBar({ onMenuToggle, isMangaRoute }: BottomTabBarProps) 
               <motion.div
                 layoutId="activeTabDot"
                 className={`absolute -bottom-1.5 w-1 h-1 rounded-full ${
-                  isMangaRoute ? "bg-[#7c3aed]" : "bg-[#9b0c0c]"
+                  isMangaRoute ? "bg-[#5b128c]" : "bg-[#5c0606]"
                 } shadow-[0_0_8px_currentColor]`}
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />

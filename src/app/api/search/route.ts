@@ -21,8 +21,7 @@ export async function GET(request: Request) {
       query: query.trim(),
       page,
       type: (type === "MANGA" || type === "MANHWA") ? "MANGA" : "ANIME",
-      countryOfOrigin: type === "MANHWA" ? "KR" : (type === "MANGA" ? "JP" : undefined),
-      exact: true
+      countryOfOrigin: type === "MANHWA" ? "KR" : (type === "MANGA" ? "JP" : undefined)
     });
     return NextResponse.json(data);
   } catch (error) {

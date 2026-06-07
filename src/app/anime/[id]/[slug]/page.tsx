@@ -287,7 +287,7 @@ export default async function AnimeDetailsPage({ params }: PageProps) {
                 {/* Manga Adaptation Shortcut */}
                 {!isManga && adaptations.find(r => r.type === 'MANGA') && (
                   <Link
-                    href={`/manga/${adaptations.find(r => r.type === 'MANGA')?.id}/${slugify(getDisplayTitle(adaptations.find(r => r.type === 'MANGA')?.title))}`} 
+                    href={`/reader/${adaptations.find(r => r.type === 'MANGA')?.id}/${slugify(getDisplayTitle(adaptations.find(r => r.type === 'MANGA')?.title))}`} 
                     className="flex items-center justify-between gap-8 w-full sm:w-[280px] px-8 py-5 bg-white/10 text-white font-black rounded-2xl shadow-lg hover:bg-white/20 hover:text-primary group transition-all active:scale-95 border border-white/5 manga-theme"
                   >
                     <span className="text-lg uppercase tracking-[0.15em] ml-2">Read Manga</span>
@@ -325,7 +325,7 @@ export default async function AnimeDetailsPage({ params }: PageProps) {
                 return (
                   <Link 
                     key={rel.id} 
-                    href={isMangaRel ? `/manga/${rel.id}/${slugify(getDisplayTitle(rel.title))}` : `/anime/${rel.id}/${slugify(getDisplayTitle(rel.title))}`} 
+                    href={isMangaRel ? `/reader/${rel.id}/${slugify(getDisplayTitle(rel.title))}` : `/anime/${rel.id}/${slugify(getDisplayTitle(rel.title))}`} 
                     className={`relative group overflow-hidden rounded-3xl bg-white/5 border border-white/5 hover:border-primary/40 transition-all flex h-48 shadow-xl ${isMangaRel ? 'manga-theme' : ''} w-[280px] sm:w-[320px] shrink-0 md:w-full`}
                   >
                   <div className="w-32 h-full relative shrink-0">

@@ -37,9 +37,9 @@ export default async function TrendingPage({
         {trendingAnime.length > 0 ? (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-10">
-              {trendingAnime.map((anime: HeroResult) => (
+              {trendingAnime.map((anime: HeroResult, idx: number) => (
                 <AnimeCard 
-                  key={anime.id} 
+                  key={`trending-${anime.id || idx}`} 
                   id={anime.id} 
                   title={getAnimeTitle(anime.title)} 
                   image={anime.image && anime.image !== "" ? anime.image : "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop"} 

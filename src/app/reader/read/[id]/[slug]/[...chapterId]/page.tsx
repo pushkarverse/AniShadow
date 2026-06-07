@@ -21,8 +21,8 @@ export default async function MangaReaderPage({ params }: PageProps) {
         <h1 className="text-2xl font-black text-primary uppercase mb-4 italic tracking-tighter">Content Unavailable</h1>
         <p className="text-white/40 max-w-sm mb-8">This chapter&apos;s content could not be loaded from our providers. The source might be down or encrypted.</p>
         <div className="flex gap-4">
-             <Link href="/manga" className="px-8 py-3 bg-white/5 text-white rounded-xl font-bold uppercase tracking-widest text-xs border border-white/5">Library</Link>
-             <Link href={`/manga/${id}/${slug}`} className="px-8 py-3 bg-primary text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20">Info Page</Link>
+             <Link href="/reader" className="px-8 py-3 bg-white/5 text-white rounded-xl font-bold uppercase tracking-widest text-xs border border-white/5">Library</Link>
+             <Link href={`/reader/${id}/${slug}`} className="px-8 py-3 bg-primary text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20">Info Page</Link>
         </div>
       </div>
     );

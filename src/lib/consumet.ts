@@ -355,8 +355,9 @@ async function enrichAnimeResultsWithSubDub<T extends {
   if (!results.length) return results;
 
   const enriched = [...results];
+  const animeFormats = ["TV", "TV_SHORT", "MOVIE", "SPECIAL", "OVA", "ONA", "MUSIC"];
   const candidates = enriched
-    .filter((item) => item.type !== "MANGA")
+    .filter((item) => item.type && animeFormats.includes(item.type))
     .slice(0, MAX_ENRICH_ITEMS_PER_PAGE);
   const concurrency = ENRICH_CONCURRENCY;
 
@@ -427,7 +428,19 @@ async function fetchAnilistDirect(id: string): Promise<IAnimeInfo | null> {
         season
         seasonYear
         countryOfOrigin
-        startDate { year }
+        startDate { year month day }
+        endDate { year month day }
+        duration
+        averageScore
+        studios {
+          edges {
+            isMain
+            node {
+              id
+              name
+            }
+          }
+        }
         relations {
           edges {
             relationType
@@ -512,7 +525,15 @@ async function fetchAnilistDirect(id: string): Promise<IAnimeInfo | null> {
         title: `Episode ${i + 1}`
       })),
       type: media.type,
-      countryOfOrigin: media.countryOfOrigin
+      countryOfOrigin: media.countryOfOrigin,
+      duration: media.duration,
+      rating: media.averageScore,
+      startDate: media.startDate,
+      endDate: media.endDate,
+      studios: media.studios?.edges?.map((edge: any) => ({
+        isMain: edge.isMain,
+        name: edge.node.name
+      })) || []
     } as unknown as IAnimeInfo;
   } catch {
     return null;
@@ -748,7 +769,7 @@ export async function advancedSearchAnime({
         status: m.status,
         year: m.seasonYear
       })) || [];
-      results = await enrichAnimeResultsWithSubDub(results);
+      results = type === "MANGA" ? results : await enrichAnimeResultsWithSubDub(results);
       return { results, hasNextPage: pageInfo?.hasNextPage || false, total: pageInfo?.total || 0 };
     } catch {
       return { results: [], hasNextPage: false, total: 0 };
@@ -1634,7 +1655,7 @@ export async function getMangaDetails(id: string) {
     try {
       console.log(`[MangaDetails] Fetching novel details for: ${realId}`);
       const url = `https://novelfull.com/${realId}.html`;
-      const res = await gotScraping({ url });
+      const res = await gotScraping({ url, http2: false });
       const $ = load(res.body);
 
       const title = $('.desc h3.title').text().trim() || realId.replace(/-/g, ' ');
@@ -1676,7 +1697,7 @@ export async function getMangaDetails(id: string) {
 
       if (truyenId) {
         const ajaxUrl = `https://novelfull.com/ajax/chapter-option?novelId=${truyenId}`;
-        const ajaxRes = await gotScraping({ url: ajaxUrl });
+        const ajaxRes = await gotScraping({ url: ajaxUrl, http2: false });
         const ajax$ = load(ajaxRes.body);
         
         ajax$('option').each((idx, optionEl) => {
@@ -1872,7 +1893,7 @@ export async function getMangaChapterPages(chapterId: string) {
     if (providerName === "novelfull") {
       console.log(`[NovelChapterText] Fetching chapter text for: ${realChapterId}`);
       const url = `https://novelfull.com/${realChapterId}`;
-      const res = await gotScraping({ url });
+      const res = await gotScraping({ url, http2: false });
       const $ = load(res.body);
 
       const contentEl = $('#chapter-content');
@@ -2050,7 +2071,7 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
 export async function searchNovel(query: string, page: number = 1) {
   const url = `https://novelfull.com/search?keyword=${encodeURIComponent(query)}&page=${page}`;
   try {
-    const res = await gotScraping({ url });
+    const res = await gotScraping({ url, http2: false });
     const $ = load(res.body);
     const results: any[] = [];
 

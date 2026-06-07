@@ -32,44 +32,9 @@ interface WatchPlayerSectionProps {
   currentEpisodeNumber?: number;
   animeId?: string;
   animeSlug?: string;
+  anime?: any;
 }
 
-// Color conversion helpers for theme syncing
-function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
-  r /= 255; g /= 255; b /= 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h = 0, s = 0;
-  const l = (max + min) / 2;
-
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
-    }
-    h /= 6;
-  }
-  return [h * 360, s * 100, l * 100];
-}
-
-function hslToRgb(h: number, s: number, l: number): [number, number, number] {
-  s /= 100;
-  l /= 100;
-  const k = (n: number) => (n + h / 30) % 12;
-  const a = s * Math.min(l, 1 - l);
-  const f = (n: number) => {
-    const kVal = k(n);
-    return l - a * Math.max(-1, Math.min(kVal - 3, 9 - kVal, 1));
-  };
-  return [Math.round(255 * f(0)), Math.round(255 * f(8)), Math.round(255 * f(4))];
-}
-
-function rgbToHex(r: number, g: number, b: number): string {
-  const toHex = (c: number) => c.toString(16).padStart(2, "0");
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-}
 
 export function WatchPlayerSection({
   videoUrl,
@@ -81,13 +46,16 @@ export function WatchPlayerSection({
   episodes = [],
   currentEpisodeNumber,
   animeId,
-  animeSlug
+  animeSlug,
+  anime
 }: WatchPlayerSectionProps) {
   const [currentVideoUrl, setCurrentVideoUrl] = useState(videoUrl);
   const [selectedServer, setSelectedServer] = useState(allServers[0]?.name || "Primary");
   const [activeServerGroup, setActiveServerGroup] = useState<"dub" | "other">("other");
   const [showEpisodesSheet, setShowEpisodesSheet] = useState(false);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
+  const [episodeSearch, setEpisodeSearch] = useState<string>("");
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
 
   // Load theater mode preference on mount
   useEffect(() => {
@@ -97,57 +65,6 @@ export function WatchPlayerSection({
     }
   }, []);
 
-  // Theme Sync effect: Extract average color of the anime's poster art
-  useEffect(() => {
-    if (!poster) return;
-
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = poster;
-
-    img.onload = () => {
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = 1;
-        canvas.height = 1;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        ctx.drawImage(img, 0, 0, 1, 1);
-        const imgData = ctx.getImageData(0, 0, 1, 1).data;
-        const [r, g, b] = Array.from(imgData);
-
-        // Convert to HSL to adjust saturation and lightness for styling
-        const [h, s, l] = rgbToHsl(r, g, b);
-
-        // Saturation 70% to 90%, Lightness 45% to 58% to guarantee readable contrast on dark backgrounds
-        const finalS = Math.max(70, Math.min(s, 90));
-        const finalL = Math.max(45, Math.min(l, 58));
-
-        const [pr, pg, pb] = hslToRgb(h, finalS, finalL);
-        const primaryHex = rgbToHex(pr, pg, pb);
-
-        // Generate slightly brighter accent color
-        const accentL = Math.min(finalL + 12, 72);
-        const [ar, ag, ab] = hslToRgb(h, finalS, accentL);
-        const accentHex = rgbToHex(ar, ag, ab);
-
-        // Apply theme colors globally
-        document.documentElement.style.setProperty("--color-primary", primaryHex);
-        document.documentElement.style.setProperty("--color-accent", accentHex);
-        document.documentElement.style.setProperty("--shadow-primary", `0 0 15px rgba(${pr}, ${pg}, ${pb}, 0.4)`);
-      } catch (err) {
-        console.warn("Failed to extract color from poster image due to canvas restriction:", err);
-      }
-    };
-
-    return () => {
-      // Revert style properties to initial configuration on unmount
-      document.documentElement.style.removeProperty("--color-primary");
-      document.documentElement.style.removeProperty("--color-accent");
-      document.documentElement.style.removeProperty("--shadow-primary");
-    };
-  }, [poster]);
 
   const handleTheaterToggle = () => {
     setIsTheaterMode((prev) => {
@@ -299,22 +216,114 @@ export function WatchPlayerSection({
       </div>
     );
 
+  const formatDate = (date: any) => {
+    if (!date || !date.year) return null;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthStr = date.month ? months[date.month - 1] : '';
+    const dayStr = date.day ? ` ${date.day},` : '';
+    return `${monthStr}${dayStr} ${date.year}`.trim();
+  };
+
+  const getAiredDateString = () => {
+    const start = formatDate(anime?.startDate);
+    const end = formatDate(anime?.endDate);
+    if (start && end) return `${start} to ${end}`;
+    if (start) return `${start}`;
+    return "Unknown";
+  };
+
+  const formatStatus = (status: string) => {
+    if (!status) return "Unknown";
+    return status.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+
+  const cleanDescription = (anime?.description || description || "No description available.").replace(/<[^>]*>?/gm, '');
+
   const renderInfoDetails = () => (
-    <div className="px-4 md:px-0 flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-[clamp(1.5rem,4vw,2.5rem)] font-black tracking-tighter leading-none text-white">
-          {title}
-        </h1>
-        <p className="text-lg text-primary font-black uppercase tracking-widest opacity-80">
-          {episodeTitle}
-        </p>
+    <div className="px-4 md:px-0 flex flex-col md:flex-row items-center md:items-start gap-6 p-6 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-md">
+      {/* Left Column: Poster Image */}
+      <div className="w-36 md:w-44 shrink-0 rounded-2xl overflow-hidden aspect-[2/3] relative border border-white/10 shadow-lg bg-black/40 self-center md:self-start">
+        <img
+          src={anime?.image || poster || "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx151807-m1gX3iqITmI6.png"}
+          alt={title}
+          className="w-full h-full object-cover"
+        />
       </div>
 
-      <div className="p-8 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-md">
-        <div
-          className="text-white/60 leading-relaxed italic line-clamp-3 font-medium [&>i]:font-serif [&>i]:text-white/90 [&>br]:hidden"
-          dangerouslySetInnerHTML={{ __html: description || "No description available." }}
-        />
+      {/* Right Column: Title, Subtitle, Description, Metadata */}
+      <div className="flex-1 min-w-0 flex flex-col justify-between">
+        <div>
+          <h2 className="text-2xl md:text-3xl font-black tracking-tight text-white">
+            {title}
+          </h2>
+          {anime?.title && (
+            <p className="text-xs text-white/40 italic font-medium mt-1">
+              {typeof anime.title === 'object' 
+                ? (anime.title.romaji || anime.title.native) 
+                : anime.title}
+            </p>
+          )}
+          
+          <p className="text-white/65 text-sm leading-relaxed mt-4 font-medium">
+            {isDescExpanded ? cleanDescription : (cleanDescription.length > 220 ? `${cleanDescription.slice(0, 220)}...` : cleanDescription)}
+            {cleanDescription.length > 220 && (
+              <button 
+                onClick={() => setIsDescExpanded(!isDescExpanded)} 
+                className="text-primary hover:text-white ml-2 font-black uppercase tracking-widest text-[10px] transition-colors cursor-pointer"
+              >
+                {isDescExpanded ? " -less" : " +more"}
+              </button>
+            )}
+          </p>
+        </div>
+
+        {/* Metadata Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 mt-6 pt-6 border-t border-white/5 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-white/30 uppercase tracking-widest min-w-[100px]">Type:</span>
+            <span className="text-white/85 font-semibold">{anime?.type || "Unknown"}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-white/30 uppercase tracking-widest min-w-[100px]">Premiered:</span>
+            <span className="text-white/85 font-semibold capitalize">{anime?.season && anime?.seasonYear ? `${anime.season} ${anime.seasonYear}`.toLowerCase() : "Unknown"}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-white/30 uppercase tracking-widest min-w-[100px]">Date aired:</span>
+            <span className="text-white/85 font-semibold">{getAiredDateString()}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-white/30 uppercase tracking-widest min-w-[100px]">Duration:</span>
+            <span className="text-white/85 font-semibold">{anime?.duration ? `${anime.duration} min` : "Unknown"}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-white/30 uppercase tracking-widest min-w-[100px]">Status:</span>
+            <span className="text-white/85 font-semibold">{formatStatus(anime?.status)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-white/30 uppercase tracking-widest min-w-[100px]">Episodes:</span>
+            <span className="text-white/85 font-semibold">{anime?.totalEpisodes || anime?.episodes?.length || "Unknown"}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-white/30 uppercase tracking-widest min-w-[100px]">Genres:</span>
+            <span className="text-white/85 font-semibold line-clamp-1">{anime?.genres?.join(', ') || "Unknown"}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-white/30 uppercase tracking-widest min-w-[100px]">Scores:</span>
+            <span className="text-white/85 font-semibold">{anime?.rating ? `${(anime.rating / 10).toFixed(1)} / 10` : "N/A"}</span>
+          </div>
+          <div className="flex items-start gap-2 col-span-1 sm:col-span-2">
+            <span className="font-bold text-white/30 uppercase tracking-widest min-w-[100px] mt-0.5">Studios:</span>
+            <span className="text-white/85 font-semibold">
+              {anime?.studios?.filter((s: any) => s.isMain).map((s: any) => s.name).join(', ') || "Unknown"}
+            </span>
+          </div>
+          <div className="flex items-start gap-2 col-span-1 sm:col-span-2">
+            <span className="font-bold text-white/30 uppercase tracking-widest min-w-[100px] mt-0.5">Producers:</span>
+            <span className="text-white/85 font-semibold">
+              {anime?.studios?.filter((s: any) => !s.isMain).map((s: any) => s.name).join(', ') || "Unknown"}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -322,8 +331,25 @@ export function WatchPlayerSection({
   const renderSidebar = () => (
     <div className="hidden lg:flex w-full lg:w-80 flex-col gap-4 shrink-0">
       <h3 className="text-lg font-semibold px-2">Episodes</h3>
+      <div className="px-2">
+        <div className="relative">
+          <input
+            value={episodeSearch}
+            onChange={(e) => setEpisodeSearch(e.target.value)}
+            placeholder="Search episodes..."
+            className="w-full bg-white/5 text-white/70 placeholder-white/40 px-3 py-2 rounded-lg border border-white/5 focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+      </div>
       <div className="flex flex-col gap-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-        {episodes.map((episode) => {
+        {episodes
+          .filter((ep) => {
+            if (!episodeSearch) return true;
+            const q = episodeSearch.toLowerCase();
+            const title = (ep.title || `Episode ${ep.number}`).toString().toLowerCase();
+            return title.includes(q) || ep.number.toString() === q;
+          })
+          .map((episode) => {
           const isActive = episode.number === currentEpisodeNumber;
           const targetUrl = `/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
 
@@ -378,7 +404,7 @@ export function WatchPlayerSection({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 220 }}
-            className="fixed bottom-0 left-0 right-0 z-[9999] bg-[#120c24] border-t border-[#21163e] rounded-t-3xl max-h-[75vh] flex flex-col overflow-hidden md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
+            className="fixed bottom-0 left-0 right-0 z-[9999] bg-black/95 backdrop-blur-xl border-t border-white/10 rounded-t-3xl max-h-[75vh] flex flex-col overflow-hidden md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
           >
             <div className="flex justify-between items-center p-5 border-b border-white/5 shrink-0 bg-gradient-to-b from-white/[0.02] to-transparent">
               <div className="flex flex-col gap-0.5">
@@ -394,8 +420,23 @@ export function WatchPlayerSection({
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar">
+              <div className="mb-3 px-2">
+                <input
+                  value={episodeSearch}
+                  onChange={(e) => setEpisodeSearch(e.target.value)}
+                  placeholder="Search episodes..."
+                  className="w-full bg-white/5 text-white/70 placeholder-white/40 px-3 py-2 rounded-lg border border-white/5 focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {episodes.map((episode) => {
+                {episodes
+                  .filter((ep) => {
+                    if (!episodeSearch) return true;
+                    const q = episodeSearch.toLowerCase();
+                    const title = (ep.title || `Episode ${ep.number}`).toString().toLowerCase();
+                    return title.includes(q) || ep.number.toString() === q;
+                  })
+                  .map((episode) => {
                   const isActive = episode.number === currentEpisodeNumber;
                   const targetUrl = `/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
 

@@ -149,7 +149,7 @@ export function MangaProgressButton({
 
   return (
     <Link 
-      href={`/manga/read/${mangaId}/${slug}/${targetChapter.id}`}
+      href={`/reader/read/${mangaId}/${slug}/${targetChapter.id}`}
       className="flex items-center gap-3 px-8 py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-primary/20 hover:scale-105 transition-all"
     >
       <BookOpen className="w-5 h-5" />

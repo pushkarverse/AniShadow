@@ -7,7 +7,7 @@ import { BookOpen, ListOrdered, Star, Calendar, Info, Play, Share2 } from "lucid
 import { MangaCard } from "@/components/MangaCard";
 import { MangaActions } from "@/components/MangaActions";
 import { MangaProgressPosterBadge, MangaProgressText, MangaProgressButton } from "@/components/MangaProgressTracker";
-import { MangaChapterList } from "@/components/MangaChapterList";
+import { ReaderChapterList } from "@/components/ReaderChapterList";
 import { CollapsibleDescription } from "@/components/CollapsibleDescription";
 
 import { slugify } from "@/lib/anime-utils";
@@ -27,16 +27,15 @@ export default async function MangaDetailPage({ params }: PageProps) {
       <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center px-4">
         <h1 className="text-3xl font-black text-primary mb-4 uppercase italic tracking-tighter">Manga Not Found</h1>
         <p className="text-white/40 mb-8 max-w-md">The requested title could not be retrieved from our providers. Please try again later.</p>
-        <Link href={`/manga/${id}/${slug}`} className="px-8 py-3 bg-primary text-white rounded-xl font-bold uppercase tracking-widest shadow-xl shadow-primary/20">Check Again</Link>
+        <Link href={`/reader/${id}/${slug}`} className="px-8 py-3 bg-primary text-white rounded-xl font-bold uppercase tracking-widest shadow-xl shadow-primary/20">Check Again</Link>
       </div>
     );
   }
 
   const title = getAnimeTitle(manga.title);
   const chapters = manga.chapters || [];
-  const relations = manga.relations || [];
+  const relations = (manga.relations || []).filter((r: any) => r.type !== 'ANIME');
   const recommendations = manga.recommendations || [];
-  const animeRelation = relations.find((r: any) => r.type === 'ANIME');
 
   const isNovel = id.startsWith("novelfull-") || getMangaFormat(manga.countryOfOrigin, manga.format || manga.type) === 'Novel';
   const themeClass = isNovel ? "novel-theme" : "manga-theme";
@@ -102,16 +101,6 @@ export default async function MangaDetailPage({ params }: PageProps) {
                     chapters={chapters}
                   />
                 )}
-                
-                {animeRelation && (
-                  <Link 
-                    href={`/anime/${animeRelation.id}/${slugify(getAnimeTitle(animeRelation.title))}`}
-                    className="flex items-center gap-3 px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl transition-all border border-white/5"
-                  >
-                    <Play className="w-5 h-5 fill-current" />
-                    Watch Anime
-                  </Link>
-                )}
 
                 <div className="flex items-center gap-6">
                    <MangaActions 
@@ -149,7 +138,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
               </span>
             </div>
 
-            <MangaChapterList mangaId={id} slug={slug} chapters={chapters} />
+            <ReaderChapterList mangaId={id} slug={slug} chapters={chapters} />
           </div>
 
           {/* Sidebar Info */}
@@ -194,7 +183,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
                        const relTitle = getAnimeTitle(rel.title);
                        const relSlug = slugify(relTitle);
                        return (
-                         <Link key={rel.id} href={rel.type === 'MANGA' ? `/manga/${rel.id}/${relSlug}` : `/anime/${rel.id}/${relSlug}`} className="flex items-center gap-3 group">
+                         <Link key={rel.id} href={rel.type === 'MANGA' ? `/reader/${rel.id}/${relSlug}` : `/anime/${rel.id}/${relSlug}`} className="flex items-center gap-3 group">
                            <div className="w-12 h-16 rounded-lg overflow-hidden bg-white/5 relative shrink-0">
                              <Image src={rel.image || ""} alt="" fill sizes="48px" className="object-cover" />
                            </div>

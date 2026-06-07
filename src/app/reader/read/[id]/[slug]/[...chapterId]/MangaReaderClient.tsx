@@ -168,9 +168,9 @@ export function MangaReaderClient({
 
       if (readingMode === 'vertical') {
         if (e.key === 'ArrowRight' && nextChapterId) {
-          router.push(`/manga/read/${mangaId}/${slug}/${nextChapterId}`);
+          router.push(`/reader/read/${mangaId}/${slug}/${nextChapterId}`);
         } else if (e.key === 'ArrowLeft' && prevChapterId) {
-          router.push(`/manga/read/${mangaId}/${slug}/${prevChapterId}`);
+          router.push(`/reader/read/${mangaId}/${slug}/${prevChapterId}`);
         }
         return;
       }
@@ -278,7 +278,7 @@ export function MangaReaderClient({
   useEffect(() => {
     if (autoPlayCountdown === null) return;
     if (autoPlayCountdown === 0) {
-      const nextUrl = `/manga/read/${mangaId}/${slug}/${nextChapterId}`;
+      const nextUrl = `/reader/read/${mangaId}/${slug}/${nextChapterId}`;
       router.push(nextUrl);
       return;
     }
@@ -298,7 +298,7 @@ export function MangaReaderClient({
 
   const handleReadNow = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const nextUrl = `/manga/read/${mangaId}/${slug}/${nextChapterId}`;
+    const nextUrl = `/reader/read/${mangaId}/${slug}/${nextChapterId}`;
     router.push(nextUrl);
   };
 
@@ -330,7 +330,7 @@ export function MangaReaderClient({
         setActivePage((prev) => prev - 1);
         window.scrollTo({ top: 0, behavior: 'instant' });
       } else if (prevChapterId) {
-        router.push(`/manga/read/${mangaId}/${slug}/${prevChapterId}`);
+        router.push(`/reader/read/${mangaId}/${slug}/${prevChapterId}`);
       }
     } else if (readingMode === 'double') {
       if (isOnEndSlide) {
@@ -342,7 +342,7 @@ export function MangaReaderClient({
       } else if (activePage > 2) {
         setActivePage((prev) => prev - 2);
       } else if (prevChapterId) {
-        router.push(`/manga/read/${mangaId}/${slug}/${prevChapterId}`);
+        router.push(`/reader/read/${mangaId}/${slug}/${prevChapterId}`);
       }
     }
   };
@@ -550,14 +550,14 @@ export function MangaReaderClient({
       
       <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
         <Link 
-          href={mangaId ? `/manga/${mangaId}/${slug || ''}` : '/manga'}
+          href={mangaId ? `/reader/${mangaId}/${slug || ''}` : '/reader'}
           className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-black rounded-2xl border border-white/5 uppercase tracking-widest text-xs transition-all"
         >
           Chapter List
         </Link>
         {nextChapterId ? (
           <Link 
-            href={`/manga/read/${mangaId}/${slug}/${nextChapterId}`}
+            href={`/reader/read/${mangaId}/${slug}/${nextChapterId}`}
             className={`px-10 py-4 ${currentPrimaryBtn} font-black rounded-2xl shadow-xl uppercase tracking-widest text-xs group hover:scale-105 transition-all flex items-center gap-3`}
           >
             Next Chapter
@@ -593,7 +593,7 @@ export function MangaReaderClient({
               {/* Back Link & Manga title */}
               <div className="flex items-center gap-3 min-w-0 flex-1 sm:flex-initial">
                 <Link 
-                  href={mangaId ? `/manga/${mangaId}/${slug || ''}` : '/manga'}
+                  href={mangaId ? `/reader/${mangaId}/${slug || ''}` : '/reader'}
                   className="p-2 hover:bg-white/5 rounded-full transition-colors shrink-0"
                 >
                   <ChevronLeft className="w-6 h-6" />
@@ -670,7 +670,7 @@ export function MangaReaderClient({
                   return (
                     <Link
                       key={c.id}
-                      href={`/manga/read/${mangaId}/${slug}/${c.id}`}
+                      href={`/reader/read/${mangaId}/${slug}/${c.id}`}
                       onClick={() => setChaptersOpen(false)}
                       className={`flex items-center justify-between p-3.5 rounded-2xl transition-all ${isActive ? 'bg-primary text-white font-black shadow-lg shadow-primary/20' : 'hover:bg-white/5 text-white/60 hover:text-white'}`}
                     >

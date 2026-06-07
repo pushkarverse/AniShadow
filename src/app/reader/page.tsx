@@ -5,7 +5,7 @@ import { getTrendingManga, getPopularManga } from "@/lib/consumet";
 import { getAnimeTitle } from "@/lib/anime-utils";
 import { TrendingUp, Star } from "lucide-react";
 import { Metadata } from "next";
-import { MangaLibrarySection } from "@/components/MangaLibrarySection";
+import { ReaderLibrarySection } from "@/components/ReaderLibrarySection";
 
 export const metadata: Metadata = {
   title: "Reader - Premium Manga & Novel Reading",
@@ -25,7 +25,7 @@ export default async function MangaPage() {
       
       <main className="container mx-auto px-4 md:px-8 pt-8">
         {/* Library Section */}
-        <MangaLibrarySection />
+        <ReaderLibrarySection />
 
         {/* Categories / Trending */}
         <div className="flex flex-col lg:flex-row gap-8 overflow-x-hidden">
@@ -41,9 +41,9 @@ export default async function MangaPage() {
               </div>
               
               <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
-                {trendingManga.map((manga: any) => (
+                {trendingManga.map((manga: any, idx: number) => (
                   <MangaCard 
-                    key={manga.id} 
+                    key={`trending-${manga.id || idx}`} 
                     id={manga.id} 
                     title={getAnimeTitle(manga.title)} 
                     slug={manga.slug}
@@ -68,9 +68,9 @@ export default async function MangaPage() {
               </div>
               
               <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
-                {popularManga.map((manga: any) => (
+                {popularManga.map((manga: any, idx: number) => (
                   <MangaCard 
-                    key={manga.id} 
+                    key={`popular-${manga.id || idx}`} 
                     id={manga.id} 
                     title={getAnimeTitle(manga.title)} 
                     slug={manga.slug}

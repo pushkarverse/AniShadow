@@ -21,7 +21,7 @@ interface ProgressItem {
   readAt: string;
 }
 
-export function MangaLibrarySection() {
+export function ReaderLibrarySection() {
   const [library, setLibrary] = useState<WatchlistItem[]>([]);
   const [progressMap, setProgressMap] = useState<Record<string, ProgressItem>>({});
   const [mounted, setMounted] = useState(false);
@@ -82,25 +82,7 @@ export function MangaLibrarySection() {
   if (!mounted) return null;
 
   if (library.length === 0) {
-    return (
-      <section id="manga-library" className="mb-12 md:mb-16">
-        <div className="flex items-center gap-4 mb-8">
-          <Library className="w-6 h-6 text-primary" />
-          <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white uppercase">
-            Your Library
-          </h2>
-        </div>
-        <div className="rounded-3xl bg-gradient-to-br from-white/[0.03] to-transparent border border-white/5 p-12 text-center">
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6 ring-8 ring-primary/5">
-            <BookOpen className="w-8 h-8 text-primary opacity-50" />
-          </div>
-          <h3 className="text-xl font-black uppercase tracking-wider mb-3 text-white/60">No Manga Saved Yet</h3>
-          <p className="text-white/30 text-sm max-w-sm mx-auto mb-8 font-medium leading-relaxed">
-            Browse trending or popular manga below and click &quot;Add to Library&quot; on any manga detail page to save it here.
-          </p>
-        </div>
-      </section>
-    );
+    return null;
   }
 
   return (
@@ -150,8 +132,8 @@ export function MangaLibrarySection() {
           {library.map((item, index) => {
             const progress = progressMap[item.mangaId];
             const readUrl = progress
-              ? `/manga/read/${item.mangaId}/${item.slug}/${progress.chapterId}`
-              : `/manga/${item.mangaId}/${item.slug}`;
+              ? `/reader/read/${item.mangaId}/${item.slug}/${progress.chapterId}`
+              : `/reader/${item.mangaId}/${item.slug}`;
 
             return (
               <motion.div
@@ -203,7 +185,7 @@ export function MangaLibrarySection() {
                 </button>                
 
                 {/* Title */}
-                <Link href={`/manga/${item.mangaId}/${item.slug}`} className="block mt-3 px-1">
+                <Link href={`/reader/${item.mangaId}/${item.slug}`} className="block mt-3 px-1">
                   <h4 className="text-[11px] font-black text-white/85 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                     {item.title}
                   </h4>

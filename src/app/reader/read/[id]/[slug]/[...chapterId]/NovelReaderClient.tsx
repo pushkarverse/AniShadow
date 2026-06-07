@@ -148,9 +148,9 @@ export function NovelReaderClient({
       }
 
       if (e.key === 'ArrowRight' && nextChapterId) {
-        router.push(`/manga/read/${mangaId}/${slug}/${nextChapterId}`);
+        router.push(`/reader/read/${mangaId}/${slug}/${nextChapterId}`);
       } else if (e.key === 'ArrowLeft' && prevChapterId) {
-        router.push(`/manga/read/${mangaId}/${slug}/${prevChapterId}`);
+        router.push(`/reader/read/${mangaId}/${slug}/${prevChapterId}`);
       }
     };
 
@@ -257,7 +257,7 @@ export function NovelReaderClient({
             <div className="container mx-auto flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
                 <Link 
-                  href={mangaId ? `/manga/${mangaId}/${slug || ''}` : '/manga'}
+                  href={mangaId ? `/reader/${mangaId}/${slug || ''}` : '/reader'}
                   className="p-2 hover:bg-white/5 rounded-full transition-colors shrink-0"
                 >
                   <ChevronLeft className="w-6 h-6" />
@@ -334,7 +334,7 @@ export function NovelReaderClient({
                   return (
                     <Link
                       key={c.id}
-                      href={`/manga/read/${mangaId}/${slug}/${c.id}`}
+                      href={`/reader/read/${mangaId}/${slug}/${c.id}`}
                       onClick={() => setChaptersOpen(false)}
                       className={`flex items-center justify-between p-3.5 rounded-2xl transition-all ${isActive ? 'bg-primary text-white font-black shadow-lg shadow-primary/20' : 'hover:bg-white/5 opacity-80 hover:opacity-100'}`}
                     >
@@ -476,7 +476,7 @@ export function NovelReaderClient({
         <div className="mt-16 pt-10 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 select-none">
           {prevChapterId ? (
             <Link 
-              href={`/manga/read/${mangaId}/${slug}/${prevChapterId}`}
+              href={`/reader/read/${mangaId}/${slug}/${prevChapterId}`}
               className="w-full sm:w-auto px-6 py-4 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center gap-2 font-black uppercase tracking-widest text-[10px] transition-all duration-300 border border-white/5"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -493,7 +493,7 @@ export function NovelReaderClient({
           )}
 
           <Link 
-            href={mangaId ? `/manga/${mangaId}/${slug}` : "/manga"}
+            href={mangaId ? `/reader/${mangaId}/${slug}` : "/reader"}
             className="w-full sm:w-auto px-6 py-4 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center gap-2 font-black uppercase tracking-widest text-[10px] transition-all duration-300 border border-white/5"
           >
             Chapter List
@@ -501,7 +501,7 @@ export function NovelReaderClient({
 
           {nextChapterId ? (
             <Link 
-              href={`/manga/read/${mangaId}/${slug}/${nextChapterId}`}
+              href={`/reader/read/${mangaId}/${slug}/${nextChapterId}`}
               className="w-full sm:w-auto px-6 py-4 bg-primary text-white hover:bg-primary/95 rounded-2xl flex items-center justify-center gap-2 font-black uppercase tracking-widest text-[10px] transition-all duration-300 shadow-xl shadow-primary/10"
             >
               Next Chapter

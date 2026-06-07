@@ -27,6 +27,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "*.comick.media" },
       { protocol: "https", hostname: "*.mangadex.org" },
       { protocol: "https", hostname: "*.mangareader.to" },
+      { protocol: "https", hostname: "novelfull.com" },
     ],
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",

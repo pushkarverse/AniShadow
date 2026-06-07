@@ -24,6 +24,14 @@ export default function WatchlistPage() {
     if (savedManga) setMangaWatchlist(JSON.parse(savedManga));
   }, []);
 
+  useEffect(() => {
+    if (activeTab === "manga") {
+      document.documentElement.classList.add("reader-theme");
+    } else {
+      document.documentElement.classList.remove("reader-theme");
+    }
+  }, [activeTab]);
+
   const clearWatchlist = () => {
     const type = activeTab === "anime" ? "anime" : "manga";
     if (confirm(`Are you sure you want to clear your entire ${type} list?`)) {
@@ -138,7 +146,7 @@ export default function WatchlistPage() {
                         Start building your ultimate collection by clicking the bookmark icon on any {activeTab} card.
                     </p>
                     <Link 
-                        href={activeTab === "anime" ? "/" : "/manga"}
+                        href={activeTab === "anime" ? "/" : "/reader"}
                         className="px-8 py-3 bg-primary text-white font-bold rounded-lg border border-accent/20 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
                     >
                         Explore {activeTab === "anime" ? "Trending" : "Library"}

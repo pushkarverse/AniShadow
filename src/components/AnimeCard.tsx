@@ -24,6 +24,7 @@ interface AnimeCardProps {
   dubEpisodes?: number | string;
   variant?: "default" | "search";
   duration?: string;
+  priority?: boolean;
 }
 
 const statusOptions = ["Watching", "On-Hold", "Planning", "Completed", "Dropped"];
@@ -42,7 +43,8 @@ export function AnimeCard({
   rating,
   type, 
   href,
-  variant = "default"
+  variant = "default",
+  priority = false
 }: AnimeCardProps) {
   const [showInfo, setShowInfo] = useState(false);
   const [infoData, setInfoData] = useState<IAnimeInfo | null>(null);
@@ -125,6 +127,7 @@ export function AnimeCard({
             src={image || "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop"}
             alt={title}
             fill
+            priority={priority}
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
             className="object-cover transition-all duration-700 group-hover:scale-105"
             unoptimized

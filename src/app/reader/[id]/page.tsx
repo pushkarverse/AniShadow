@@ -15,7 +15,7 @@ export default async function MangaIdRedirectPage({ params }: Props) {
     if (manga) {
       const title = getAnimeTitle((manga as any).title);
       const slug = slugify(title);
-      targetUrl = `/manga/${id}/${slug}`;
+      targetUrl = `/reader/${id}/${slug}`;
     }
   } catch (e) {
     console.error("Manga details fetch failed for redirect:", e);
@@ -24,6 +24,6 @@ export default async function MangaIdRedirectPage({ params }: Props) {
   if (targetUrl) {
     redirect(targetUrl);
   } else {
-    redirect("/manga");
+    redirect("/reader");
   }
 }

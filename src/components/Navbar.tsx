@@ -34,11 +34,11 @@ export function Navbar() {
     return () => window.removeEventListener("keydown", handleGlobalShortcut);
   }, []);
 
-  const [isMangaRoute, setIsMangaRoute] = useState(pathname?.startsWith('/manga') || false);
+  const [isMangaRoute, setIsMangaRoute] = useState(pathname?.startsWith('/reader') || false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const isMangaPath = window.location.pathname.startsWith('/manga');
+    const isMangaPath = window.location.pathname.startsWith('/reader');
     const params = new URLSearchParams(window.location.search);
     const isMangaSearch = window.location.pathname.startsWith('/search') && params.get('type') === 'MANGA';
     setIsMangaRoute(isMangaPath || isMangaSearch);
@@ -112,16 +112,16 @@ export function Navbar() {
           </Link>
 
           {/* Brand Switcher */}
-          <div className="hidden sm:flex items-center bg-white/5 p-1 rounded-full border border-white/5 ml-2">
+          <div className="hidden sm:flex items-center bg-white/5 p-0.5 rounded-full border border-white/5 ml-2">
             <Link 
               href="/" 
-              className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter transition-all ${!isMangaRoute ? 'bg-[#9b0c0c] text-white shadow-lg shadow-[#9b0c0c]/20' : 'text-white/40 hover:text-white'}`}
+              className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter transition-all ${!isMangaRoute ? 'bg-[#5c0606] text-white shadow-lg shadow-[#5c0606]/20' : 'text-white/40 hover:text-white'}`}
             >
               Anime
             </Link>
             <Link 
-              href="/manga" 
-              className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter transition-all ${isMangaRoute ? 'bg-[#7c3aed] text-white shadow-lg shadow-[#7c3aed]/20' : 'text-white/40 hover:text-white'}`}
+              href="/reader" 
+              className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter transition-all ${isMangaRoute ? 'bg-[#5b128c] text-white shadow-lg shadow-[#5b128c]/20' : 'text-white/40 hover:text-white'}`}
             >
               Reader
             </Link>
@@ -161,15 +161,17 @@ export function Navbar() {
             >
               <Users className="w-5 h-5" />
             </Link>
-            <button 
-              onClick={handleRandom}
-              disabled={isShuffling}
-              suppressHydrationWarning
-              title="Random Anime" 
-              className={`p-2.5 text-white/60 hover:text-white hover:bg-white/5 rounded-full transition-all ${isShuffling ? "animate-spin opacity-50" : ""}`}
-            >
-              <Shuffle className="w-5 h-5" />
-            </button>
+            {!isMangaRoute && (
+              <button 
+                onClick={handleRandom}
+                disabled={isShuffling}
+                suppressHydrationWarning
+                title="Random Anime" 
+                className={`p-2.5 text-white/60 hover:text-white hover:bg-white/5 rounded-full transition-all ${isShuffling ? "animate-spin opacity-50" : ""}`}
+              >
+                <Shuffle className="w-5 h-5" />
+              </button>
+            )}
           </div>
 
           {/* Mobile Search Toggle - Hidden on mobile in favor of bottom tab bar search option */}
@@ -283,25 +285,25 @@ export function Navbar() {
               </div>
 
               {/* Mobile Brand Switcher */}
-              <div className="flex items-center bg-white/5 p-1 rounded-2xl border border-white/5 mb-8">
+              <div className="flex items-center bg-white/5 p-0.5 rounded-xl border border-white/5 mb-8">
                 <Link 
                   href="/" 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex-1 py-3 rounded-xl text-center text-[10px] font-black uppercase tracking-widest transition-all ${!isMangaRoute ? 'bg-[#9b0c0c] text-white shadow-xl' : 'text-white/40'}`}
+                  className={`flex-1 py-2 rounded-lg text-center text-[9px] font-black uppercase tracking-widest transition-all ${!isMangaRoute ? 'bg-[#5c0606] text-white shadow-xl' : 'text-white/40'}`}
                 >
                   Anime
                 </Link>
                 <Link 
-                  href="/manga" 
+                  href="/reader" 
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex-1 py-3 rounded-xl text-center text-[10px] font-black uppercase tracking-widest transition-all ${isMangaRoute ? 'bg-[#7c3aed] text-white shadow-xl' : 'text-white/40'}`}
+                  className={`flex-1 py-2 rounded-lg text-center text-[9px] font-black uppercase tracking-widest transition-all ${isMangaRoute ? 'bg-[#5b128c] text-white shadow-xl' : 'text-white/40'}`}
                 >
                   Reader
                 </Link>
               </div>
 
               <div className="flex flex-col gap-2">
-                <Link href="/manga" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all uppercase tracking-widest text-xs">READER</Link>
+                <Link href="/reader" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all uppercase tracking-widest text-xs">READER</Link>
                 <Link href="/search" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">GENRES</Link>
                 <Link href="/trending" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">TYPES</Link>
                 <Link href="/popular" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">NEW RELEASES</Link>

@@ -488,17 +488,28 @@ export function VideoPlayer({
       lastTapRef.current = 0;
     } else {
       lastTapRef.current = now;
+      // Capture position now — synthetic event may be nullified after this handler returns
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const width = rect.width;
       clickTimeoutRef.current = setTimeout(() => {
+        const isCenter = clickX >= width * 0.33 && clickX <= width * 0.67;
         if (window.innerWidth < 768) {
+          // Mobile: always toggle the control bar; play/pause only when center
           setShowControls((prev) => {
             const next = !prev;
-            if (next) {
-              scheduleControlsHide();
-            }
+            if (next) scheduleControlsHide();
             return next;
           });
+          if (isCenter) togglePlay();
         } else {
-          togglePlay();
+          // Desktop: play/pause only when center; sides just reveal controls
+          if (isCenter) {
+            togglePlay();
+          } else {
+            setShowControls(true);
+            scheduleControlsHide();
+          }
         }
       }, DOUBLE_PRESS_DELAY);
     }
@@ -1080,7 +1091,7 @@ export function VideoPlayer({
         </AnimatePresence>
 
         {(isExtracting || isBuffering) && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#080808]/80 backdrop-blur-xs z-30 pointer-events-none">
+          <div className="absolute inset-0 flex items-center justify-center bg-[#080808]/80 backdrop-blur-xs z-20 pointer-events-none">
             <div className="relative w-16 h-16 pointer-events-auto">
               <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping" />
               <div className="absolute inset-0 rounded-full border-t-2 border-r-2 border-primary animate-spin" />
@@ -1097,9 +1108,9 @@ export function VideoPlayer({
             )}
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 backdrop-blur-[2px]">
               <motion.button
-                className="w-20 h-20 md:w-24 md:h-24 bg-primary/90 group-hover/preview:bg-primary group-hover/preview:scale-110 rounded-full flex items-center justify-center text-white shadow-[0_0_40px_rgba(155,12,12,0.5)] backdrop-blur-sm transition-all pointer-events-none"
+                className="w-16 h-16 md:w-16 md:h-16 bg-primary/90 group-hover/preview:bg-primary group-hover/preview:scale-105 rounded-full flex items-center justify-center text-white shadow-[0_0_40px_rgba(155,12,12,0.5)] backdrop-blur-sm transition-all pointer-events-none border-2 border-[#4A2125]"
               >
-                <Play className="w-10 h-10 md:w-12 md:h-12 ml-2 fill-current" />
+                <Play className="w-8 h-8 md:w-8 md:h-8 fill-current" />
               </motion.button>
             </div>
           </div>
@@ -1113,12 +1124,12 @@ export function VideoPlayer({
             <motion.button
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              whileHover={{ scale: 1.1 }}
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={togglePlay}
-              className="w-14 h-14 md:w-16 md:h-16 bg-primary/90 hover:bg-primary rounded-full flex items-center justify-center text-white shadow-[0_0_20px_rgba(155,12,12,0.4)] backdrop-blur-sm transition-all pointer-events-auto cursor-pointer"
+              className="w-12 h-12 md:w-12 md:h-12 bg-primary/90 hover:bg-primary rounded-full flex items-center justify-center text-white shadow-[0_0_20px_rgba(155,12,12,0.4)] backdrop-blur-sm transition-all pointer-events-auto cursor-pointer border-2 border-[#4A2125]"
             >
-              <Play className="w-6 h-6 md:w-7 h-7 ml-1 fill-current" />
+              <Play className="w-5 h-5 md:w-5 md:h-5 fill-current" />
             </motion.button>
           </div>
         )}
@@ -1292,28 +1303,22 @@ export function VideoPlayer({
               className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/90 via-transparent to-black/60 p-4 md:p-6 pointer-events-none z-40"
             >
               <div className="flex justify-between items-start">
-                <div className="flex items-center gap-3 pointer-events-auto">
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.back();
-                    }} 
-                    className="md:hidden p-2 rounded-full bg-black/60 border border-white/10 text-white/80 hover:text-white hover:bg-black/80 transition-all cursor-pointer"
-                    title="Go Back"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <div>
-                    <h2 className="text-white font-bold text-xl md:text-2xl drop-shadow-lg">{title}</h2>
-                    <p className="text-white/70 text-sm md:text-base">{episodeTitle}</p>
-                  </div>
-                </div>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.back();
+                  }} 
+                  className="md:hidden p-2 rounded-full bg-black/60 border border-white/10 text-white/80 hover:text-white hover:bg-black/80 transition-all cursor-pointer pointer-events-auto"
+                  title="Go Back"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
               </div>
 
               <div className="flex flex-col gap-4 pointer-events-auto mt-auto">
                 <div className="flex items-center gap-4">
                   <span className="text-white/80 text-xs font-mono">{formatTime(progress)}</span>
-                  <div className="flex-1 relative flex items-center h-6">
+                  <div className="flex-1 relative flex items-center h-6" onMouseMove={handleProgressBarMouseMove} onMouseLeave={handleProgressBarMouseLeave}>
                     {hoverTime !== null && duration > 0 && (
                       <div
                         className="absolute bottom-6 bg-zinc-950/95 border border-white/10 rounded-lg overflow-hidden shadow-2xl z-50 pointer-events-none -translate-x-1/2 flex flex-col items-center p-1 w-32 backdrop-blur-xs"
@@ -1338,7 +1343,9 @@ export function VideoPlayer({
                       max={duration || 100}
                       value={progress}
                       onChange={(e) => {
-                        if (videoRef.current) videoRef.current.currentTime = Number(e.target.value);
+                        const newTime = Number(e.target.value);
+                        setProgress(newTime);
+                        if (videoRef.current) videoRef.current.currentTime = newTime;
                       }}
                       onMouseDown={() => setIsScrubbing(true)}
                       onTouchStart={() => setIsScrubbing(true)}
@@ -1350,9 +1357,7 @@ export function VideoPlayer({
                         setIsScrubbing(false);
                         scheduleControlsHide();
                       }}
-                      onMouseMove={handleProgressBarMouseMove}
-                      onMouseLeave={handleProgressBarMouseLeave}
-                      className="w-full h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 transition-all focus:outline-none [&::-webkit-slider-runnable-track]:bg-transparent [&::-moz-range-track]:bg-transparent"
+                      className="w-full h-1 appearance-none rounded-full cursor-pointer accent-primary hover:h-1.5 transition-all focus:outline-none [&::-webkit-slider-runnable-track]:bg-transparent [&::-moz-range-track]:bg-transparent [&::-webkit-slider-thumb]:opacity-0 hover:[&::-webkit-slider-thumb]:opacity-100 [&::-moz-range-thumb]:opacity-0 hover:[&::-moz-range-thumb]:opacity-100 [&::-webkit-slider-thumb]:transition-opacity [&::-moz-range-thumb]:transition-opacity"
                       style={{
                         background: `linear-gradient(to right, rgb(155, 12, 12) 0%, rgb(155, 12, 12) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (progress / duration) * 100 : 0)}%, rgba(156, 163, 175, 0.4) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) ${(duration ? (Math.max(progress, buffered) / duration) * 100 : 0)}%, rgba(255, 255, 255, 0.15) 100%)`
                       }}
