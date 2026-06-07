@@ -48,14 +48,15 @@ interface PageProps {
 
 export default async function AnimeDetailsPage({ params }: PageProps) {
   const { id, slug } = await params;
-  
-  if (!id) {
-    return <div className="min-h-screen flex items-center justify-center text-white">ID required.</div>;
-  }
 
-  // Use a targeted cast to access properties while avoiding total 'any' where possible
-  const rawData = await getAnimeDetails(id);
-  const animeData = rawData as {
+  try {
+    if (!id) {
+      return <div className="min-h-screen flex items-center justify-center text-white">ID required.</div>;
+    }
+
+    // Use a targeted cast to access properties while avoiding total 'any' where possible
+    const rawData = await getAnimeDetails(id);
+    const animeData = rawData as {
     id: string;
     title: MediaTitle | string;
     type?: string;
@@ -433,4 +434,19 @@ export default async function AnimeDetailsPage({ params }: PageProps) {
       </div>
     </div>
   );
+  } catch (err) {
+    console.error('Unexpected error rendering anime details page:', err);
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="p-8 rounded-2xl bg-card shadow-2xl max-w-lg text-center">
+          <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
+          <p className="mb-6 text-white/70">We encountered an unexpected error while rendering this page. Try reloading or check back shortly.</p>
+          <div className="flex gap-4 justify-center">
+            <Link href="/" className="px-6 py-2 bg-primary text-white rounded-lg">Home</Link>
+            <Link href="#" onClick={() => {}} className="px-6 py-2 bg-card text-white/80 rounded-lg">Retry</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 }
