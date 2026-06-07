@@ -281,6 +281,8 @@ export function VideoPlayer({
   };
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  // Detected once on mount — doesn't flip when phone rotates to landscape
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [useNative, setUseNative] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -312,6 +314,12 @@ export function VideoPlayer({
   const [showMobileSettings, setShowMobileSettings] = useState(false);
   const [isMaxView, setIsMaxView] = useState(false);
   const [activeMobileTab, setActiveMobileTab] = useState<'quality' | 'audio-subs' | 'speed'>('quality');
+
+  // Detect mobile device once on mount (stable across orientation changes)
+  useEffect(() => {
+    const mobile = navigator.maxTouchPoints > 0 || window.innerWidth < 768;
+    setIsMobileDevice(mobile);
+  }, []);
 
   // Sync playback speed when video URL or component changes
   useEffect(() => {
@@ -497,17 +505,13 @@ export function VideoPlayer({
       const width = rect.width;
       clickTimeoutRef.current = setTimeout(() => {
         const isCenter = clickX >= width * 0.33 && clickX <= width * 0.67;
-        if (window.innerWidth < 768) {
-          // Mobile: single tap center = play/pause, sides = always SHOW controls (so double-tap seek always fires)
+        if (isMobileDevice) {
+          // Mobile: single tap anywhere shows controls; center also toggles play
           if (isCenter) {
             togglePlay();
-            setShowControls(true);
-            scheduleControlsHide();
-          } else {
-            // Just show controls — never hide on single side tap
-            setShowControls(true);
-            scheduleControlsHide();
           }
+          setShowControls(true);
+          scheduleControlsHide();
         } else {
           // Desktop: play/pause only when center; sides just reveal controls
           if (isCenter) {
@@ -1278,8 +1282,8 @@ export function VideoPlayer({
                 exit={{ opacity: 0 }}
                 className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/90 via-transparent to-black/60 p-4 md:p-6 pointer-events-none z-40"
               >
-                {/* Mobile Controls Overlay */}
-                <div className="flex flex-col justify-between h-full w-full md:hidden pointer-events-none relative">
+                {/* Mobile Controls Overlay — shown on mobile devices regardless of orientation/fullscreen */}
+                <div className={`flex flex-col justify-between h-full w-full pointer-events-none relative ${isMobileDevice ? 'flex' : 'hidden'}`}>
                   {/* Top Row: Back (left), Cast (mock), Settings, Fullscreen (right) */}
                   <div className="flex justify-between items-center w-full pointer-events-auto">
                     <button
@@ -1624,8 +1628,8 @@ export function VideoPlayer({
                   </AnimatePresence>
                 </div>
 
-                {/* Desktop Controls Overlay */}
-                <div className="flex flex-col justify-between h-full w-full hidden md:flex pointer-events-none">
+                {/* Desktop Controls Overlay — only shown on non-mobile devices */}
+                <div className={`flex flex-col justify-between h-full w-full pointer-events-none ${isMobileDevice ? 'hidden' : 'flex'}`}>
                   <div className="flex justify-between items-start">
                     <button
                       onClick={(e) => {
