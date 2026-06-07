@@ -1248,13 +1248,11 @@ export function VideoPlayer({
                   initial={{ rotate: 0 }}
                   animate={{ rotate: -360 }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="w-20 h-20 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-md border border-white/10 shadow-[0_0_35px_rgba(155,12,12,0.35)]"
+                  className="relative w-12 h-12 md:w-14 md:h-14 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-md border border-white/10 shadow-[0_0_35px_rgba(155,12,12,0.35)]"
                 >
-                  <RotateCcw className="w-9 h-9 text-white" />
+                  <RotateCcw className="w-6 h-6 md:w-7 md:h-7 text-white" />
+                  <span className="absolute bottom-1 text-[9px] md:text-[10px] font-black leading-none text-white">-{showSkipOverlay.count}s</span>
                 </motion.div>
-                <span className="text-white text-xs font-black uppercase tracking-widest bg-black/80 px-4 py-1.5 rounded-full backdrop-blur-sm shadow-md border border-white/5">
-                  -{showSkipOverlay.count} seconds
-                </span>
               </motion.div>
             </>
           )}
@@ -1282,13 +1280,11 @@ export function VideoPlayer({
                   initial={{ rotate: 0 }}
                   animate={{ rotate: 360 }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  className="w-20 h-20 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-md border border-white/10 shadow-[0_0_35px_rgba(155,12,12,0.35)]"
+                  className="relative w-12 h-12 md:w-14 md:h-14 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-md border border-white/10 shadow-[0_0_35px_rgba(155,12,12,0.35)]"
                 >
-                  <RotateCw className="w-9 h-9 text-white" />
+                  <RotateCw className="w-6 h-6 md:w-7 md:h-7 text-white" />
+                  <span className="absolute bottom-1 text-[9px] md:text-[10px] font-black leading-none text-white">+{showSkipOverlay.count}s</span>
                 </motion.div>
-                <span className="text-white text-xs font-black uppercase tracking-widest bg-black/80 px-4 py-1.5 rounded-full backdrop-blur-sm shadow-md border border-white/5">
-                  +{showSkipOverlay.count} seconds
-                </span>
               </motion.div>
             </>
           )}
@@ -1368,16 +1364,18 @@ export function VideoPlayer({
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 sm:gap-6">
-                    <button onClick={skipBackward} className="text-white hover:text-accent transition-all scale-110 active:scale-95" title="Rewind 10s">
-                      <RotateCcw className="w-5 h-5" />
+                    <button onClick={skipBackward} className="relative w-10 h-10 text-white hover:text-accent transition-all scale-110 active:scale-95 flex items-center justify-center" title="Rewind 10s">
+                      <RotateCcw className="w-6 h-6 sm:w-7 sm:h-7" />
+                      <span className="absolute bottom-0 text-[9px] font-black leading-none text-white/90">10s</span>
                     </button>
 
                     <button onClick={togglePlay} className="text-white hover:text-accent transition-all scale-110 active:scale-95">
                       {isPlaying ? <Pause className="w-6 h-6 sm:w-7 h-7" /> : <Play className="w-6 h-6 sm:w-7 h-7 fill-current" />}
                     </button>
 
-                    <button onClick={skipForward} className="text-white hover:text-accent transition-all scale-110 active:scale-95" title="Forward 10s">
-                      <RotateCw className="w-5 h-5" />
+                    <button onClick={skipForward} className="relative w-10 h-10 text-white hover:text-accent transition-all scale-110 active:scale-95 flex items-center justify-center" title="Forward 10s">
+                      <RotateCw className="w-6 h-6 sm:w-7 sm:h-7" />
+                      <span className="absolute bottom-0 text-[9px] font-black leading-none text-white/90">10s</span>
                     </button>
 
                     <button onClick={() => {
