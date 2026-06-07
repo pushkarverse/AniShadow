@@ -86,22 +86,6 @@ export function VideoPlayer({
     setShowAudioMenu(false);
   };
 
-  useEffect(() => {
-    if (!allServers || allServers.length === 0 || !initialVideoUrl) return;
-    const matchedServer = allServers.find(s => s.url === initialVideoUrl);
-    if (matchedServer) {
-      setActiveAudioGroup(matchedServer.kind === "dub" ? "dub" : "other");
-    } else {
-      const hasDub = allServers.some(s => s.kind === "dub");
-      const hasSub = allServers.some(s => s.kind !== "dub");
-      if (hasSub) {
-        setActiveAudioGroup("other");
-      } else if (hasDub) {
-        setActiveAudioGroup("dub");
-      }
-    }
-  }, [initialVideoUrl, allServers]);
-
   // Responsive auto-hide delay
   const getControlsTimeout = () => typeof window !== 'undefined' && window.innerWidth < 768 ? 6000 : 4000;
 

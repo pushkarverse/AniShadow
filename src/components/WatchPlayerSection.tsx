@@ -126,7 +126,7 @@ export function WatchPlayerSection({
   );
 
   const renderAudioSwitcher = () => (
-    <div className="px-4 md:px-0 hidden md:block">
+    <div className="px-4 md:px-0">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/5 bg-black/80 px-4 py-3">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[10px] font-black uppercase tracking-[0.25em] text-white/30 mr-1">
