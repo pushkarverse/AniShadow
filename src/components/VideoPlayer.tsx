@@ -1161,7 +1161,7 @@ export function VideoPlayer({
           )}
 
           {/* Center Play Button Overlay for Paused State */}
-          {!isPlaying && hasInteracted && !isIframe && (
+          {!isMobileDevice && !isPlaying && hasInteracted && !isIframe && (
             <div
               className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/40 transition-colors pointer-events-none"
             >
@@ -1965,7 +1965,7 @@ export function VideoPlayer({
                       !showControls ? "opacity-30" : "opacity-100"
                     }`}
                   >
-                    {isPlaying ? <Pause className="w-10 h-10 fill-current" /> : <Play className="w-10 h-10 fill-current ml-0.5" />}
+                    {isPlaying ? <Pause className="w-7 h-7 fill-current" /> : <Play className="w-7 h-7 fill-current ml-0.5" />}
                   </button>
 
                   {/* Skip Forward Button */}
