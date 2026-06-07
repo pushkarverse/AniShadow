@@ -322,7 +322,7 @@ export function VideoPlayer({
     if (mobile) {
       try {
         const orientation = window.screen?.orientation as any;
-        orientation?.lock?.('portrait-primary').catch(() => {});
+        orientation?.lock?.('portrait-primary').catch(() => { });
       } catch { }
     }
 
@@ -541,11 +541,11 @@ export function VideoPlayer({
 
     // Already fullscreen — exit
     const isFs = !!(
-      document.fullscreenElement || 
-      (document as any).webkitFullscreenElement || 
+      document.fullscreenElement ||
+      (document as any).webkitFullscreenElement ||
       (video as any)?.webkitDisplayingFullscreen
     );
-    
+
     if (isFs) {
       try {
         if (document.exitFullscreen) {
@@ -568,7 +568,6 @@ export function VideoPlayer({
       } else if ((container as any).webkitRequestFullscreen) {
         (container as any).webkitRequestFullscreen();
       } else if (video && (video as any).webkitEnterFullscreen) {
-        // iOS Safari HTML5 video element standard fallback
         (video as any).webkitEnterFullscreen();
       } else if (video && (video as any).webkitEnterFullScreen) {
         (video as any).webkitEnterFullScreen();
@@ -582,23 +581,23 @@ export function VideoPlayer({
     const handleFullscreenChange = () => {
       const video = videoRef.current;
       const isFs = !!(
-        document.fullscreenElement || 
-        (document as any).webkitFullscreenElement || 
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
         (video as any)?.webkitDisplayingFullscreen
       );
       setIsFullscreen(isFs);
       if (isMobileDevice) {
         if (isFs) {
-          try { (window.screen?.orientation as any)?.lock?.('landscape').catch(() => {}); } catch { }
+          try { (window.screen?.orientation as any)?.lock?.('landscape').catch(() => { }); } catch { }
         } else {
-          try { (window.screen?.orientation as any)?.lock?.('portrait-primary').catch(() => {}); } catch { }
+          try { (window.screen?.orientation as any)?.lock?.('portrait-primary').catch(() => { }); } catch { }
         }
       }
     };
-    
+
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
-    
+
     const video = videoRef.current;
     if (video) {
       video.addEventListener("webkitbeginfullscreen", handleFullscreenChange);
@@ -1150,11 +1149,10 @@ export function VideoPlayer({
               )}
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/20 backdrop-blur-[2px]">
                 <motion.button
-                  className={`flex items-center justify-center text-white transition-all pointer-events-none ${
-                    isMobileDevice
+                  className={`flex items-center justify-center text-white transition-all pointer-events-none ${isMobileDevice
                       ? 'drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]'
                       : 'w-14 h-14 bg-primary/90 group-hover/preview:bg-primary group-hover/preview:scale-105 rounded-full shadow-[0_0_40px_rgba(155,12,12,0.5)] backdrop-blur-sm border-2 border-[#4A2125]'
-                  }`}
+                    }`}
                 >
                   <Play className={`fill-current ${isMobileDevice ? 'w-10 h-10' : 'w-7 h-7'}`} />
                 </motion.button>
@@ -1173,11 +1171,10 @@ export function VideoPlayer({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={togglePlay}
-                className={`flex items-center justify-center text-white transition-all pointer-events-auto cursor-pointer ${
-                  isMobileDevice
+                className={`flex items-center justify-center text-white transition-all pointer-events-auto cursor-pointer ${isMobileDevice
                     ? 'drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]'
                     : 'w-10 h-10 bg-primary/90 hover:bg-primary rounded-full shadow-[0_0_20px_rgba(155,12,12,0.4)] border-2 border-[#4A2125]'
-                }`}
+                  }`}
               >
                 <Play className={`fill-current ${isMobileDevice ? 'w-7 h-7' : 'w-5 h-5'}`} />
               </motion.button>
@@ -1275,70 +1272,7 @@ export function VideoPlayer({
             </>
           )}
 
-          {/* Double Tap Skip Animations */}
-          <AnimatePresence>
-            {showSkipOverlay.visible && showSkipOverlay.direction === "backward" && (
-              <>
-                {/* Left Ripple Backdrop */}
-                <motion.div
-                  initial={{ scaleX: 0, opacity: 0 }}
-                  animate={{ scaleX: 1, opacity: 0.15 }}
-                  exit={{ scaleX: 0, opacity: 0 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="absolute left-0 top-0 bottom-0 w-1/2 bg-gradient-to-r from-white/30 to-transparent origin-left rounded-r-[100px] pointer-events-none z-30"
-                />
-                {/* Left Spinning Indicator */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.5, y: "-50%", x: "-50%" }}
-                  animate={{ opacity: 1, scale: 1, y: "-50%", x: "-50%" }}
-                  exit={{ opacity: 0, scale: 0.5, y: "-50%", x: "-50%" }}
-                  className="absolute left-1/4 top-1/2 z-50 flex flex-col items-center gap-3 pointer-events-none"
-                >
-                  <motion.div
-                    initial={{ rotate: 0 }}
-                    animate={{ rotate: -360 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    className="relative w-12 h-12 md:w-14 md:h-14 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-md border border-white/10 shadow-[0_0_35px_rgba(155,12,12,0.35)]"
-                  >
-                    <RotateCcw className="w-6 h-6 md:w-7 md:h-7 text-white" />
-                    <span className="absolute bottom-1 text-[9px] md:text-[10px] font-black leading-none text-white">-{showSkipOverlay.count}s</span>
-                  </motion.div>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
-
-          <AnimatePresence>
-            {showSkipOverlay.visible && showSkipOverlay.direction === "forward" && (
-              <>
-                {/* Right Ripple Backdrop */}
-                <motion.div
-                  initial={{ scaleX: 0, opacity: 0 }}
-                  animate={{ scaleX: 1, opacity: 0.15 }}
-                  exit={{ scaleX: 0, opacity: 0 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="absolute right-0 top-0 bottom-0 w-1/2 bg-gradient-to-l from-white/30 to-transparent origin-right rounded-l-[100px] pointer-events-none z-30"
-                />
-                {/* Right Spinning Indicator */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.5, y: "-50%", x: "50%" }}
-                  animate={{ opacity: 1, scale: 1, y: "-50%", x: "50%" }}
-                  exit={{ opacity: 0, scale: 0.5, y: "-50%", x: "50%" }}
-                  className="absolute right-1/4 top-1/2 z-50 flex flex-col items-center gap-3 pointer-events-none"
-                >
-                  <motion.div
-                    initial={{ rotate: 0 }}
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    className="relative w-12 h-12 md:w-14 md:h-14 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-md border border-white/10 shadow-[0_0_35px_rgba(155,12,12,0.35)]"
-                  >
-                    <RotateCw className="w-6 h-6 md:w-7 md:h-7 text-white" />
-                    <span className="absolute bottom-1 text-[9px] md:text-[10px] font-black leading-none text-white">+{showSkipOverlay.count}s</span>
-                  </motion.div>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
+          {/* Double tap animations are now integrated directly into the center skip controls below */}
 
           <AnimatePresence>
             {(showControls || isBuffering || isExtracting || showMobileSettings) && hasInteracted && !isIframe && (
@@ -1359,7 +1293,7 @@ export function VideoPlayer({
                     return;
                   }
                   e.stopPropagation();
-                  
+
                   if (isMobileDevice) {
                     setShowControls(false);
                     setShowMobileSettings(false);
@@ -1443,45 +1377,7 @@ export function VideoPlayer({
                     </div>
                   </div>
 
-                  {/* Center Buttons: Skip back, Play/Pause, Skip forward — no backgrounds */}
-                  <div className="absolute inset-0 flex items-center justify-center gap-10 pointer-events-auto z-10">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        skipBackward();
-                        scheduleControlsHide();
-                      }}
-                      className="relative w-8 h-8 flex items-center justify-center text-white/80 hover:text-white active:scale-90 transition-all cursor-pointer"
-                      title="Rewind 10s"
-                    >
-                      <RotateCcw className="w-5 h-5" />
-                      <span className="absolute bottom-0 text-[8px] font-black leading-none text-white/80">10s</span>
-                    </button>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        togglePlay();
-                        scheduleControlsHide();
-                      }}
-                      className="text-white hover:text-white/80 active:scale-90 transition-all cursor-pointer"
-                    >
-                      {isPlaying ? <Pause className="w-7 h-7 fill-current" /> : <Play className="w-7 h-7 fill-current ml-0.5" />}
-                    </button>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        skipForward();
-                        scheduleControlsHide();
-                      }}
-                      className="relative w-8 h-8 flex items-center justify-center text-white/80 hover:text-white active:scale-90 transition-all cursor-pointer"
-                      title="Forward 10s"
-                    >
-                      <RotateCw className="w-5 h-5" />
-                      <span className="absolute bottom-0 text-[8px] font-black leading-none text-white/80">10s</span>
-                    </button>
-                  </div>
+                  {/* Center skip buttons removed here; they are managed as a separate overlay below */}
 
                   {/* Bottom Row: timestamp + seekbar */}
                   <div className="flex flex-col gap-3 w-full pointer-events-auto mt-auto z-20">
@@ -2005,6 +1901,104 @@ export function VideoPlayer({
                       </div>
                     </div>
                   </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Mobile Center Controls with Double-Tap Seek Animations */}
+          <AnimatePresence>
+            {isMobileDevice && (showControls || showSkipOverlay.visible || showMobileSettings) && hasInteracted && !isIframe && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
+              >
+                <div className="flex items-center justify-center gap-12 pointer-events-auto">
+                  {/* Skip Backward Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      skipBackward();
+                      scheduleControlsHide();
+                    }}
+                    onTouchEnd={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      skipBackward();
+                      scheduleControlsHide();
+                    }}
+                    className={`relative w-12 h-12 flex items-center justify-center text-white active:scale-95 transition-all cursor-pointer ${
+                      !showControls && showSkipOverlay.direction !== "backward" ? "opacity-30" : "opacity-100"
+                    }`}
+                    title="Rewind 10s"
+                  >
+                    <motion.div
+                      animate={showSkipOverlay.visible && showSkipOverlay.direction === "backward" ? { rotate: -360 } : { rotate: 0 }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                    >
+                      <RotateCcw className="w-7 h-7" />
+                    </motion.div>
+                    <span className="absolute -bottom-4 text-[10px] font-black text-white/80 whitespace-nowrap">
+                      {showSkipOverlay.visible && showSkipOverlay.direction === "backward"
+                        ? `-${showSkipOverlay.count}s`
+                        : "10s"
+                      }
+                    </span>
+                  </button>
+
+                  {/* Play/Pause Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      togglePlay();
+                      scheduleControlsHide();
+                    }}
+                    onTouchEnd={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      togglePlay();
+                      scheduleControlsHide();
+                    }}
+                    className={`text-white active:scale-90 transition-all cursor-pointer ${
+                      !showControls ? "opacity-30" : "opacity-100"
+                    }`}
+                  >
+                    {isPlaying ? <Pause className="w-10 h-10 fill-current" /> : <Play className="w-10 h-10 fill-current ml-0.5" />}
+                  </button>
+
+                  {/* Skip Forward Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      skipForward();
+                      scheduleControlsHide();
+                    }}
+                    onTouchEnd={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      skipForward();
+                      scheduleControlsHide();
+                    }}
+                    className={`relative w-12 h-12 flex items-center justify-center text-white active:scale-95 transition-all cursor-pointer ${
+                      !showControls && showSkipOverlay.direction !== "forward" ? "opacity-30" : "opacity-100"
+                    }`}
+                    title="Forward 10s"
+                  >
+                    <motion.div
+                      animate={showSkipOverlay.visible && showSkipOverlay.direction === "forward" ? { rotate: 360 } : { rotate: 0 }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                    >
+                      <RotateCw className="w-7 h-7" />
+                    </motion.div>
+                    <span className="absolute -bottom-4 text-[10px] font-black text-white/80 whitespace-nowrap">
+                      {showSkipOverlay.visible && showSkipOverlay.direction === "forward"
+                        ? `+${showSkipOverlay.count}s`
+                        : "10s"
+                      }
+                    </span>
+                  </button>
                 </div>
               </motion.div>
             )}
