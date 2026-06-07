@@ -495,13 +495,17 @@ export function VideoPlayer({
       clickTimeoutRef.current = setTimeout(() => {
         const isCenter = clickX >= width * 0.33 && clickX <= width * 0.67;
         if (window.innerWidth < 768) {
-          // Mobile: always toggle the control bar; play/pause only when center
-          setShowControls((prev) => {
-            const next = !prev;
-            if (next) scheduleControlsHide();
-            return next;
-          });
-          if (isCenter) togglePlay();
+          if (isCenter) {
+            togglePlay();
+            setShowControls(true);
+            scheduleControlsHide();
+          } else {
+            setShowControls((prev) => {
+              const next = !prev;
+              if (next) scheduleControlsHide();
+              return next;
+            });
+          }
         } else {
           // Desktop: play/pause only when center; sides just reveal controls
           if (isCenter) {
@@ -1016,10 +1020,12 @@ export function VideoPlayer({
         ref={containerRef}
         className={`relative w-full bg-black rounded-lg overflow-hidden group shadow-2xl transition-all z-10 ${isFullscreen ? 'rounded-none' : ''}`}
         onMouseMove={() => {
+          if (typeof window !== 'undefined' && window.innerWidth < 768) return;
           setShowControls(true);
           scheduleControlsHide();
         }}
         onMouseLeave={() => {
+          if (typeof window !== 'undefined' && window.innerWidth < 768) return;
           if (videoRef.current && !videoRef.current.paused && !isScrubbingRef.current) {
             setShowControls(false);
           }
