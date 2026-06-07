@@ -13,15 +13,24 @@ import type { IAnimeResult } from "@consumet/extensions";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [trendingData, popularData, ongoingDataJP] = await Promise.all([
-    getTrendingAnime(),
-    getPopularAnime(),
-    getOngoingAnime(1, 24, "JP")
-  ]);
+  let trendingAnime: any[] = [];
+  let popularAnime: any[] = [];
+  let ongoingAnimeJP: any[] = [];
 
-  const trendingAnime = trendingData?.results || [];
-  const popularAnime = popularData?.results || [];
-  const ongoingAnimeJP = ongoingDataJP?.results || [];
+  try {
+    const [trendingData, popularData, ongoingDataJP] = await Promise.all([
+      getTrendingAnime(),
+      getPopularAnime(),
+      getOngoingAnime(1, 24, "JP")
+    ]);
+
+    trendingAnime = trendingData?.results || [];
+    popularAnime = popularData?.results || [];
+    ongoingAnimeJP = ongoingDataJP?.results || [];
+  } catch (err) {
+    console.error('Home data fetch failed:', err);
+    // leave arrays empty to render a friendly fallback UI
+  }
 
   // Use the top 5 trending anime as carousel features
   const featuredAnime: HeroItem[] = trendingAnime.slice(0, 10).map((anime: HeroResult) => ({
