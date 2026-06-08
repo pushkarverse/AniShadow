@@ -1,22 +1,8 @@
 import { NextResponse } from "next/server";
+import { getTrendingAnime } from "@/lib/consumet";
 
 export async function GET() {
   const report: Record<string, any> = {};
-
-  // Test got-scraping import
-  try {
-    const gotScrapingModule = await import("got-scraping");
-    report.gotScraping = {
-      success: true,
-      hasGotScraping: typeof gotScrapingModule.gotScraping === "function"
-    };
-  } catch (e: any) {
-    report.gotScraping = {
-      success: false,
-      error: e.message || e.toString(),
-      stack: e.stack
-    };
-  }
 
   // Test cheerio import
   try {
@@ -56,6 +42,21 @@ export async function GET() {
     };
   } catch (e: any) {
     report.mongodb = {
+      success: false,
+      error: e.message || e.toString(),
+      stack: e.stack
+    };
+  }
+
+  // Test getTrendingAnime execution
+  try {
+    const animeData = await getTrendingAnime(1, 1);
+    report.getTrendingAnime = {
+      success: true,
+      resultsCount: animeData?.results?.length || 0
+    };
+  } catch (e: any) {
+    report.getTrendingAnime = {
       success: false,
       error: e.message || e.toString(),
       stack: e.stack
