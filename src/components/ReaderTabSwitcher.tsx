@@ -36,7 +36,7 @@ export function ReaderTabSwitcher({ activeTab }: ReaderTabSwitcherProps) {
             />
           )}
           <BookOpen className="w-4 h-4" />
-          <span>Manga</span>
+          <span>Manga & Manhwa</span>
         </button>
 
         {/* Novel Tab */}
@@ -54,7 +54,7 @@ export function ReaderTabSwitcher({ activeTab }: ReaderTabSwitcherProps) {
             />
           )}
           <BookText className="w-4 h-4" />
-          <span>Novels</span>
+          <span>Novels & Webnovels</span>
         </button>
       </div>
     </div>

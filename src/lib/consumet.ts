@@ -1413,12 +1413,12 @@ export async function getStreamingLinks(
   return { sources: [], allServers: [] };
 }
 
-export async function getTrendingManga(page: number = 1, perPage: number = 20): Promise<{ results: any[], hasNextPage: boolean }> {
+export async function getTrendingManga(page: number = 1, perPage: number = 20, countryOfOrigin?: string): Promise<{ results: any[], hasNextPage: boolean }> {
   const query = `
-  query ($page: Int, $perPage: Int) {
+  query ($page: Int, $perPage: Int, $countryOfOrigin: CountryCode) {
     Page (page: $page, perPage: $perPage) {
       pageInfo { hasNextPage }
-      media (type: MANGA, sort: TRENDING_DESC) {
+      media (type: MANGA, sort: TRENDING_DESC, countryOfOrigin: $countryOfOrigin, isAdult: false) {
         id
         title { romaji english native }
         coverImage { large }
@@ -1438,7 +1438,7 @@ export async function getTrendingManga(page: number = 1, perPage: number = 20): 
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ query, variables: { page, perPage } })
+      body: JSON.stringify({ query, variables: { page, perPage, countryOfOrigin } })
     });
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;
@@ -1463,12 +1463,12 @@ export async function getTrendingManga(page: number = 1, perPage: number = 20): 
   }
 }
 
-export async function getPopularManga(page: number = 1, perPage: number = 20): Promise<{ results: any[], hasNextPage: boolean }> {
+export async function getPopularManga(page: number = 1, perPage: number = 20, countryOfOrigin?: string): Promise<{ results: any[], hasNextPage: boolean }> {
   const query = `
-  query ($page: Int, $perPage: Int) {
+  query ($page: Int, $perPage: Int, $countryOfOrigin: CountryCode) {
     Page (page: $page, perPage: $perPage) {
       pageInfo { hasNextPage }
-      media (type: MANGA, sort: [POPULARITY_DESC]) {
+      media (type: MANGA, sort: [POPULARITY_DESC], countryOfOrigin: $countryOfOrigin, isAdult: false) {
         id
         title { romaji english native }
         coverImage { large }
@@ -1488,7 +1488,7 @@ export async function getPopularManga(page: number = 1, perPage: number = 20): P
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ query, variables: { page, perPage } })
+      body: JSON.stringify({ query, variables: { page, perPage, countryOfOrigin } })
     });
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;

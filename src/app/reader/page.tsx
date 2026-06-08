@@ -14,9 +14,9 @@ import { ReaderLibrarySection } from "@/components/ReaderLibrarySection";
 import { ReaderTabSwitcher } from "@/components/ReaderTabSwitcher";
 
 export const metadata: Metadata = {
-  title: "Reader – Manga & Web Novels",
+  title: "Reader – Manga, Manhwa & Novels",
   description:
-    "Explore thousands of manga and webnovel titles with our sleek, ad-free Reader.",
+    "Explore thousands of manga, manhwa, light novels, and web novels with our sleek, ad-free Reader.",
 };
 
 export default async function ReaderPage({
@@ -27,14 +27,22 @@ export default async function ReaderPage({
   const resolvedParams = await searchParams;
   const activeTab = resolvedParams.tab === "novel" ? "novel" : "manga";
 
-  // Fetch data in parallel based on active tab
-  const [trendingManga, popularManga, trendingNovels, popularNovels] =
-    await Promise.all([
-      activeTab === "manga" ? getTrendingManga(1, 20) : Promise.resolve({ results: [] }),
-      activeTab === "manga" ? getPopularManga(1, 20) : Promise.resolve({ results: [] }),
-      activeTab === "novel" ? getTrendingNovels(1, 20) : Promise.resolve({ results: [] }),
-      activeTab === "novel" ? getPopularNovels(1, 20) : Promise.resolve({ results: [] }),
-    ]);
+  // Fetch data based on active tab
+  const [
+    trendingManga,
+    popularManga,
+    trendingManhwa,
+    popularManhwa,
+    trendingNovels,
+    popularNovels,
+  ] = await Promise.all([
+    activeTab === "manga" ? getTrendingManga(1, 15, "JP") : Promise.resolve({ results: [] }),
+    activeTab === "manga" ? getPopularManga(1, 15, "JP") : Promise.resolve({ results: [] }),
+    activeTab === "manga" ? getTrendingManga(1, 15, "KR") : Promise.resolve({ results: [] }),
+    activeTab === "manga" ? getPopularManga(1, 15, "KR") : Promise.resolve({ results: [] }),
+    activeTab === "novel" ? getTrendingNovels(1, 20) : Promise.resolve({ results: [] }),
+    activeTab === "novel" ? getPopularNovels(1, 20) : Promise.resolve({ results: [] }),
+  ]);
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 manga-theme">
@@ -51,18 +59,23 @@ export default async function ReaderPage({
         {activeTab === "manga" && (
           <div className="flex flex-col lg:flex-row gap-8 overflow-x-hidden">
             <div className="flex-1 min-w-0">
-              {/* Trending Manga */}
+              {/* Manga Section */}
               <section className="mb-16">
                 <div className="flex items-center gap-4 mb-8">
                   <TrendingUp className="w-6 h-6 text-primary" />
-                  <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white uppercase">
-                    Trending Right Now
-                  </h2>
+                  <div>
+                    <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white uppercase">
+                      Trending Manga
+                    </h2>
+                    <p className="text-xs text-white/30 font-medium mt-0.5">
+                      Japanese comics & graphic novels
+                    </p>
+                  </div>
                 </div>
-                <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
+                <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-3 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
                   {trendingManga.results.map((manga: any, idx: number) => (
                     <MangaCard
-                      key={`trending-${manga.id || idx}`}
+                      key={`manga-trending-${manga.id || idx}`}
                       id={manga.id}
                       title={getAnimeTitle(manga.title)}
                       slug={manga.slug}
@@ -76,25 +89,31 @@ export default async function ReaderPage({
                 </div>
               </section>
 
-              {/* Popular Manga */}
+              {/* Manhwa Section */}
               <section className="mb-16">
                 <div className="flex items-center gap-4 mb-8">
-                  <Star className="w-6 h-6 text-primary" />
-                  <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white uppercase">
-                    All-Time Popular
-                  </h2>
+                  <TrendingUp className="w-6 h-6 text-primary" />
+                  <div>
+                    <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white uppercase">
+                      Trending Manhwa
+                    </h2>
+                    <p className="text-xs text-white/30 font-medium mt-0.5">
+                      Korean webtoons & comics
+                    </p>
+                  </div>
                 </div>
-                <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
-                  {popularManga.results.map((manga: any, idx: number) => (
+                <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-3 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
+                  {trendingManhwa.results.map((manhwa: any, idx: number) => (
                     <MangaCard
-                      key={`popular-${manga.id || idx}`}
-                      id={manga.id}
-                      title={getAnimeTitle(manga.title)}
-                      slug={manga.slug}
-                      image={manga.image}
-                      rating={manga.rating ? manga.rating / 10 : undefined}
-                      countryOfOrigin={manga.countryOfOrigin}
-                      chapters={manga.chapters}
+                      key={`manhwa-trending-${manhwa.id || idx}`}
+                      id={manhwa.id}
+                      title={getAnimeTitle(manhwa.title)}
+                      slug={manhwa.slug}
+                      image={manhwa.image}
+                      rating={manhwa.rating ? manhwa.rating / 10 : undefined}
+                      countryOfOrigin={manhwa.countryOfOrigin}
+                      chapters={manhwa.chapters}
+                      chapterNumber={manhwa.chapters}
                     />
                   ))}
                 </div>
@@ -110,7 +129,7 @@ export default async function ReaderPage({
         {/* ── NOVEL TAB ── */}
         {activeTab === "novel" && (
           <div className="flex flex-col gap-16">
-            {/* Trending Web Novels */}
+            {/* Trending Novels & Web novels */}
             <section>
               <div className="flex items-center gap-4 mb-8">
                 <TrendingUp className="w-6 h-6 text-primary" />
@@ -119,7 +138,7 @@ export default async function ReaderPage({
                     Trending Novels
                   </h2>
                   <p className="text-xs text-white/30 font-medium mt-0.5">
-                    Hot web novels from NovelFull
+                    Hot web novels & light novels from NovelFull
                   </p>
                 </div>
               </div>
@@ -146,7 +165,7 @@ export default async function ReaderPage({
               </div>
             </section>
 
-            {/* Completed Web Novels */}
+            {/* Completed Novels & Web novels */}
             <section>
               <div className="flex items-center gap-4 mb-8">
                 <Star className="w-6 h-6 text-primary" />
@@ -155,7 +174,7 @@ export default async function ReaderPage({
                     Completed Novels
                   </h2>
                   <p className="text-xs text-white/30 font-medium mt-0.5">
-                    All-time completed web novels
+                    All-time completed novels & webnovels
                   </p>
                 </div>
               </div>
