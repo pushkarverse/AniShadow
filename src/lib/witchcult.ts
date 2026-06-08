@@ -1,7 +1,22 @@
 import { load } from "cheerio";
-import { gotScraping } from "got-scraping";
 import { slugify } from "./anime-utils";
 import { REZERO_BANNER, REZERO_COVER, WITCHCULT_NOVEL_ID } from "./rezero";
+
+async function fetchHtml(url: string): Promise<string> {
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+    },
+    cache: "no-store"
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch ${url}: ${res.status}`);
+  }
+  return await res.text();
+}
+
 
 export { REZERO_BANNER, REZERO_COVER, WITCHCULT_NOVEL_ID } from "./rezero";
 
@@ -140,8 +155,8 @@ function arcIndexUrlScore(url: string) {
 }
 
 async function fetchTocPage() {
-  const res = await gotScraping({ url: WITCHCULT_TOC_URL, http2: false });
-  return load(res.body);
+  const html = await fetchHtml(WITCHCULT_TOC_URL);
+  return load(html);
 }
 
 function parseTocArcHeadings($: ReturnType<typeof load>) {
@@ -199,11 +214,11 @@ function parseTocChaptersForArc($: ReturnType<typeof load>, arcNumber: number) {
 }
 
 async function fetchWitchCultArcIndex() {
-  const [homeRes, $toc] = await Promise.all([
-    gotScraping({ url: WITCHCULT_BASE_URL, http2: false }),
+  const [homeHtml, $toc] = await Promise.all([
+    fetchHtml(WITCHCULT_BASE_URL),
     fetchTocPage()
   ]);
-  const $home = load(homeRes.body);
+  const $home = load(homeHtml);
   const urlByArc = new Map<number, string>();
   const titleByArc = new Map<number, string>();
 
@@ -313,8 +328,8 @@ async function fetchWitchCultArcs(): Promise<{ arcs: ReaderArc[]; chapters: Read
       if (arcInfo.useTocChapters && $toc) {
         chapterLinks = parseTocChaptersForArc($toc, arcInfo.arc);
       } else {
-        const res = await gotScraping({ url: arcInfo.url, http2: false });
-        const $ = load(res.body);
+        const html = await fetchHtml(arcInfo.url);
+        const $ = load(html);
 
         for (const linkEl of $("a").toArray()) {
           const text = $(linkEl).text().replace(/\s+/g, " ").trim();
@@ -356,8 +371,8 @@ async function fetchWitchCultArcs(): Promise<{ arcs: ReaderArc[]; chapters: Read
 
 async function fetchWitchCultChapterText(chapterUrlWithHash: string) {
   const chapterUrl = chapterUrlWithHash.split("#")[0];
-  const res = await gotScraping({ url: chapterUrl, http2: false });
-  const $ = load(res.body);
+  const html = await fetchHtml(chapterUrl);
+  const $ = load(html);
   const hostname = new URL(chapterUrl).hostname;
 
   const contentEl =

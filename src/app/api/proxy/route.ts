@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gotScraping } from "got-scraping";
-
+// Pure fetch implementation to avoid got-scraping serverless bundles and ADM-ZIP bugs on Vercel Node runtime.
 export const dynamic = "force-dynamic";
 
 function rewriteM3u8(content: string, originalUrl: string, referer?: string): string {
@@ -54,6 +53,26 @@ function rewriteM3u8(content: string, originalUrl: string, referer?: string): st
   return rewritten;
 }
 
+async function doFetch(url: string, method: string, headers: Record<string, string>) {
+  const res = await fetch(url, {
+    method,
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "X-Forwarded-For": "1.1.1.1",
+      ...headers
+    },
+    cache: "no-store"
+  });
+  const arrayBuf = await res.arrayBuffer();
+  return {
+    status: res.status,
+    body: Buffer.from(arrayBuf),
+    contentType: res.headers.get("Content-Type") || "",
+    contentRange: res.headers.get("Content-Range") || "",
+    contentLength: res.headers.get("Content-Length") || ""
+  };
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const url = searchParams.get("url");
@@ -72,12 +91,6 @@ export async function GET(req: NextRequest) {
       new URL(url).origin
     );
     
-    const headers: Record<string, string> = {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Referer": referer,
-      "X-Forwarded-For": "1.1.1.1",
-    };
-
     const range = req.headers.get("range");
     const gotHeaders: Record<string, string> = {};
     if (referer) gotHeaders["Referer"] = referer;
@@ -92,71 +105,27 @@ export async function GET(req: NextRequest) {
     let contentLength = "";
 
     try {
-      const gotResponse = await gotScraping({
-        url,
-        method: method as any,
-        headers: gotHeaders,
-        responseType: "buffer",
-        retry: { limit: 0 },
-        followRedirect: true
-      });
-      status = gotResponse.statusCode;
-      body = gotResponse.body;
-      contentType = gotResponse.headers["content-type"] || "";
-      contentRange = gotResponse.headers["content-range"] || "";
-      contentLength = gotResponse.headers["content-length"] || "";
+      const fetchRes = await doFetch(url, method, gotHeaders);
+      status = fetchRes.status;
+      body = fetchRes.body;
+      contentType = fetchRes.contentType;
+      contentRange = fetchRes.contentRange;
+      contentLength = fetchRes.contentLength;
     } catch (gotError: any) {
-      if (gotError.response) {
-        status = gotError.response.statusCode;
-        body = gotError.response.body;
-        contentType = gotError.response.headers["content-type"] || "";
-        contentRange = gotError.response.headers["content-range"] || "";
-        contentLength = gotError.response.headers["content-length"] || "";
-      } else {
-        // Fallback to fetch if gotScraping fails completely on socket connection errors
-        const fetchHeaders: Record<string, string> = {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Referer": referer,
-          "X-Forwarded-For": "1.1.1.1",
-        };
-        if (range) fetchHeaders["Range"] = range;
-        
-        const fetchResponse = await fetch(url, { method, headers: fetchHeaders });
-        const arrayBuf = await fetchResponse.arrayBuffer();
-        body = Buffer.from(arrayBuf);
-        status = fetchResponse.status;
-        contentType = fetchResponse.headers.get("Content-Type") || "";
-        contentRange = fetchResponse.headers.get("Content-Range") || "";
-        contentLength = fetchResponse.headers.get("Content-Length") || "";
-      }
+      return new NextResponse(null, { status: 500 });
     }
 
     if (status === 403 && gotHeaders["Referer"]) {
       // Retry without referer
       delete gotHeaders["Referer"];
       try {
-        const gotResponse = await gotScraping({
-          url,
-          method: method as any,
-          headers: gotHeaders,
-          responseType: "buffer",
-          retry: { limit: 0 },
-          followRedirect: true
-        });
-        status = gotResponse.statusCode;
-        body = gotResponse.body;
-        contentType = gotResponse.headers["content-type"] || "";
-        contentRange = gotResponse.headers["content-range"] || "";
-        contentLength = gotResponse.headers["content-length"] || "";
-      } catch (gotError: any) {
-        if (gotError.response) {
-          status = gotError.response.statusCode;
-          body = gotError.response.body;
-          contentType = gotError.response.headers["content-type"] || "";
-          contentRange = gotError.response.headers["content-range"] || "";
-          contentLength = gotError.response.headers["content-length"] || "";
-        }
-      }
+        const fetchRes = await doFetch(url, method, gotHeaders);
+        status = fetchRes.status;
+        body = fetchRes.body;
+        contentType = fetchRes.contentType;
+        contentRange = fetchRes.contentRange;
+        contentLength = fetchRes.contentLength;
+      } catch (gotError: any) {}
     }
 
     if (status !== 200 && status !== 206) {
@@ -197,3 +166,4 @@ export async function GET(req: NextRequest) {
     return new NextResponse(null, { status: 500 });
   }
 }
+
