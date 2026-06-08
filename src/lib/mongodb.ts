@@ -1,8 +1,6 @@
 // import { MongoClient, ServerApiVersion } from "mongodb";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('Invalid/Missing environment variable: "DATABASE_URL"');
-}
+// DATABASE_URL check moved to getDb to prevent module initialization crashes
 
 // const uri = process.env.DATABASE_URL;
 // const options = {
@@ -23,6 +21,9 @@ const clientPromise: Promise<unknown> = Promise.resolve(null);
 export default clientPromise;
 
 export async function getDb() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('Invalid/Missing environment variable: "DATABASE_URL"');
+  }
   const client = await clientPromise;
   if (!client) {
     throw new Error("Database is temporarily disabled per user request.");
