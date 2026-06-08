@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-  serverExternalPackages: ["@consumet/extensions", "got-scraping", "got"],
+  serverExternalPackages: ["@consumet/extensions", "got-scraping"],
   images: {
     remotePatterns: [
       {

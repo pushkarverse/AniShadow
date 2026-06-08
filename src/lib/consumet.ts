@@ -1,6 +1,84 @@
 import { ANIME, META, MANGA, IAnimeInfo } from "@consumet/extensions";
 import { load } from "cheerio";
-import { gotScraping } from "got-scraping";
+
+let cachedGotScraping: any = null;
+let gotScrapingLoadError = false;
+
+async function getGotScraping() {
+  if (gotScrapingLoadError) return null;
+  if (cachedGotScraping) return cachedGotScraping;
+  try {
+    const mod = await import("got-scraping");
+    cachedGotScraping = mod.gotScraping;
+    return cachedGotScraping;
+  } catch (err) {
+    console.error("Failed to load got-scraping dynamically. Falling back to native fetch.", err);
+    gotScrapingLoadError = true;
+    return null;
+  }
+}
+
+async function scrapeRequest(options: { url: string; method?: string; headers?: any; body?: any; json?: any; timeout?: { request?: number } | number; http2?: boolean }) {
+  const gotScraper = await getGotScraping();
+  if (gotScraper) {
+    try {
+      return await gotScraper(options);
+    } catch (err) {
+      console.warn("got-scraping execution failed, falling back to native fetch:", err);
+    }
+  }
+  
+  // Fallback using native fetch
+  const url = options.url;
+  const method = options.method || "GET";
+  const headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+    ...(options.headers || {})
+  };
+  
+  let body = options.body;
+  if (options.json) {
+    headers["Content-Type"] = "application/json";
+    body = JSON.stringify(options.json);
+  }
+
+  // Parse timeout
+  let timeoutMs = 8000;
+  if (options.timeout) {
+    if (typeof options.timeout === "number") {
+      timeoutMs = options.timeout;
+    } else if (typeof options.timeout === "object" && options.timeout.request) {
+      timeoutMs = options.timeout.request;
+    }
+  }
+
+  const controller = new AbortController();
+  const tId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      method,
+      headers,
+      body,
+      signal: controller.signal,
+      cache: "no-store"
+    });
+    clearTimeout(tId);
+    
+    const text = await res.text();
+    return {
+      body: text,
+      ok: res.ok,
+      status: res.status
+    };
+  } catch (err) {
+    clearTimeout(tId);
+    throw err;
+  }
+}
+
 
 
 let anilist: InstanceType<typeof META.Anilist> | null = null;
@@ -1681,7 +1759,7 @@ export async function getReaderDetails(id: string) {
     try {
       console.log(`[ReaderDetails] Fetching NovelBin details for: ${realId}`);
       const url = `https://novelbin.com/b/${realId}`;
-      const res = await gotScraping({ url, http2: false });
+      const res = await scrapeRequest({ url, http2: false });
       const $ = load(res.body);
 
       const title = $('.title').text().trim() || $('h3.title').text().trim() || realId.replace(/-/g, ' ');
@@ -1714,7 +1792,7 @@ export async function getReaderDetails(id: string) {
 
       if (novelId) {
         const ajaxUrl = `https://novelbin.com/ajax/chapter-option?novelId=${novelId}`;
-        const ajaxRes = await gotScraping({ url: ajaxUrl, http2: false });
+        const ajaxRes = await scrapeRequest({ url: ajaxUrl, http2: false });
         const ajax$ = load(ajaxRes.body);
 
         ajax$('option').each((idx, optionEl) => {
@@ -1761,7 +1839,7 @@ export async function getReaderDetails(id: string) {
     try {
       console.log(`[ReaderDetails] Fetching novel details for: ${realId}`);
       const url = `https://novelfull.com/${realId}.html`;
-      const res = await gotScraping({ url, http2: false });
+      const res = await scrapeRequest({ url, http2: false });
       const $ = load(res.body);
 
       const title = $('.desc h3.title').text().trim() || realId.replace(/-/g, ' ');
@@ -1803,7 +1881,7 @@ export async function getReaderDetails(id: string) {
 
       if (truyenId) {
         const ajaxUrl = `https://novelfull.com/ajax/chapter-option?novelId=${truyenId}`;
-        const ajaxRes = await gotScraping({ url: ajaxUrl, http2: false });
+        const ajaxRes = await scrapeRequest({ url: ajaxUrl, http2: false });
         const ajax$ = load(ajaxRes.body);
 
         ajax$('option').each((idx, optionEl) => {
@@ -2004,7 +2082,7 @@ export async function getReaderChapterPages(chapterId: string) {
     if (providerName === "novelfull") {
       console.log(`[NovelChapterText] Fetching chapter text for: ${realChapterId}`);
       const url = `https://novelfull.com/${realChapterId}`;
-      const res = await gotScraping({ url, http2: false });
+      const res = await scrapeRequest({ url, http2: false });
       const $ = load(res.body);
 
       const contentEl = $('#chapter-content');
@@ -2021,7 +2099,7 @@ export async function getReaderChapterPages(chapterId: string) {
     if (providerName === "novelbin") {
       console.log(`[NovelBinChapterText] Fetching chapter text for: ${realChapterId}`);
       const url = `https://novelbin.com/b/${realChapterId}`;
-      const res = await gotScraping({ url, http2: false });
+      const res = await scrapeRequest({ url, http2: false });
       const $ = load(res.body);
 
       const contentEl = $('#chapter-content');
@@ -2202,7 +2280,7 @@ async function getHQCover(title: string): Promise<string | null> {
 
   // 1. Try MangaDex
   try {
-    const res = await gotScraping({
+    const res = await scrapeRequest({
       url: `https://api.mangadex.org/manga?title=${encodeURIComponent(title)}&limit=3&includes[]=cover_art`,
       http2: false,
       timeout: { request: 2000 }
@@ -2242,7 +2320,7 @@ async function getHQCover(title: string): Promise<string | null> {
         }
       }
     `;
-    const response = await gotScraping({
+    const response = await scrapeRequest({
       url: 'https://graphql.anilist.co',
       method: 'POST',
       json: {
@@ -2274,7 +2352,7 @@ async function enrichNovelCovers(results: any[]) {
     try {
       const [hqCover, res] = await Promise.all([
         getHQCover(novel.title),
-        gotScraping({ url, http2: false, timeout: { request: 2500 } }).catch(() => null)
+        scrapeRequest({ url, http2: false, timeout: { request: 2500 } }).catch(() => null)
       ]);
 
       if (hqCover) {
@@ -2321,7 +2399,7 @@ async function enrichNovelCovers(results: any[]) {
 async function searchNovelBinScraper(query: string, page: number = 1) {
   const url = `https://novelbin.com/search?keyword=${encodeURIComponent(query)}&page=${page}`;
   try {
-    const res = await gotScraping({ url, http2: false });
+    const res = await scrapeRequest({ url, http2: false });
     const $ = load(res.body);
     const results: any[] = [];
 
@@ -2380,7 +2458,7 @@ export async function searchNovel(query: string, page: number = 1) {
 
   try {
     const [fullRes, binRes] = await Promise.all([
-      gotScraping({ url: fullUrl, http2: false }).then(res => {
+      scrapeRequest({ url: fullUrl, http2: false }).then(res => {
         const $ = load(res.body);
         const results: any[] = [];
         $('.list-truyen .row').each((idx, el) => {
@@ -2465,7 +2543,7 @@ export async function searchNovel(query: string, page: number = 1) {
 
 async function scrapeNovelList(url: string) {
   try {
-    const res = await gotScraping({ url, http2: false, timeout: { request: 5000 } });
+    const res = await scrapeRequest({ url, http2: false, timeout: { request: 5000 } });
     const $ = load(res.body);
     const results: any[] = [];
 
