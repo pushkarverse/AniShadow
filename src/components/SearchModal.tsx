@@ -182,56 +182,28 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
                 >
                   {/* Interactive Tabs Row */}
                   <div className="flex border-b border-white/10 select-none bg-black overflow-x-auto no-scrollbar">
-                    {!isMangaRoute && (
-                      <button
-                        type="button"
-                        onClick={() => setActiveType("ANIME")}
-                        className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
-                          activeType === "ANIME"
-                            ? "text-primary border-primary"
-                            : "text-white/40 border-transparent hover:text-white"
-                        }`}
-                      >
-                        Anime
-                      </button>
-                    )}
-                    {isMangaRoute && (
-                      <>
+                    {(!isMangaRoute ? ["ANIME"] : ["MANGA", "MANHWA", "NOVEL"]).map((tabType) => {
+                      const labelMap: Record<string, string> = {
+                        ANIME: "Anime",
+                        MANGA: "Manga",
+                        MANHWA: "Manhwa",
+                        NOVEL: "Novels"
+                      };
+                      return (
                         <button
                           type="button"
-                          onClick={() => setActiveType("MANGA")}
+                          key={`search-tab-${tabType}`}
+                          onClick={() => setActiveType(tabType as any)}
                           className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
-                            activeType === "MANGA"
+                            activeType === tabType
                               ? "text-primary border-primary"
                               : "text-white/40 border-transparent hover:text-white"
                           }`}
                         >
-                          Manga
+                          {labelMap[tabType]}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setActiveType("MANHWA")}
-                          className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
-                            activeType === "MANHWA"
-                              ? "text-primary border-primary"
-                              : "text-white/40 border-transparent hover:text-white"
-                          }`}
-                        >
-                          Manhwa
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setActiveType("NOVEL")}
-                          className={`py-3.5 px-6 font-bold uppercase tracking-wider text-xs border-b-2 transition-all cursor-pointer shrink-0 ${
-                            activeType === "NOVEL"
-                              ? "text-primary border-primary"
-                              : "text-white/40 border-transparent hover:text-white"
-                          }`}
-                        >
-                          Novels
-                        </button>
-                      </>
-                    )}
+                      );
+                    })}
                   </div>
 
               {/* Input Wrapper */}
