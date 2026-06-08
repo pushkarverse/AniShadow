@@ -1763,7 +1763,7 @@ export async function getReaderDetails(id: string) {
     const realId = id.replace("novelbin-", "");
     try {
       console.log(`[ReaderDetails] Fetching NovelBin details for: ${realId}`);
-      const url = `https://novelbin.com/b/${realId}`;
+      const url = `https://novelbin.net/b/${realId}`;
       const res = await scrapeRequest({ url, http2: false });
       const $ = load(res.body);
 
@@ -1796,14 +1796,14 @@ export async function getReaderDetails(id: string) {
       let chapters: any[] = [];
 
       if (novelId) {
-        const ajaxUrl = `https://novelbin.com/ajax/chapter-option?novelId=${novelId}`;
+        const ajaxUrl = `https://novelbin.net/ajax/chapter-option?novelId=${novelId}`;
         const ajaxRes = await scrapeRequest({ url: ajaxUrl, http2: false });
         const ajax$ = load(ajaxRes.body);
 
         ajax$('option').each((idx, optionEl) => {
           const href = ajax$(optionEl).attr('value') || "";
           const text = ajax$(optionEl).text().trim();
-          const cleanHref = href.replace('https://novelbin.com/b/', '').replace(/^\//, '');
+          const cleanHref = href.replace('https://novelbin.com/b/', '').replace('https://novelbin.net/b/', '').replace(/^\//, '');
 
           const match = text.match(/chapter\s+(\d+(\.\d+)?)/i);
           const chapNum = match ? match[1] : (idx + 1).toString();
@@ -1843,14 +1843,14 @@ export async function getReaderDetails(id: string) {
     const realId = id.replace("novelfull-", "");
     try {
       console.log(`[ReaderDetails] Fetching novel details for: ${realId}`);
-      const url = `https://novelfull.com/${realId}.html`;
+      const url = `https://novelfull.net/${realId}.html`;
       const res = await scrapeRequest({ url, http2: false });
       const $ = load(res.body);
 
       const title = $('.desc h3.title').text().trim() || realId.replace(/-/g, ' ');
       let image = $('.info-holder .book img').attr('src') || "";
       if (image && image.startsWith('/')) {
-        image = `https://novelfull.com${image}`;
+        image = `https://novelfull.net${image}`;
       }
 
       let author = '';
@@ -1885,7 +1885,7 @@ export async function getReaderDetails(id: string) {
       let chapters: any[] = [];
 
       if (truyenId) {
-        const ajaxUrl = `https://novelfull.com/ajax/chapter-option?novelId=${truyenId}`;
+        const ajaxUrl = `https://novelfull.net/ajax/chapter-option?novelId=${truyenId}`;
         const ajaxRes = await scrapeRequest({ url: ajaxUrl, http2: false });
         const ajax$ = load(ajaxRes.body);
 
@@ -2086,7 +2086,7 @@ export async function getReaderChapterPages(chapterId: string) {
 
     if (providerName === "novelfull") {
       console.log(`[NovelChapterText] Fetching chapter text for: ${realChapterId}`);
-      const url = `https://novelfull.com/${realChapterId}`;
+      const url = `https://novelfull.net/${realChapterId}`;
       const res = await scrapeRequest({ url, http2: false });
       const $ = load(res.body);
 
@@ -2103,7 +2103,7 @@ export async function getReaderChapterPages(chapterId: string) {
 
     if (providerName === "novelbin") {
       console.log(`[NovelBinChapterText] Fetching chapter text for: ${realChapterId}`);
-      const url = `https://novelbin.com/b/${realChapterId}`;
+      const url = `https://novelbin.net/b/${realChapterId}`;
       const res = await scrapeRequest({ url, http2: false });
       const $ = load(res.body);
 
@@ -2402,7 +2402,7 @@ async function enrichNovelCovers(results: any[]) {
 }
 
 async function searchNovelBinScraper(query: string, page: number = 1) {
-  const url = `https://novelbin.com/search?keyword=${encodeURIComponent(query)}&page=${page}`;
+  const url = `https://novelbin.net/search?keyword=${encodeURIComponent(query)}&page=${page}`;
   try {
     const res = await scrapeRequest({ url, http2: false });
     const $ = load(res.body);
@@ -2415,7 +2415,7 @@ async function searchNovelBinScraper(query: string, page: number = 1) {
       if (titleEl.length > 0) {
         const title = titleEl.text().trim();
         const href = titleEl.attr('href') || "";
-        const id = href.replace('https://novelbin.com/b/', '').replace(/^\//, '');
+        const id = href.replace('https://novelbin.com/b/', '').replace('https://novelbin.net/b/', '').replace(/^\//, '');
 
         let img = $(el).find('img').attr('src') || "";
 
@@ -2459,7 +2459,7 @@ async function searchNovelBinScraper(query: string, page: number = 1) {
 
 export async function searchNovel(query: string, page: number = 1) {
   const includeWitchCult = isWitchCultSearch(query);
-  const fullUrl = `https://novelfull.com/search?keyword=${encodeURIComponent(query)}&page=${page}`;
+  const fullUrl = `https://novelfull.net/search?keyword=${encodeURIComponent(query)}&page=${page}`;
 
   try {
     const [fullRes, binRes] = await Promise.all([
@@ -2475,7 +2475,7 @@ export async function searchNovel(query: string, page: number = 1) {
 
             let img = $(el).find('img.cover').attr('src') || $(el).find('img').attr('src') || "";
             if (img && img.startsWith('/')) {
-              img = `https://novelfull.com${img}`;
+              img = `https://novelfull.net${img}`;
             }
 
             const chapterText = $(el).find('.col-xs-2 a.chapter-text, .col-xs-2 a').text().trim();
@@ -2782,7 +2782,7 @@ export async function searchAniListNovels(search: string, page: number = 1) {
 }
 
 export async function getTrendingNovels(page: number = 1, perPage: number = 20): Promise<{ results: any[], hasNextPage: boolean }> {
-  const url = `https://novelfull.com/hot-novel?page=${page}`;
+  const url = `https://novelfull.net/hot-novel?page=${page}`;
   let data = await scrapeNovelList(url);
 
   if (!data || !data.results || data.results.length === 0) {
@@ -2800,7 +2800,7 @@ export async function getTrendingNovels(page: number = 1, perPage: number = 20):
 }
 
 export async function getPopularNovels(page: number = 1, perPage: number = 20): Promise<{ results: any[], hasNextPage: boolean }> {
-  const url = `https://novelfull.com/completed-novel?page=${page}`;
+  const url = `https://novelfull.net/completed-novel?page=${page}`;
   let data = await scrapeNovelList(url);
 
   if (!data || !data.results || data.results.length === 0) {

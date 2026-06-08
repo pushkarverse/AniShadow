@@ -2,9 +2,9 @@
 
 export const WITCHCULT_NOVEL_ID = "witchcult-re-zero-web-novel";
 
-/** Official Re:Zero promotional art via webnovel.com */
+/** Official Re:Zero promotional art via webnovel.com proxied to bypass hotlink protection */
 export const REZERO_COVER =
-  "https://book-pic.webnovel.com/bookcover/27200483305740105?imageMogr2/thumbnail/600x&imageId=1692046605695";
+  "/api/proxy?url=" + encodeURIComponent("https://book-pic.webnovel.com/bookcover/27200483305740105?imageMogr2/thumbnail/600x&imageId=1692046605695");
 export const REZERO_BANNER =
   "https://witchculttranslation.com/wp-content/uploads/2024/09/Banner_new.jpg?x20762";
 
