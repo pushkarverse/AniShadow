@@ -1,38 +1,11 @@
 import { ANIME, META, MANGA, IAnimeInfo } from "@consumet/extensions";
 import { load } from "cheerio";
 
-let cachedGotScraping: any = null;
-let gotScrapingLoadError = false;
-
-async function getGotScraping() {
-  if (gotScrapingLoadError) return null;
-  if (cachedGotScraping) return cachedGotScraping;
-  try {
-    const mod = await import("got-scraping");
-    cachedGotScraping = mod.gotScraping;
-    return cachedGotScraping;
-  } catch (err) {
-    console.error("Failed to load got-scraping dynamically. Falling back to native fetch.", err);
-    gotScrapingLoadError = true;
-    return null;
-  }
-}
-
 async function scrapeRequest(options: { url: string; method?: string; headers?: any; body?: any; json?: any; timeout?: { request?: number } | number; http2?: boolean }) {
-  const gotScraper = await getGotScraping();
-  if (gotScraper) {
-    try {
-      return await gotScraper(options);
-    } catch (err) {
-      console.warn("got-scraping execution failed, falling back to native fetch:", err);
-    }
-  }
-  
-  // Fallback using native fetch
   const url = options.url;
   const method = options.method || "GET";
   const headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.5",
     ...(options.headers || {})
