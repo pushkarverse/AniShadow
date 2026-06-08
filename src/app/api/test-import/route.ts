@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getTrendingAnime } from "@/lib/consumet";
+// Dynamically import getTrendingAnime inside the handler to prevent module-level import crashes from blocking the rest of the diagnostics.
+
 
 export async function GET() {
   const report: Record<string, any> = {};
@@ -50,6 +51,7 @@ export async function GET() {
 
   // Test getTrendingAnime execution
   try {
+    const { getTrendingAnime } = await import("@/lib/consumet");
     const animeData = await getTrendingAnime(1, 1);
     report.getTrendingAnime = {
       success: true,
