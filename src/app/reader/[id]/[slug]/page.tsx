@@ -37,7 +37,8 @@ export default async function MangaDetailPage({ params }: PageProps) {
   const relations = (manga.relations || []).filter((r: any) => r.type !== 'ANIME');
   const recommendations = manga.recommendations || [];
 
-  const isNovel = id.startsWith("novelfull-") || getMangaFormat(manga.countryOfOrigin, manga.format || manga.type) === 'Novel';
+  const formatText = getMangaFormat(manga.countryOfOrigin, manga.format || manga.type, id);
+  const isNovel = id.startsWith("novelfull-") || formatText === 'Light Novel' || formatText === 'Web Novel';
   const themeClass = isNovel ? "novel-theme" : "manga-theme";
 
   return (
@@ -47,15 +48,19 @@ export default async function MangaDetailPage({ params }: PageProps) {
       {/* Hero Header */}
       <div className="relative w-full min-h-[60vh] flex items-end">
         <div className="absolute inset-0">
-          <Image
-            src={manga.cover || manga.image || ""}
-            alt={title}
-            fill
-            sizes="100vw"
-            className="object-cover object-top opacity-20"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/90 to-transparent" />
+          {isNovel ? (
+            <div className="absolute inset-0 bg-gradient-to-br from-[#120826] via-[#080b11] to-[#0d1622] opacity-85" />
+          ) : (
+            <Image
+              src={manga.cover || manga.image || ""}
+              alt={title}
+              fill
+              sizes="100vw"
+              className="object-cover object-top opacity-20"
+              priority
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-transparent" />
         </div>
 
         <div className="container relative z-10 px-6 md:px-12 mx-auto pb-16 pt-32">
@@ -79,7 +84,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
                 </h1>
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-4 text-xs font-black uppercase tracking-[0.2em] text-primary/60">
-                    <span>{getMangaFormat(manga.countryOfOrigin, manga.format || manga.type)}</span>
+                    <span>{getMangaFormat(manga.countryOfOrigin, manga.format || manga.type, id)}</span>
                     <div className="w-1 h-1 bg-white/10 rounded-full" />
                     <span>{manga.status?.replace(/_/g, ' ') || "Unknown"}</span>
                     <div className="w-1 h-1 bg-white/10 rounded-full" />

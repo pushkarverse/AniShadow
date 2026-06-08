@@ -50,7 +50,11 @@ export const MangaCard = ({
   href,
   variant = "default"
 }: MangaCardProps) => {
-  const format = getMangaFormat(countryOfOrigin, type);
+  const format = getMangaFormat(countryOfOrigin, type, id);
+  const isNovelCard = type === "WEBNOVEL" || type === "NOVEL" || id?.startsWith("novelfull-");
+  const fallbackImage = isNovelCard
+    ? "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=500&auto=format&fit=crop"
+    : "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop";
   const [showInfo, setShowInfo] = useState(false);
   const [infoData, setInfoData] = useState<IAnimeInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -164,7 +168,7 @@ export const MangaCard = ({
       <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-[#121212] border border-white/5 shadow-2xl transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-primary/20 group-hover:-translate-y-1">
         <Link href={actionUrl} className="block w-full h-full relative">
           <Image
-            src={image || "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop"}
+            src={image || fallbackImage}
             alt={title}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"

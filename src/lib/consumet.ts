@@ -1,19 +1,6 @@
 import { ANIME, META, MANGA, IAnimeInfo } from "@consumet/extensions";
 import { load } from "cheerio";
-async function gotScraping(options: { url: string; http2?: boolean }) {
-  const response = await fetch(options.url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.5",
-    }
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${options.url}: ${response.status} ${response.statusText}`);
-  }
-  const body = await response.text();
-  return { body };
-}
+import { gotScraping } from "got-scraping";
 
 
 let anilist: InstanceType<typeof META.Anilist> | null = null;
@@ -2120,11 +2107,11 @@ export async function searchNovel(query: string, page: number = 1) {
           slug: slugify(title),
           image: img,
           cover: img,
-          type: "NOVEL",
+          type: "WEBNOVEL",
           rating: 85,
           episodeNumber: latestChapter,
           subEpisodes: latestChapter,
-          format: "NOVEL",
+          format: "WEBNOVEL",
           status: "RELEASING",
           year: new Date().getFullYear(),
           countryOfOrigin: "US"
@@ -2154,4 +2141,68 @@ export async function searchNovel(query: string, page: number = 1) {
     console.error("Error searching novel:", err);
     return { results: [], hasNextPage: false, total: 0 };
   }
+}
+
+async function scrapeNovelList(url: string) {
+  try {
+    const res = await gotScraping({ url, http2: false });
+    const $ = load(res.body);
+    const results: any[] = [];
+
+    $('.list-truyen .row').each((idx, el) => {
+      const titleEl = $(el).find('h3.truyen-title a');
+      if (titleEl.length > 0) {
+        const title = titleEl.text().trim();
+        const href = titleEl.attr('href') || "";
+        const id = href.replace(/^\//, '').replace(/\.html$/, '');
+
+        let img = $(el).find('img.cover').attr('src') || $(el).find('img').attr('src') || "";
+        if (img && img.startsWith('/')) {
+          img = `https://novelfull.com${img}`;
+        }
+
+        const chapterText = $(el).find('.col-xs-2 a.chapter-text, .col-xs-2 a').text().trim();
+        const chapMatch = chapterText.match(/chapter\s+(\d+(\.\d+)?)/i);
+        const latestChapter = chapMatch ? parseFloat(chapMatch[1]) : 0;
+
+        results.push({
+          id: `novelfull-${id}`,
+          title,
+          slug: slugify(title),
+          image: img,
+          cover: img,
+          type: "WEBNOVEL",
+          rating: 85,
+          episodeNumber: latestChapter,
+          subEpisodes: latestChapter,
+          format: "WEBNOVEL",
+          status: "RELEASING",
+          year: new Date().getFullYear(),
+          countryOfOrigin: "US",
+          chapters: latestChapter
+        });
+      }
+    });
+
+    let hasNextPage = false;
+    const nextLi = $('.pagination li.next');
+    if (nextLi.length > 0 && !nextLi.hasClass('disabled')) {
+      hasNextPage = true;
+    }
+
+    return { results, hasNextPage };
+  } catch (err) {
+    console.error("Error scraping novel list:", err);
+    return { results: [], hasNextPage: false };
+  }
+}
+
+export async function getTrendingNovels(page: number = 1, perPage: number = 20): Promise<{ results: any[], hasNextPage: boolean }> {
+  const url = `https://novelfull.com/hot-novel?page=${page}`;
+  return scrapeNovelList(url);
+}
+
+export async function getPopularNovels(page: number = 1, perPage: number = 20): Promise<{ results: any[], hasNextPage: boolean }> {
+  const url = `https://novelfull.com/completed-novel?page=${page}`;
+  return scrapeNovelList(url);
 }

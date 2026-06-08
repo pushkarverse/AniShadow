@@ -41,7 +41,7 @@ export function MangaTrendingSidebar({ initialData }: MangaTrendingSidebarProps)
               <div className="flex flex-col flex-1 min-w-0 pr-2">
                 <h4 className="text-xs font-bold text-white group-hover:text-primary transition-colors line-clamp-2 leading-snug mb-1">{title}</h4>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[8px] text-white/40 font-black bg-white/5 py-0.5 px-1.5 rounded uppercase tracking-wider">{getMangaFormat(manga.countryOfOrigin, manga.type)}</span>
+                  <span className="text-[8px] text-white/40 font-black bg-white/5 py-0.5 px-1.5 rounded uppercase tracking-wider">{getMangaFormat(manga.countryOfOrigin, manga.type, manga.id)}</span>
                   {manga.chapters && (
                     <span className="flex items-center text-[8px] text-primary font-black py-0.5 px-1.5 rounded uppercase tracking-wider bg-primary/10 border border-primary/20">
                       CH {manga.chapters}
