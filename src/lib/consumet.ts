@@ -1718,6 +1718,40 @@ async function fetchComicKAllChapters(hid: string): Promise<any[]> {
 }
 
 export async function getReaderDetails(id: string) {
+  if (id.startsWith("anilistnovel-")) {
+    const realId = id.replace("anilistnovel-", "");
+    try {
+      const anilistData = await fetchAnilistNovelDetails(realId);
+      if (!anilistData) return null;
+
+      // Find a matching NovelFull or NovelBin scraper representation by matching titles
+      const searchRes = await searchNovel(anilistData.title);
+      // Exclude WITCHCULT and the anilistnovel ID itself to avoid infinite recursion
+      const match = searchRes.results.find((r: any) =>
+        (r.id.startsWith("novelfull-") || r.id.startsWith("novelbin-")) && r.id !== id
+      );
+
+      let chapters: any[] = [];
+      let mappedId = id;
+      if (match) {
+        mappedId = match.id;
+        const matchedDetails = await getReaderDetails(match.id);
+        if (matchedDetails && matchedDetails.chapters) {
+          chapters = matchedDetails.chapters;
+        }
+      }
+
+      return {
+        ...anilistData,
+        id: mappedId, // Swap ID so chapter routes like /reader/read/... use provider chapters
+        chapters
+      };
+    } catch (err) {
+      console.error("Error fetching/mapping AniList novel details:", err);
+      return null;
+    }
+  }
+
   if (id === WITCHCULT_NOVEL_ID) {
     try {
       return await getWitchCultReaderDetails();
@@ -2492,7 +2526,7 @@ export async function searchNovel(query: string, page: number = 1) {
     const existingTitles = new Set(enrichedFull.map(r => r.title.toLowerCase()));
     const uniqueBin = binRes.results.filter(r => !existingTitles.has(r.title.toLowerCase()));
 
-    const combinedResults = includeWitchCult
+    let combinedResults = includeWitchCult
       ? [
         getWitchCultNovelCard(),
         ...enrichedFull.filter((novel) => novel.id !== WITCHCULT_NOVEL_ID),
@@ -2500,7 +2534,18 @@ export async function searchNovel(query: string, page: number = 1) {
       ]
       : [...enrichedFull, ...uniqueBin];
 
-    const hasNextPage = fullRes.hasNextPage || binRes.hasNextPage;
+    let hasNextPage = fullRes.hasNextPage || binRes.hasNextPage;
+
+    // Fallback to AniList search if empty (typically due to scraping block on Vercel deployment)
+    const isSearchEmpty = combinedResults.filter(r => r.id !== WITCHCULT_NOVEL_ID).length === 0;
+    if (isSearchEmpty) {
+      console.log(`[searchNovel] Scrapers returned empty, falling back to AniList search for: ${query}`);
+      const anilistSearch = await searchAniListNovels(query, page);
+      combinedResults = includeWitchCult
+        ? [getWitchCultNovelCard(), ...anilistSearch.results]
+        : anilistSearch.results;
+      hasNextPage = anilistSearch.hasNextPage;
+    }
 
     return {
       results: combinedResults,
@@ -2570,22 +2615,211 @@ async function scrapeNovelList(url: string) {
   }
 }
 
+export async function fetchAniListNovels(page: number, perPage: number, sort: string[]) {
+  const query = `
+    query ($page: Int, $perPage: Int, $sort: [MediaSort]) {
+      Page (page: $page, perPage: $perPage) {
+        pageInfo { hasNextPage }
+        media (type: MANGA, format: NOVEL, sort: $sort, isAdult: false) {
+          id
+          title { romaji english native }
+          coverImage { large }
+          bannerImage
+          description
+          genres
+          status
+          chapters
+          averageScore
+        }
+      }
+    }
+  `;
+
+  try {
+    const res = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ query, variables: { page, perPage, sort } }),
+      cache: 'no-store'
+    });
+    if (!res.ok) throw new Error(`AniList returned status ${res.status}`);
+    const data = await res.json();
+    const media = data?.data?.Page?.media || [];
+    const hasNextPage = data?.data?.Page?.pageInfo?.hasNextPage || false;
+
+    const results = media.map((m: any) => {
+      const title = m.title.english || m.title.romaji || m.title.native || "Unknown Title";
+      return {
+        id: `anilistnovel-${m.id}`,
+        title,
+        slug: slugify(title),
+        image: m.coverImage?.large || "",
+        cover: m.bannerImage || m.coverImage?.large || "",
+        type: "NOVEL",
+        rating: m.averageScore || 85,
+        episodeNumber: m.chapters || 0,
+        subEpisodes: m.chapters || 0,
+        format: "NOVEL",
+        status: m.status || "RELEASING",
+        countryOfOrigin: "JP",
+        chapters: m.chapters || 0
+      };
+    });
+
+    return { results, hasNextPage };
+  } catch (err) {
+    console.error("Error fetching AniList novels:", err);
+    return { results: [], hasNextPage: false };
+  }
+}
+
+export async function fetchAnilistNovelDetails(id: string) {
+  const query = `
+    query ($id: Int) {
+      Media (id: $id, type: MANGA) {
+        id
+        title { romaji english native }
+        coverImage { large }
+        bannerImage
+        description
+        genres
+        status
+        chapters
+        averageScore
+        startDate { year }
+      }
+    }
+  `;
+
+  try {
+    const res = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ query, variables: { id: parseInt(id) } }),
+      cache: 'no-store'
+    });
+    if (!res.ok) throw new Error(`AniList returned status ${res.status}`);
+    const data = await res.json();
+    const media = data?.data?.Media;
+    if (!media) return null;
+
+    const title = media.title.english || media.title.romaji || media.title.native || "Unknown Title";
+    return {
+      id: `anilistnovel-${media.id}`,
+      title,
+      slug: slugify(title),
+      description: media.description || "No description available.",
+      image: media.coverImage?.large || "",
+      cover: media.bannerImage || media.coverImage?.large || "",
+      status: media.status || "RELEASING",
+      releaseDate: media.startDate?.year?.toString() || "Unknown",
+      genres: media.genres || [],
+      rating: media.averageScore || 85,
+      type: "NOVEL",
+      format: "NOVEL",
+      countryOfOrigin: "JP",
+      chapters: []
+    };
+  } catch (err) {
+    console.error("Error fetching AniList novel details:", err);
+    return null;
+  }
+}
+
+export async function searchAniListNovels(search: string, page: number = 1) {
+  const query = `
+    query ($search: String, $page: Int) {
+      Page (page: $page, perPage: 20) {
+        pageInfo { hasNextPage }
+        media (search: $search, type: MANGA, format: NOVEL, isAdult: false) {
+          id
+          title { romaji english native }
+          coverImage { large }
+          bannerImage
+          description
+          genres
+          status
+          chapters
+          averageScore
+        }
+      }
+    }
+  `;
+
+  try {
+    const res = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ query, variables: { search, page } }),
+      cache: 'no-store'
+    });
+    if (!res.ok) throw new Error(`AniList returned status ${res.status}`);
+    const data = await res.json();
+    const media = data?.data?.Page?.media || [];
+    const hasNextPage = data?.data?.Page?.pageInfo?.hasNextPage || false;
+
+    const results = media.map((m: any) => {
+      const title = m.title.english || m.title.romaji || m.title.native || "Unknown Title";
+      return {
+        id: `anilistnovel-${m.id}`,
+        title,
+        slug: slugify(title),
+        image: m.coverImage?.large || "",
+        cover: m.bannerImage || m.coverImage?.large || "",
+        type: "NOVEL",
+        rating: m.averageScore || 85,
+        episodeNumber: m.chapters || 0,
+        subEpisodes: m.chapters || 0,
+        format: "NOVEL",
+        status: m.status || "RELEASING",
+        countryOfOrigin: "JP",
+        chapters: m.chapters || 0
+      };
+    });
+
+    return { results, hasNextPage };
+  } catch (err) {
+    console.error("Error searching AniList novels:", err);
+    return { results: [], hasNextPage: false };
+  }
+}
+
 export async function getTrendingNovels(page: number = 1, perPage: number = 20): Promise<{ results: any[], hasNextPage: boolean }> {
   const url = `https://novelfull.com/hot-novel?page=${page}`;
-  const data = await scrapeNovelList(url);
+  let data = await scrapeNovelList(url);
+  
+  // Fallback to AniList if NovelFull is blocked (common on Vercel deployment)
+  if (!data || !data.results || data.results.length === 0) {
+    console.log("[getTrendingNovels] NovelFull scraping failed, falling back to AniList...");
+    data = await fetchAniListNovels(page, perPage, ["TRENDING_DESC", "POPULARITY_DESC"]);
+  }
+
   if (page !== 1) return data;
+  
+  // Filter out duplicate Re:Zero card if it got loaded from AniList to avoid key collisions
+  const resultsWithoutReZero = data.results.filter(n => n.id !== WITCHCULT_NOVEL_ID && !n.title.toLowerCase().includes("re:zero"));
   return {
     ...data,
-    results: [getWitchCultNovelCard(), ...data.results].slice(0, perPage)
+    results: [getWitchCultNovelCard(), ...resultsWithoutReZero].slice(0, perPage)
   };
 }
 
 export async function getPopularNovels(page: number = 1, perPage: number = 20): Promise<{ results: any[], hasNextPage: boolean }> {
   const url = `https://novelfull.com/completed-novel?page=${page}`;
-  const data = await scrapeNovelList(url);
+  let data = await scrapeNovelList(url);
+
+  // Fallback to AniList if NovelFull is blocked (common on Vercel deployment)
+  if (!data || !data.results || data.results.length === 0) {
+    console.log("[getPopularNovels] NovelFull scraping failed, falling back to AniList...");
+    data = await fetchAniListNovels(page, perPage, ["POPULARITY_DESC"]);
+  }
+
   if (page !== 1) return data;
+  
+  // Filter out duplicate Re:Zero card if it got loaded from AniList to avoid key collisions
+  const resultsWithoutReZero = data.results.filter(n => n.id !== WITCHCULT_NOVEL_ID && !n.title.toLowerCase().includes("re:zero"));
   return {
     ...data,
-    results: [getWitchCultNovelCard(), ...data.results].slice(0, perPage)
+    results: [getWitchCultNovelCard(), ...resultsWithoutReZero].slice(0, perPage)
   };
 }
