@@ -28,9 +28,9 @@ export function BottomTabBar({ onMenuToggle, isMangaRoute }: BottomTabBarProps) 
     },
     { 
       label: "Search", 
-      href: isMangaRoute ? "/anime/search?type=MANGA" : "/anime/search", 
+      href: isMangaRoute ? "/reader/search?type=MANGA" : "/anime/search", 
       icon: Search, 
-      active: pathname?.startsWith("/anime/search") 
+      active: pathname?.startsWith("/anime/search") || pathname?.startsWith("/reader/search")
     },
     { 
       label: "Library", 

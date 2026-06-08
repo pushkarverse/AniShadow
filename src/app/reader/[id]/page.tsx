@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getMangaDetails } from "@/lib/consumet";
+import { getReaderDetails } from "@/lib/consumet";
 import { slugify, getAnimeTitle } from "@/lib/anime-utils";
 
 interface Props {
@@ -11,7 +11,7 @@ export default async function MangaIdRedirectPage({ params }: Props) {
   let targetUrl: string | null = null;
   
   try {
-    const manga = await getMangaDetails(id);
+    const manga = await getReaderDetails(id);
     if (manga) {
       const title = getAnimeTitle((manga as any).title);
       const slug = slugify(title);

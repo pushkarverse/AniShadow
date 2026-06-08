@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, X, ChevronLeft, ChevronRight, Library, Trash2 } from "lucide-react";
+import { getReaderChapterPath } from "@/lib/rezero";
 
 interface WatchlistItem {
   mangaId: string;
@@ -132,7 +133,7 @@ export function ReaderLibrarySection() {
           {library.map((item, index) => {
             const progress = progressMap[item.mangaId];
             const readUrl = progress
-              ? `/reader/read/${item.mangaId}/${item.slug}/${progress.chapterId}`
+              ? getReaderChapterPath(item.mangaId, item.slug, progress.chapterId)
               : `/reader/${item.mangaId}/${item.slug}`;
 
             return (

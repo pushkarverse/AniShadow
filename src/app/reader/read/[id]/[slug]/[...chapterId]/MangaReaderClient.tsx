@@ -606,7 +606,24 @@ export function MangaReaderClient({
               </div>
 
               {/* Central Chapter Switcher Dropdown Pill */}
-              <div className="flex justify-center">
+              <div className="flex items-center justify-center gap-1.5 shrink-0">
+                {prevChapterId ? (
+                  <Link 
+                    href={`/reader/read/${mangaId}/${slug}/${prevChapterId}`}
+                    className="p-2 hover:bg-white/5 rounded-full transition-all shrink-0 opacity-70 hover:opacity-100 active:scale-90"
+                    title="Previous Chapter"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Link>
+                ) : (
+                  <button 
+                    disabled 
+                    className="p-2 opacity-15 rounded-full cursor-not-allowed shrink-0"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                )}
+
                 <button 
                   onClick={() => { setChaptersOpen(!chaptersOpen); setSettingsOpen(false); }}
                   className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full text-[11px] font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 shadow-inner"
@@ -617,6 +634,23 @@ export function MangaReaderClient({
                   </span>
                   <ChevronDown className="w-3.5 h-3.5 opacity-60" />
                 </button>
+
+                {nextChapterId ? (
+                  <Link 
+                    href={`/reader/read/${mangaId}/${slug}/${nextChapterId}`}
+                    className="p-2 hover:bg-white/5 rounded-full transition-all shrink-0 opacity-70 hover:opacity-100 active:scale-90"
+                    title="Next Chapter"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                ) : (
+                  <button 
+                    disabled 
+                    className="p-2 opacity-15 rounded-full cursor-not-allowed shrink-0"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                )}
               </div>
 
               {/* Utility Panel Buttons */}

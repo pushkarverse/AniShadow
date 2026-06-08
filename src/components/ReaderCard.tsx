@@ -10,8 +10,9 @@ import { createPortal } from "react-dom";
 import { IAnimeInfo } from "@consumet/extensions";
 import { RoomModal } from "./RoomModal";
 
-import { getMangaDetails } from "@/lib/consumet";
+import { getReaderDetails } from "@/lib/consumet";
 import { getMangaFormat, slugify } from "@/lib/anime-utils";
+import { REZERO_COVER, WITCHCULT_NOVEL_ID } from "@/lib/rezero";
 
 interface ReaderCardProps {
   id: string;
@@ -51,10 +52,12 @@ export const ReaderCard = ({
   variant = "default"
 }: ReaderCardProps) => {
   const format = getMangaFormat(countryOfOrigin, type, id);
-  const isNovelCard = type === "WEBNOVEL" || type === "NOVEL" || id?.startsWith("novelfull-");
-  const fallbackImage = isNovelCard
-    ? "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=500&auto=format&fit=crop"
-    : "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop";
+  const isNovelCard = type === "WEBNOVEL" || type === "NOVEL" || id?.startsWith("novelfull-") || id?.startsWith("novelbin-") || id?.startsWith("witchcult-");
+  const fallbackImage = id === WITCHCULT_NOVEL_ID
+    ? REZERO_COVER
+    : isNovelCard
+      ? "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=500&auto=format&fit=crop"
+      : "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop";
   const [showInfo, setShowInfo] = useState(false);
   const [infoData, setInfoData] = useState<IAnimeInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -123,7 +126,7 @@ export const ReaderCard = ({
   const fetchInfo = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/anime/${id}/info`); // Reuse anime info API for now as it handles both
+      const res = await fetch(`/api/anime/${id}/info?type=${type}`);
       const data = await res.json();
       setInfoData(data);
     } catch (e) {
@@ -283,7 +286,7 @@ export const ReaderCard = ({
 
         {/* Quick Info Popover */}
         {isMounted && createPortal(
-          <AnimatePresence>
+          <AnimatePresence key={`reader-info-presence-${id}`}>
             {showInfo && (
               <>
                 {/* Backdrop Overlay */}
@@ -345,7 +348,7 @@ export const ReaderCard = ({
                     <div className="flex flex-col gap-1">
                       <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
                          <div className="w-1 h-3 bg-primary rounded-full" />
-                         Manga Preview
+                         Reader Preview
                       </h4>
                     </div>
                     <button onClick={() => setShowInfo(false)} className="p-1 rounded-full hover:bg-white/5 text-white/30 hover:text-white transition-all">
@@ -489,7 +492,7 @@ export const ReaderCard = ({
           document.body
         )}
         {isMounted && createPortal(
-          <AnimatePresence>
+          <AnimatePresence key={`reader-status-presence-${id}`}>
             {showStatusMenu && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: -10 }}

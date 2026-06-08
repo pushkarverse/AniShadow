@@ -1,4 +1,10 @@
-import { getMangaChapterPages, getMangaDetails } from "@/lib/consumet";
+import { getReaderChapterPages, getReaderDetails } from "@/lib/consumet";
+import {
+  decodeReaderChapterPathId,
+  findReaderChapter,
+  getChapterDisplayTitle,
+  readerChapterIdsMatch
+} from "@/lib/rezero";
 import { MangaReaderClient } from "./MangaReaderClient";
 import { NovelReaderClient } from "./NovelReaderClient";
 import Link from "next/link";
@@ -11,9 +17,9 @@ interface PageProps {
 
 export default async function MangaReaderPage({ params }: PageProps) {
   const { id, slug, chapterId: chapterIdArray } = await params;
-  const chapterId = decodeURIComponent(chapterIdArray.join("/"));
+  const chapterId = decodeReaderChapterPathId(chapterIdArray);
   
-  const pages = await getMangaChapterPages(chapterId);
+  const pages = await getReaderChapterPages(chapterId);
 
   if (!pages || pages.length === 0) {
     return (
@@ -29,7 +35,7 @@ export default async function MangaReaderPage({ params }: PageProps) {
   }
 
   // Fetch manga details to get all chapters for next/prev navigation
-  const manga = await getMangaDetails(id);
+  const manga = await getReaderDetails(id);
   const chapters = manga?.chapters || [];
   
   // Sort chapters ascending by chapter number so index math is correct
@@ -39,16 +45,19 @@ export default async function MangaReaderPage({ params }: PageProps) {
     return numA - numB;
   });
 
-  const currentIndex = sortedChapters.findIndex((c: any) => c.id === chapterId);
+  const currentIndex = sortedChapters.findIndex((c: any) => readerChapterIdsMatch(c.id, chapterId));
   const nextChapter = currentIndex !== -1 && currentIndex < sortedChapters.length - 1 ? sortedChapters[currentIndex + 1] : null;
   const prevChapter = currentIndex !== -1 && currentIndex > 0 ? sortedChapters[currentIndex - 1] : null;
 
-  const currentChapterInfo = sortedChapters.find((c: any) => c.id === chapterId);
-  const chapterTitle = currentChapterInfo 
-    ? (currentChapterInfo.title ? `Chapter ${currentChapterInfo.number}: ${currentChapterInfo.title}` : `Chapter ${currentChapterInfo.number}`)
-    : `Chapter ${chapterId.split(":").pop()}`;
+  const currentChapterInfo = findReaderChapter(sortedChapters, chapterId);
+  const chapterTitle = getChapterDisplayTitle(
+    chapterId,
+    currentChapterInfo,
+    currentChapterInfo?.number
+  );
 
-  const isNovel = chapterId.startsWith("novelfull:") || (pages[0] && "text" in pages[0]);
+  const isNovel = chapterId.startsWith("novelfull:") || chapterId.startsWith("novelbin:") || chapterId.startsWith("witchcult:") || (pages[0] && "text" in pages[0]);
+  const arcs = (manga as any)?.arcs || [];
 
   if (isNovel) {
     const contentHtml = (pages[0] as any).text || "";
@@ -63,6 +72,7 @@ export default async function MangaReaderPage({ params }: PageProps) {
         chapterTitle={chapterTitle}
         chapterNumber={currentChapterInfo?.number || currentChapterInfo?.chapterNumber || ""}
         chapters={sortedChapters}
+        arcs={arcs}
       />
     );
   }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
+import { getReaderChapterPath, readerChapterIdsMatch } from "@/lib/rezero";
 
 interface Chapter {
   id: string;
@@ -105,7 +106,7 @@ export function ReaderProgressButton({
   let buttonText = `Read Chapter ${targetChapter.number || "1"}`;
 
   if (progress) {
-    const currentIndex = chapters.findIndex((c) => c.id === progress.chapterId);
+    const currentIndex = chapters.findIndex((c) => readerChapterIdsMatch(c.id, progress.chapterId));
     const isCompleted = !!progress.completed;
     
     if (currentIndex !== -1) {
@@ -149,7 +150,7 @@ export function ReaderProgressButton({
 
   return (
     <Link 
-      href={`/reader/read/${mangaId}/${slug}/${targetChapter.id}`}
+      href={getReaderChapterPath(mangaId, slug, targetChapter.id)}
       className="flex items-center gap-3 px-8 py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-primary/20 hover:scale-105 transition-all"
     >
       <BookOpen className="w-5 h-5" />

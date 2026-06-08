@@ -212,7 +212,7 @@ export function AnimeCard({
 
         {/* Quick Info Popover */}
         {isMounted && createPortal(
-          <AnimatePresence>
+          <AnimatePresence key={`anime-info-presence-${id}`}>
             {showInfo && (
               <>
                 {/* Backdrop Overlay */}

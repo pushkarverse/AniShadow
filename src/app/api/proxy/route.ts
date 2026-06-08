@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { gotScraping } from "got-scraping";
 
 export const dynamic = "force-dynamic";
 
@@ -78,21 +79,91 @@ export async function GET(req: NextRequest) {
     };
 
     const range = req.headers.get("range");
-    if (range) headers["Range"] = range;
+    const gotHeaders: Record<string, string> = {};
+    if (referer) gotHeaders["Referer"] = referer;
+    if (range) gotHeaders["Range"] = range;
 
     const method = req.method;
-    let response = await fetch(url, { method, headers });
-    if (response.status === 403) {
-        delete headers["Referer"];
-        response = await fetch(url, { method, headers });
+
+    let body: Buffer;
+    let status = 200;
+    let contentType = "";
+    let contentRange = "";
+    let contentLength = "";
+
+    try {
+      const gotResponse = await gotScraping({
+        url,
+        method: method as any,
+        headers: gotHeaders,
+        responseType: "buffer",
+        retry: { limit: 0 },
+        followRedirect: true
+      });
+      status = gotResponse.statusCode;
+      body = gotResponse.body;
+      contentType = gotResponse.headers["content-type"] || "";
+      contentRange = gotResponse.headers["content-range"] || "";
+      contentLength = gotResponse.headers["content-length"] || "";
+    } catch (gotError: any) {
+      if (gotError.response) {
+        status = gotError.response.statusCode;
+        body = gotError.response.body;
+        contentType = gotError.response.headers["content-type"] || "";
+        contentRange = gotError.response.headers["content-range"] || "";
+        contentLength = gotError.response.headers["content-length"] || "";
+      } else {
+        // Fallback to fetch if gotScraping fails completely on socket connection errors
+        const fetchHeaders: Record<string, string> = {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Referer": referer,
+          "X-Forwarded-For": "1.1.1.1",
+        };
+        if (range) fetchHeaders["Range"] = range;
+        
+        const fetchResponse = await fetch(url, { method, headers: fetchHeaders });
+        const arrayBuf = await fetchResponse.arrayBuffer();
+        body = Buffer.from(arrayBuf);
+        status = fetchResponse.status;
+        contentType = fetchResponse.headers.get("Content-Type") || "";
+        contentRange = fetchResponse.headers.get("Content-Range") || "";
+        contentLength = fetchResponse.headers.get("Content-Length") || "";
+      }
     }
 
-    if (!response.ok && response.status !== 206) {
-        return new NextResponse(null, { status: response.status });
+    if (status === 403 && gotHeaders["Referer"]) {
+      // Retry without referer
+      delete gotHeaders["Referer"];
+      try {
+        const gotResponse = await gotScraping({
+          url,
+          method: method as any,
+          headers: gotHeaders,
+          responseType: "buffer",
+          retry: { limit: 0 },
+          followRedirect: true
+        });
+        status = gotResponse.statusCode;
+        body = gotResponse.body;
+        contentType = gotResponse.headers["content-type"] || "";
+        contentRange = gotResponse.headers["content-range"] || "";
+        contentLength = gotResponse.headers["content-length"] || "";
+      } catch (gotError: any) {
+        if (gotError.response) {
+          status = gotError.response.statusCode;
+          body = gotError.response.body;
+          contentType = gotError.response.headers["content-type"] || "";
+          contentRange = gotError.response.headers["content-range"] || "";
+          contentLength = gotError.response.headers["content-length"] || "";
+        }
+      }
     }
 
-    const contentType = (response.headers.get("Content-Type") || "").toLowerCase();
-    const isM3u8 = contentType.includes("mpegurl") || contentType.includes("mpeg-url") || url.toLowerCase().includes(".m3u8");
+    if (status !== 200 && status !== 206) {
+      return new NextResponse(null, { status });
+    }
+
+    const isM3u8 = (contentType || "").includes("mpegurl") || (contentType || "").includes("mpeg-url") || url.toLowerCase().includes(".m3u8");
 
     const responseHeaders: Record<string, string> = {
       "Access-Control-Allow-Origin": "*",
@@ -103,11 +174,11 @@ export async function GET(req: NextRequest) {
       "Content-Type": contentType || "application/octet-stream"
     };
 
-    if (response.headers.get("Content-Range")) responseHeaders["Content-Range"] = response.headers.get("Content-Range")!;
-    if (response.headers.get("Content-Length")) responseHeaders["Content-Length"] = response.headers.get("Content-Length")!;
+    if (contentRange) responseHeaders["Content-Range"] = contentRange;
+    if (contentLength) responseHeaders["Content-Length"] = contentLength;
 
     if (isM3u8) {
-      const text = await response.text();
+      const text = body.toString("utf-8");
       if (text.includes("#EXTM3U")) {
           const rewritten = rewriteM3u8(text, url, referer);
           responseHeaders["Content-Type"] = "application/vnd.apple.mpegurl";
@@ -118,8 +189,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return new NextResponse(response.body, {
-      status: response.status === 206 ? 206 : 200,
+    return new NextResponse(new Uint8Array(body), {
+      status: status === 206 ? 206 : 200,
       headers: responseHeaders,
     });
   } catch (e) {

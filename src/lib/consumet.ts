@@ -412,8 +412,15 @@ const getAnimePahe = () => {
 };
 
 
-import { getAnimeTitle, getMangaFormat, slugify } from "./anime-utils";
+import { getAnimeTitle, slugify } from "./anime-utils";
 import type { HeroResult } from "@/types/anime";
+import {
+  WITCHCULT_NOVEL_ID,
+  getWitchCultChapterPages,
+  getWitchCultNovelCard,
+  getWitchCultReaderDetails,
+  isWitchCultSearch
+} from "./witchcult";
 
 
 
@@ -1659,11 +1666,100 @@ async function fetchComicKAllChapters(hid: string): Promise<any[]> {
   return sortedChapters;
 }
 
-export async function getMangaDetails(id: string) {
+export async function getReaderDetails(id: string) {
+  if (id === WITCHCULT_NOVEL_ID) {
+    try {
+      return await getWitchCultReaderDetails();
+    } catch (err) {
+      console.error("Error scraping Re:Zero web novel details:", err);
+      return null;
+    }
+  }
+
+  if (id.startsWith("novelbin-")) {
+    const realId = id.replace("novelbin-", "");
+    try {
+      console.log(`[ReaderDetails] Fetching NovelBin details for: ${realId}`);
+      const url = `https://novelbin.com/b/${realId}`;
+      const res = await gotScraping({ url, http2: false });
+      const $ = load(res.body);
+
+      const title = $('.title').text().trim() || $('h3.title').text().trim() || realId.replace(/-/g, ' ');
+      let image = $('.book img').attr('src') || "";
+
+      let author = '';
+      let genres: string[] = [];
+      let status = 'RELEASING';
+      let source = 'Webnovel';
+
+      $('.info-meta li, .info-holder .info > div').each((idx, el) => {
+        const text = $(el).text().trim().toLowerCase();
+        if (text.includes('author:')) {
+          author = $(el).text().replace(/Author:/i, "").trim();
+        } else if (text.includes('status:')) {
+          const statusText = $(el).text().replace(/Status:/i, "").trim().toLowerCase();
+          status = statusText.includes('complete') ? 'COMPLETED' : 'RELEASING';
+        }
+      });
+
+      $('.info-meta a[href*="/genre/"]').each((i, el) => {
+        genres.push($(el).text().trim().toLowerCase());
+      });
+
+      const ratingVal = parseFloat($('input#rateVal').val() as string) * 10 || 85;
+      const description = $('.desc-text').html() || $('.desc-text').text() || "No description available.";
+
+      const novelId = $('#rating').attr('data-novel-id') || realId;
+      let chapters: any[] = [];
+
+      if (novelId) {
+        const ajaxUrl = `https://novelbin.com/ajax/chapter-option?novelId=${novelId}`;
+        const ajaxRes = await gotScraping({ url: ajaxUrl, http2: false });
+        const ajax$ = load(ajaxRes.body);
+
+        ajax$('option').each((idx, optionEl) => {
+          const href = ajax$(optionEl).attr('value') || "";
+          const text = ajax$(optionEl).text().trim();
+          const cleanHref = href.replace('https://novelbin.com/b/', '').replace(/^\//, '');
+
+          const match = text.match(/chapter\s+(\d+(\.\d+)?)/i);
+          const chapNum = match ? match[1] : (idx + 1).toString();
+
+          chapters.push({
+            id: `novelbin:${cleanHref}`,
+            title: text,
+            number: chapNum,
+            releaseDate: ""
+          });
+        });
+      }
+
+      return {
+        id,
+        title,
+        slug: slugify(title),
+        description,
+        image,
+        cover: image,
+        status,
+        releaseDate: "2024",
+        genres,
+        rating: ratingVal,
+        chapters: chapters.reverse(), // reverse to return latest first
+        type: "NOVEL",
+        format: "NOVEL",
+        countryOfOrigin: "US"
+      };
+    } catch (err) {
+      console.error("Error scraping NovelBin details:", err);
+      return null;
+    }
+  }
+
   if (id.startsWith("novelfull-")) {
     const realId = id.replace("novelfull-", "");
     try {
-      console.log(`[MangaDetails] Fetching novel details for: ${realId}`);
+      console.log(`[ReaderDetails] Fetching novel details for: ${realId}`);
       const url = `https://novelfull.com/${realId}.html`;
       const res = await gotScraping({ url, http2: false });
       const $ = load(res.body);
@@ -1758,7 +1854,7 @@ export async function getMangaDetails(id: string) {
 
     if (isManhwa) {
       // Manhwa -> use Manhwatop (represented by ComicK since it indexes Toonily/Manhwatop fully)
-      console.log(`[MangaDetails] Manhwa detected. Using Manhwatop (ComicK) for search: ${searchTitle}`);
+      console.log(`[ReaderDetails] Manhwa detected. Using Manhwatop (ComicK) for search: ${searchTitle}`);
       const comick = getComicK();
       if (comick) {
         try {
@@ -1781,12 +1877,12 @@ export async function getMangaDetails(id: string) {
             }
           }
         } catch (e) {
-          console.error("[MangaDetails] Manhwatop (ComicK) fetch failed:", e);
+          console.error("[ReaderDetails] Manhwatop (ComicK) fetch failed:", e);
         }
       }
     } else {
       // Manga -> use MangaFire (represented by ComicK) and AllManga (represented by MangaReader / MangaDex)
-      console.log(`[MangaDetails] Manga detected. Attempting MangaFire (ComicK) for search: ${searchTitle}`);
+      console.log(`[ReaderDetails] Manga detected. Attempting MangaFire (ComicK) for search: ${searchTitle}`);
       const comick = getComicK();
       if (comick) {
         try {
@@ -1811,12 +1907,12 @@ export async function getMangaDetails(id: string) {
             }
           }
         } catch (e) {
-          console.warn("[MangaDetails] ComicK (MangaFire) search failed, falling to AllManga:", e);
+          console.warn("[ReaderDetails] ComicK (MangaFire) search failed, falling to AllManga:", e);
         }
       }
 
       // Fallback: AllManga -> MangaReader
-      console.log(`[MangaDetails] Attempting AllManga (MangaReader) for search: ${searchTitle}`);
+      console.log(`[ReaderDetails] Attempting AllManga (MangaReader) for search: ${searchTitle}`);
       const reader = getMangaReader();
       if (reader) {
         try {
@@ -1843,12 +1939,12 @@ export async function getMangaDetails(id: string) {
             }
           }
         } catch (e) {
-          console.warn("[MangaDetails] MangaReader (AllManga) search failed, falling to MangaDex:", e);
+          console.warn("[ReaderDetails] MangaReader (AllManga) search failed, falling to MangaDex:", e);
         }
       }
 
       // Final Fallback: MangaDex
-      console.log(`[MangaDetails] Attempting MangaDex fallback for search: ${searchTitle}`);
+      console.log(`[ReaderDetails] Attempting MangaDex fallback for search: ${searchTitle}`);
       const dex = getMangaDex();
       if (dex) {
         try {
@@ -1874,19 +1970,19 @@ export async function getMangaDetails(id: string) {
             }
           }
         } catch (e) {
-          console.error("[MangaDetails] MangaDex fallback failed:", e);
+          console.error("[ReaderDetails] MangaDex fallback failed:", e);
         }
       }
     }
 
     return mangaInfo;
   } catch (e) {
-    console.error("Manga details fetch failed:", e);
+    console.error("Reader details fetch failed:", e);
     return null;
   }
 }
 
-export async function getMangaChapterPages(chapterId: string) {
+export async function getReaderChapterPages(chapterId: string) {
   try {
     const decodedId = decodeURIComponent(chapterId);
     let providerName = "comick"; // default
@@ -1898,11 +1994,33 @@ export async function getMangaChapterPages(chapterId: string) {
       realChapterId = parts.slice(1).join(":");
     }
 
-    console.log(`[MangaChapterPages] Fetching pages. Provider: ${providerName}, Chapter: ${realChapterId}`);
+    console.log(`[ReaderChapterPages] Fetching pages. Provider: ${providerName}, Chapter: ${realChapterId}`);
+
+    if (providerName === "witchcult") {
+      console.log(`[WitchCultChapterText] Fetching chapter text for: ${realChapterId}`);
+      return await getWitchCultChapterPages(realChapterId);
+    }
 
     if (providerName === "novelfull") {
       console.log(`[NovelChapterText] Fetching chapter text for: ${realChapterId}`);
       const url = `https://novelfull.com/${realChapterId}`;
+      const res = await gotScraping({ url, http2: false });
+      const $ = load(res.body);
+
+      const contentEl = $('#chapter-content');
+      contentEl.find('script, style, iframe, ads, .ads, .adsbygoogle, div[class*="ads"], div[id*="ads"]').remove();
+
+      const htmlText = contentEl.html() || contentEl.text() || "Content load failed.";
+
+      return [{
+        page: 1,
+        text: htmlText
+      }];
+    }
+
+    if (providerName === "novelbin") {
+      console.log(`[NovelBinChapterText] Fetching chapter text for: ${realChapterId}`);
+      const url = `https://novelbin.com/b/${realChapterId}`;
       const res = await gotScraping({ url, http2: false });
       const $ = load(res.body);
 
@@ -2195,31 +2313,30 @@ async function enrichNovelCovers(results: any[]) {
   return Promise.all(promises);
 }
 
-export async function searchNovel(query: string, page: number = 1) {
-  const url = `https://novelfull.com/search?keyword=${encodeURIComponent(query)}&page=${page}`;
+async function searchNovelBinScraper(query: string, page: number = 1) {
+  const url = `https://novelbin.com/search?keyword=${encodeURIComponent(query)}&page=${page}`;
   try {
     const res = await gotScraping({ url, http2: false });
     const $ = load(res.body);
     const results: any[] = [];
 
-    $('.list-truyen .row').each((idx, el) => {
-      const titleEl = $(el).find('h3.truyen-title a');
+    $('.list-novel .row').each((idx, el) => {
+      if ($(el).hasClass('hot-item')) return;
+      
+      const titleEl = $(el).find('h3 a');
       if (titleEl.length > 0) {
         const title = titleEl.text().trim();
         const href = titleEl.attr('href') || "";
-        const id = href.replace(/^\//, '').replace(/\.html$/, '');
+        const id = href.replace('https://novelbin.com/b/', '').replace(/^\//, '');
 
-        let img = $(el).find('img.cover').attr('src') || $(el).find('img').attr('src') || "";
-        if (img && img.startsWith('/')) {
-          img = `https://novelfull.com${img}`;
-        }
+        let img = $(el).find('img').attr('src') || "";
 
-        const chapterText = $(el).find('.col-xs-2 a.chapter-text, .col-xs-2 a').text().trim();
+        const chapterText = $(el).find('.chr-text, .chapter-text').text().trim();
         const chapMatch = chapterText.match(/chapter\s+(\d+(\.\d+)?)/i);
         const latestChapter = chapMatch ? parseFloat(chapMatch[1]) : 0;
 
         results.push({
-          id: `novelfull-${id}`,
+          id: `novelbin-${id}`,
           title,
           slug: slugify(title),
           image: img,
@@ -2231,34 +2348,113 @@ export async function searchNovel(query: string, page: number = 1) {
           format: "WEBNOVEL",
           status: "RELEASING",
           year: new Date().getFullYear(),
-          countryOfOrigin: "US"
+          countryOfOrigin: "US",
+          chapters: latestChapter
         });
       }
     });
 
     let hasNextPage = false;
-    const nextLi = $('.pagination li.next');
-    if (nextLi.length > 0 && !nextLi.hasClass('disabled')) {
-      hasNextPage = true;
-    } else {
-      $('.pagination li a').each((i, aEl) => {
-        const text = $(aEl).text().trim();
-        if (text === '>' || text.toLowerCase().includes('next')) {
-          hasNextPage = true;
-        }
-      });
-    }
+    $('.pagination li a').each((i, aEl) => {
+      const text = $(aEl).text().trim();
+      if (text === '>' || text.toLowerCase().includes('next')) {
+        hasNextPage = true;
+      }
+    });
 
-    const enriched = await enrichNovelCovers(results);
+    return { results, hasNextPage };
+  } catch (err) {
+    console.error("Error searching NovelBin:", err);
+    return { results: [], hasNextPage: false };
+  }
+}
+
+export async function searchNovel(query: string, page: number = 1) {
+  const includeWitchCult = isWitchCultSearch(query);
+  const fullUrl = `https://novelfull.com/search?keyword=${encodeURIComponent(query)}&page=${page}`;
+
+  try {
+    const [fullRes, binRes] = await Promise.all([
+      gotScraping({ url: fullUrl, http2: false }).then(res => {
+        const $ = load(res.body);
+        const results: any[] = [];
+        $('.list-truyen .row').each((idx, el) => {
+          const titleEl = $(el).find('h3.truyen-title a');
+          if (titleEl.length > 0) {
+            const title = titleEl.text().trim();
+            const href = titleEl.attr('href') || "";
+            const id = href.replace(/^\//, '').replace(/\.html$/, '');
+
+            let img = $(el).find('img.cover').attr('src') || $(el).find('img').attr('src') || "";
+            if (img && img.startsWith('/')) {
+              img = `https://novelfull.com${img}`;
+            }
+
+            const chapterText = $(el).find('.col-xs-2 a.chapter-text, .col-xs-2 a').text().trim();
+            const chapMatch = chapterText.match(/chapter\s+(\d+(\.\d+)?)/i);
+            const latestChapter = chapMatch ? parseFloat(chapMatch[1]) : 0;
+
+            results.push({
+              id: `novelfull-${id}`,
+              title,
+              slug: slugify(title),
+              image: img,
+              cover: img,
+              type: "WEBNOVEL",
+              rating: 85,
+              episodeNumber: latestChapter,
+              subEpisodes: latestChapter,
+              format: "WEBNOVEL",
+              status: "RELEASING",
+              year: new Date().getFullYear(),
+              countryOfOrigin: "US"
+            });
+          }
+        });
+
+        let hasNextPage = false;
+        const nextLi = $('.pagination li.next');
+        if (nextLi.length > 0 && !nextLi.hasClass('disabled')) {
+          hasNextPage = true;
+        } else {
+          $('.pagination li a').each((i, aEl) => {
+            const text = $(aEl).text().trim();
+            if (text === '>' || text.toLowerCase().includes('next')) {
+              hasNextPage = true;
+            }
+          });
+        }
+        return { results, hasNextPage };
+      }).catch(err => {
+        console.error("Error searching NovelFull:", err);
+        return { results: [], hasNextPage: false };
+      }),
+      searchNovelBinScraper(query, page)
+    ]);
+
+    const enrichedFull = await enrichNovelCovers(fullRes.results);
+    const existingTitles = new Set(enrichedFull.map(r => r.title.toLowerCase()));
+    const uniqueBin = binRes.results.filter(r => !existingTitles.has(r.title.toLowerCase()));
+
+    const combinedResults = includeWitchCult
+      ? [
+          getWitchCultNovelCard(),
+          ...enrichedFull.filter((novel) => novel.id !== WITCHCULT_NOVEL_ID),
+          ...uniqueBin
+        ]
+      : [...enrichedFull, ...uniqueBin];
+
+    const hasNextPage = fullRes.hasNextPage || binRes.hasNextPage;
 
     return {
-      results: enriched,
+      results: combinedResults,
       hasNextPage,
-      total: enriched.length
+      total: combinedResults.length
     };
   } catch (err) {
     console.error("Error searching novel:", err);
-    return { results: [], hasNextPage: false, total: 0 };
+    const fallbackResults = includeWitchCult ? [getWitchCultNovelCard()] : [];
+    return { results: fallbackResults, hasNextPage: false, total: fallbackResults.length };
   }
 }
 
@@ -2320,10 +2516,20 @@ async function scrapeNovelList(url: string) {
 
 export async function getTrendingNovels(page: number = 1, perPage: number = 20): Promise<{ results: any[], hasNextPage: boolean }> {
   const url = `https://novelfull.com/hot-novel?page=${page}`;
-  return scrapeNovelList(url);
+  const data = await scrapeNovelList(url);
+  if (page !== 1) return data;
+  return {
+    ...data,
+    results: [getWitchCultNovelCard(), ...data.results].slice(0, perPage)
+  };
 }
 
 export async function getPopularNovels(page: number = 1, perPage: number = 20): Promise<{ results: any[], hasNextPage: boolean }> {
   const url = `https://novelfull.com/completed-novel?page=${page}`;
-  return scrapeNovelList(url);
+  const data = await scrapeNovelList(url);
+  if (page !== 1) return data;
+  return {
+    ...data,
+    results: [getWitchCultNovelCard(), ...data.results].slice(0, perPage)
+  };
 }

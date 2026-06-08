@@ -138,7 +138,7 @@ export default async function ReaderPage({
                     Trending Novels
                   </h2>
                   <p className="text-xs text-white/30 font-medium mt-0.5">
-                    Hot web novels & light novels from NovelFull
+                    Re:Zero web novel and more from NovelFull
                   </p>
                 </div>
               </div>

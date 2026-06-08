@@ -76,7 +76,8 @@ export function SearchFilters() {
     else params.delete("origin");
 
     params.set("page", "1"); // Reset to page 1 on new filters
-    router.push(`/anime/search?${params.toString()}`);
+    const searchPath = rawType === "ANIME" ? "/anime/search" : "/reader/search";
+    router.push(`${searchPath}?${params.toString()}`);
   };
 
   const handleReset = () => {
@@ -89,16 +90,17 @@ export function SearchFilters() {
 
     const params = new URLSearchParams();
     const currentQuery = searchParams.get("q");
-    const currentType = searchParams.get("type");
+    const currentTypeParam = searchParams.get("type");
     if (currentQuery) params.set("q", currentQuery);
-    if (currentType) params.set("type", currentType);
+    if (currentTypeParam) params.set("type", currentTypeParam);
     
-    router.push(`/anime/search${params.toString() ? `?${params.toString()}` : ""}`);
+    const searchPath = rawType === "ANIME" ? "/anime/search" : "/reader/search";
+    router.push(`${searchPath}${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
   if (rawType === "NOVEL") {
     return (
-      <div className="w-full text-center py-6 px-4 select-none border border-white/5 rounded-2xl bg-white/[0.01]">
+      <div key="novel-filters-disabled" className="w-full text-center py-6 px-4 select-none border border-white/5 rounded-2xl bg-white/[0.01]">
         <p className="text-[10px] font-black uppercase tracking-widest text-white/30">Filters Unavailable</p>
         <p className="text-[10px] text-white/20 mt-1.5 font-bold leading-normal">
           WebNovels searches do not support filter refinement.
@@ -108,7 +110,7 @@ export function SearchFilters() {
   }
 
   return (
-    <div className="w-full select-none">
+    <div key="active-search-filters" className="w-full select-none">
       <div className="grid grid-cols-2 lg:grid-cols-1 gap-x-4 gap-y-5 items-end">
         {/* Genres */}
         <div className="flex flex-col gap-1.5">
@@ -119,7 +121,7 @@ export function SearchFilters() {
               onChange={(e) => setSelectedGenre(e.target.value)}
               className="w-full bg-[#161616] border border-white/5 rounded-lg px-3 py-2.5 text-xs text-white/80 focus:outline-none focus:border-primary appearance-none pr-8 cursor-pointer transition-colors hover:border-white/10"
             >
-              <option value="">Select Genres</option>
+              <option key="default-genre" value="">Select Genres</option>
               {genres.map(g => (
                 <option key={g} value={g}>{g}</option>
               ))}
@@ -137,7 +139,7 @@ export function SearchFilters() {
               onChange={(e) => setSelectedTag(e.target.value)}
               className="w-full bg-[#161616] border border-white/5 rounded-lg px-3 py-2.5 text-xs text-white/80 focus:outline-none focus:border-primary appearance-none pr-8 cursor-pointer transition-colors hover:border-white/10"
             >
-              <option value="">Select Tags</option>
+              <option key="default-tag" value="">Select Tags</option>
               {tags.map(t => (
                 <option key={t} value={t}>{t}</option>
               ))}
@@ -155,7 +157,7 @@ export function SearchFilters() {
               onChange={(e) => setSelectedYear(e.target.value)}
               className="w-full bg-[#161616] border border-white/5 rounded-lg px-3 py-2.5 text-xs text-white/80 focus:outline-none focus:border-primary appearance-none pr-8 cursor-pointer transition-colors hover:border-white/10"
             >
-              <option value="">Any year</option>
+              <option key="default-year" value="">Any year</option>
               {years.map(y => (
                 <option key={y} value={y}>{y}</option>
               ))}
@@ -173,7 +175,7 @@ export function SearchFilters() {
               onChange={(e) => setSelectedStatus(e.target.value)}
               className="w-full bg-[#161616] border border-white/5 rounded-lg px-3 py-2.5 text-xs text-white/80 focus:outline-none focus:border-primary appearance-none pr-8 cursor-pointer transition-colors hover:border-white/10"
             >
-              <option value="">Any Status</option>
+              <option key="default-status" value="">Any Status</option>
               {statuses.map(s => (
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
@@ -191,7 +193,7 @@ export function SearchFilters() {
               onChange={(e) => setSelectedFormat(e.target.value)}
               className="w-full bg-[#161616] border border-white/5 rounded-lg px-3 py-2.5 text-xs text-white/80 focus:outline-none focus:border-primary appearance-none pr-8 cursor-pointer transition-colors hover:border-white/10"
             >
-              <option value="">Any Format</option>
+              <option key="default-format" value="">Any Format</option>
               {formats.map(f => (
                 <option key={f} value={f}>{f}</option>
               ))}
@@ -210,7 +212,7 @@ export function SearchFilters() {
                 onChange={(e) => setSelectedOrigin(e.target.value)}
                 className="w-full bg-[#161616] border border-white/5 rounded-lg px-3 py-2.5 text-xs text-white/80 focus:outline-none focus:border-primary appearance-none pr-8 cursor-pointer transition-colors hover:border-white/10"
               >
-                <option value="">Any Origin</option>
+                <option key="default-origin" value="">Any Origin</option>
                 <option value="JP">Japan (Manga)</option>
                 <option value="KR">Korea (Manhwa)</option>
                 <option value="CN">China (Manhua)</option>

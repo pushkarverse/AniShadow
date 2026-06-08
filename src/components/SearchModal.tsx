@@ -114,8 +114,10 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
             onClose();
           }
         } else if (query.trim()) {
+          const isComic = activeType === "MANGA" || activeType === "MANHWA" || activeType === "NOVEL";
+          const searchPath = isComic ? "/reader/search" : "/anime/search";
           const typeParam = activeType !== "ANIME" ? `&type=${activeType}` : "";
-          router.push(`/anime/search?q=${encodeURIComponent(query.trim())}${typeParam}`);
+          router.push(`${searchPath}?q=${encodeURIComponent(query.trim())}${typeParam}`);
           onClose();
         }
       } else if (e.key === "Escape") {
@@ -140,7 +142,7 @@ export function SearchModal({ isOpen, onClose, isMangaRoute = false }: SearchMod
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+        <div key="search-modal-root-wrapper" className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
           {/* Backdrop Blur Overlay */}
           <motion.div
             initial={{ opacity: 0 }}

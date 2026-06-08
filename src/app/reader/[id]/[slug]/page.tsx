@@ -1,13 +1,13 @@
 import { Navbar } from "@/components/Navbar";
-import { getAnimeDetails, getPopularAnime, getMangaDetails } from "@/lib/consumet";
+import { getAnimeDetails, getPopularAnime, getReaderDetails } from "@/lib/consumet";
 import { getAnimeTitle, getMangaFormat } from "@/lib/anime-utils";
 import Image from "next/image";
 import Link from "next/link";
-import { BookOpen, ListOrdered, Star, Calendar, Info, Play, Share2 } from "lucide-react";
+import { BookOpen, Star, Calendar, Info } from "lucide-react";
 import { ReaderCard } from "@/components/ReaderCard";
 import { ReaderActions } from "@/components/ReaderActions";
 import { ReaderProgressPosterBadge, ReaderProgressText, ReaderProgressButton } from "@/components/ReaderProgressTracker";
-import { ReaderChapterList } from "@/components/ReaderChapterList";
+import { ReaderChapterSection } from "@/components/ReaderChapterSection";
 import { CollapsibleDescription } from "@/components/CollapsibleDescription";
 
 import { slugify } from "@/lib/anime-utils";
@@ -20,7 +20,7 @@ interface PageProps {
 
 export default async function MangaDetailPage({ params }: PageProps) {
   const { id, slug } = await params;
-  const manga = await getMangaDetails(id) as any;
+  const manga = await getReaderDetails(id) as any;
 
   if (!manga) {
     return (
@@ -34,12 +34,14 @@ export default async function MangaDetailPage({ params }: PageProps) {
 
   const title = getAnimeTitle(manga.title);
   const chapters = manga.chapters || [];
+  const arcs = manga.arcs || [];
   const relations = (manga.relations || []).filter((r: any) => r.type !== 'ANIME');
   const recommendations = manga.recommendations || [];
 
   const formatText = getMangaFormat(manga.countryOfOrigin, manga.format || manga.type, id);
-  const isNovel = id.startsWith("novelfull-") || formatText === 'Light Novel' || formatText === 'Web Novel';
+  const isNovel = id.startsWith("novelfull-") || id.startsWith("novelbin-") || id.startsWith("witchcult-") || formatText === 'Light Novel' || formatText === 'Web Novel';
   const themeClass = isNovel ? "novel-theme" : "manga-theme";
+  const arcCount = arcs.length;
 
   return (
     <div className={`min-h-screen bg-background text-foreground pb-20 ${themeClass}`}>
@@ -48,17 +50,17 @@ export default async function MangaDetailPage({ params }: PageProps) {
       {/* Hero Header */}
       <div className="relative w-full min-h-[60vh] flex items-end">
         <div className="absolute inset-0">
-          {isNovel ? (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#120826] via-[#080b11] to-[#0d1622] opacity-85" />
-          ) : (
-            <Image
-              src={manga.cover || manga.image || ""}
-              alt={title}
-              fill
-              sizes="100vw"
-              className="object-cover object-top opacity-20"
-              priority
-            />
+          <Image
+            src={manga.cover || manga.image || ""}
+            alt={title}
+            fill
+            sizes="100vw"
+            className="object-cover object-top opacity-20"
+            priority
+            loading="eager"
+          />
+          {isNovel && (
+            <div className="absolute inset-0 bg-gradient-to-br from-[#120826]/80 via-[#080b11]/90 to-[#0d1622]/95" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-transparent" />
         </div>
@@ -73,6 +75,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
                 sizes="256px"
                 className="object-cover"
                 priority
+                loading="eager"
               />
               <ReaderProgressPosterBadge mangaId={id} />
             </div>
@@ -88,7 +91,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
                     <div className="w-1 h-1 bg-white/10 rounded-full" />
                     <span>{manga.status?.replace(/_/g, ' ') || "Unknown"}</span>
                     <div className="w-1 h-1 bg-white/10 rounded-full" />
-                    <span>{chapters.length} Chapters</span>
+                    <span>{chapters.length} Chapters{arcCount > 0 ? ` · ${arcCount} Arcs` : ""}</span>
                   </div>
                   <ReaderProgressText mangaId={id} />
                 </div>
@@ -133,17 +136,13 @@ export default async function MangaDetailPage({ params }: PageProps) {
         <div className="flex flex-col lg:flex-row gap-12">
           {/* Chapter List */}
           <div className="flex-1">
-            <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/5">
-              <div className="flex items-center gap-4">
-                <ListOrdered className="w-6 h-6 text-primary" />
-                <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Chapters List</h2>
-              </div>
-              <span className="text-xs font-black text-white/20 uppercase tracking-widest bg-white/5 px-4 py-2 rounded-full border border-white/5">
-                Total {chapters.length}
-              </span>
-            </div>
-
-            <ReaderChapterList mangaId={id} slug={slug} chapters={chapters} />
+            <ReaderChapterSection
+              mangaId={id}
+              slug={slug}
+              chapters={chapters}
+              arcs={arcs}
+              isNovel={isNovel}
+            />
           </div>
 
           {/* Sidebar Info */}

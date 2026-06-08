@@ -39,7 +39,8 @@ export function Navbar() {
     if (typeof window === "undefined") return;
     const isMangaPath = window.location.pathname.startsWith('/reader');
     const params = new URLSearchParams(window.location.search);
-    const isMangaSearch = window.location.pathname.startsWith('/anime/search') && params.get('type') === 'MANGA';
+    const isMangaSearch = (window.location.pathname.startsWith('/anime/search') || window.location.pathname.startsWith('/reader/search')) && 
+      ['MANGA', 'MANHWA', 'NOVEL'].includes(params.get('type') || '');
     setIsMangaRoute(isMangaPath || isMangaSearch);
   });
 
@@ -57,8 +58,9 @@ export function Navbar() {
   const handleSearch = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (searchQuery.trim()) {
+      const searchPath = isMangaRoute ? "/reader/search" : "/anime/search";
       const typeParam = isMangaRoute ? "&type=MANGA" : "";
-      router.push(`/anime/search?q=${encodeURIComponent(searchQuery.trim())}${typeParam}`);
+      router.push(`${searchPath}?q=${encodeURIComponent(searchQuery.trim())}${typeParam}`);
       setIsFilterOpen(false);
       setIsMobileSearchOpen(false);
     }
@@ -302,11 +304,11 @@ export function Navbar() {
 
               <div className="flex flex-col gap-2">
                 <Link href="/reader" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all uppercase tracking-widest text-xs">READER</Link>
-                <Link href="/anime/search" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">GENRES</Link>
+                <Link href={isMangaRoute ? "/reader/search" : "/anime/search"} onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">GENRES</Link>
                 <Link href="/anime/trending" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">TYPES</Link>
                 <Link href="/anime/popular" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">NEW RELEASES</Link>
                 <Link href="/anime/trending" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">UPDATES</Link>
-                <Link href="/anime/search?status=RELEASING" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">ONGOING</Link>
+                <Link href={isMangaRoute ? "/reader/search?status=RELEASING" : "/anime/search?status=RELEASING"} onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-primary/10 text-white/80 hover:text-primary font-bold transition-all">ONGOING</Link>
               </div>
             </motion.div>
           </>
