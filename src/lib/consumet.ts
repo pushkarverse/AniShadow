@@ -2269,42 +2269,47 @@ async function getHQCover(title: string): Promise<string | null> {
 
 async function enrichNovelCovers(results: any[]) {
   const promises = results.map(async (novel) => {
-    const hqCover = await getHQCover(novel.title);
-    if (hqCover) {
-      novel.image = hqCover;
-      novel.cover = hqCover;
-    }
-
     const realId = novel.id.replace("novelfull-", "");
     const url = `https://novelfull.com/${realId}.html`;
     try {
-      const res = await gotScraping({ url, http2: false });
-      const $ = load(res.body);
+      const [hqCover, res] = await Promise.all([
+        getHQCover(novel.title),
+        gotScraping({ url, http2: false, timeout: { request: 2500 } }).catch(() => null)
+      ]);
 
-      if (!hqCover) {
-        let image = $('.info-holder .book img').attr('src') || "";
-        if (image && image.startsWith('/')) {
-          image = `https://novelfull.com${image}`;
-        }
-        if (image) {
-          novel.image = image;
-          novel.cover = image;
-        }
+      if (hqCover) {
+        novel.image = hqCover;
+        novel.cover = hqCover;
       }
 
-      const genres: string[] = [];
-      $('.info-holder .info div').each((i, divEl) => {
-        const h3Text = $(divEl).find('h3').text().trim().toLowerCase();
-        if (h3Text.includes('genre')) {
-          $(divEl).find('a').each((j, aEl) => {
-            genres.push($(aEl).text().trim().toLowerCase());
-          });
-        }
-      });
+      if (res && res.body) {
+        const $ = load(res.body);
 
-      const isLightNovel = genres.includes('light novel') || novel.title.toLowerCase().includes('light novel');
-      novel.type = isLightNovel ? "NOVEL" : "WEBNOVEL";
-      novel.format = isLightNovel ? "NOVEL" : "WEBNOVEL";
+        if (!hqCover) {
+          let image = $('.info-holder .book img').attr('src') || "";
+          if (image && image.startsWith('/')) {
+            image = `https://novelfull.com${image}`;
+          }
+          if (image) {
+            novel.image = image;
+            novel.cover = image;
+          }
+        }
+
+        const genres: string[] = [];
+        $('.info-holder .info div').each((i, divEl) => {
+          const h3Text = $(divEl).find('h3').text().trim().toLowerCase();
+          if (h3Text.includes('genre')) {
+            $(divEl).find('a').each((j, aEl) => {
+              genres.push($(aEl).text().trim().toLowerCase());
+            });
+          }
+        });
+
+        const isLightNovel = genres.includes('light novel') || novel.title.toLowerCase().includes('light novel');
+        novel.type = isLightNovel ? "NOVEL" : "WEBNOVEL";
+        novel.format = isLightNovel ? "NOVEL" : "WEBNOVEL";
+      }
     } catch (e) {
       console.error(`Failed to enrich cover for ${novel.id}:`, e);
     }
@@ -2322,7 +2327,7 @@ async function searchNovelBinScraper(query: string, page: number = 1) {
 
     $('.list-novel .row').each((idx, el) => {
       if ($(el).hasClass('hot-item')) return;
-      
+
       const titleEl = $(el).find('h3 a');
       if (titleEl.length > 0) {
         const title = titleEl.text().trim();
@@ -2438,10 +2443,10 @@ export async function searchNovel(query: string, page: number = 1) {
 
     const combinedResults = includeWitchCult
       ? [
-          getWitchCultNovelCard(),
-          ...enrichedFull.filter((novel) => novel.id !== WITCHCULT_NOVEL_ID),
-          ...uniqueBin
-        ]
+        getWitchCultNovelCard(),
+        ...enrichedFull.filter((novel) => novel.id !== WITCHCULT_NOVEL_ID),
+        ...uniqueBin
+      ]
       : [...enrichedFull, ...uniqueBin];
 
     const hasNextPage = fullRes.hasNextPage || binRes.hasNextPage;
@@ -2460,7 +2465,7 @@ export async function searchNovel(query: string, page: number = 1) {
 
 async function scrapeNovelList(url: string) {
   try {
-    const res = await gotScraping({ url, http2: false });
+    const res = await gotScraping({ url, http2: false, timeout: { request: 5000 } });
     const $ = load(res.body);
     const results: any[] = [];
 
