@@ -2078,6 +2078,44 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
   }
 };
 
+async function enrichNovelCovers(results: any[]) {
+  const promises = results.map(async (novel) => {
+    const realId = novel.id.replace("novelfull-", "");
+    const url = `https://novelfull.com/${realId}.html`;
+    try {
+      const res = await gotScraping({ url, http2: false });
+      const $ = load(res.body);
+      let image = $('.info-holder .book img').attr('src') || "";
+      if (image && image.startsWith('/')) {
+        image = `https://novelfull.com${image}`;
+      }
+      if (image) {
+        novel.image = image;
+        novel.cover = image;
+      }
+
+      // Parse genres to determine if it is a Light Novel or Web Novel
+      const genres: string[] = [];
+      $('.info-holder .info div').each((i, divEl) => {
+        const h3Text = $(divEl).find('h3').text().trim().toLowerCase();
+        if (h3Text.includes('genre')) {
+          $(divEl).find('a').each((j, aEl) => {
+            genres.push($(aEl).text().trim().toLowerCase());
+          });
+        }
+      });
+
+      const isLightNovel = genres.includes('light novel') || novel.title.toLowerCase().includes('light novel');
+      novel.type = isLightNovel ? "NOVEL" : "WEBNOVEL";
+      novel.format = isLightNovel ? "NOVEL" : "WEBNOVEL";
+    } catch (e) {
+      console.error(`Failed to enrich cover for ${novel.id}:`, e);
+    }
+    return novel;
+  });
+  return Promise.all(promises);
+}
+
 export async function searchNovel(query: string, page: number = 1) {
   const url = `https://novelfull.com/search?keyword=${encodeURIComponent(query)}&page=${page}`;
   try {
@@ -2132,10 +2170,12 @@ export async function searchNovel(query: string, page: number = 1) {
       });
     }
 
+    const enriched = await enrichNovelCovers(results);
+
     return {
-      results,
+      results: enriched,
       hasNextPage,
-      total: results.length
+      total: enriched.length
     };
   } catch (err) {
     console.error("Error searching novel:", err);
@@ -2190,7 +2230,9 @@ async function scrapeNovelList(url: string) {
       hasNextPage = true;
     }
 
-    return { results, hasNextPage };
+    const enriched = await enrichNovelCovers(results);
+
+    return { results: enriched, hasNextPage };
   } catch (err) {
     console.error("Error scraping novel list:", err);
     return { results: [], hasNextPage: false };

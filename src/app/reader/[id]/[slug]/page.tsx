@@ -4,9 +4,9 @@ import { getAnimeTitle, getMangaFormat } from "@/lib/anime-utils";
 import Image from "next/image";
 import Link from "next/link";
 import { BookOpen, ListOrdered, Star, Calendar, Info, Play, Share2 } from "lucide-react";
-import { MangaCard } from "@/components/MangaCard";
-import { MangaActions } from "@/components/MangaActions";
-import { MangaProgressPosterBadge, MangaProgressText, MangaProgressButton } from "@/components/MangaProgressTracker";
+import { ReaderCard } from "@/components/ReaderCard";
+import { ReaderActions } from "@/components/ReaderActions";
+import { ReaderProgressPosterBadge, ReaderProgressText, ReaderProgressButton } from "@/components/ReaderProgressTracker";
 import { ReaderChapterList } from "@/components/ReaderChapterList";
 import { CollapsibleDescription } from "@/components/CollapsibleDescription";
 
@@ -74,7 +74,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
                 className="object-cover"
                 priority
               />
-              <MangaProgressPosterBadge mangaId={id} />
+              <ReaderProgressPosterBadge mangaId={id} />
             </div>
 
             <div className="flex-1 space-y-6">
@@ -90,7 +90,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
                     <div className="w-1 h-1 bg-white/10 rounded-full" />
                     <span>{chapters.length} Chapters</span>
                   </div>
-                  <MangaProgressText mangaId={id} />
+                  <ReaderProgressText mangaId={id} />
                 </div>
               </div>
 
@@ -100,7 +100,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
 
               <div className="flex items-center gap-6 pt-6 flex-wrap">
                 {chapters.length > 0 && (
-                  <MangaProgressButton 
+                  <ReaderProgressButton 
                     mangaId={id}
                     slug={slug}
                     chapters={chapters}
@@ -108,7 +108,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
                 )}
 
                 <div className="flex items-center gap-6">
-                   <MangaActions 
+                   <ReaderActions 
                       mangaId={id}
                       title={title}
                       slug={slug}
@@ -172,8 +172,8 @@ export default async function MangaDetailPage({ params }: PageProps) {
                   <div>
                     <span className="text-[10px] font-black text-white/20 uppercase tracking-widest block mb-0.5">Genres</span>
                     <div className="flex flex-wrap gap-1.5 mt-1">
-                      {manga.genres?.map((genre: string) => (
-                        <span key={genre} className="px-2 py-0.5 bg-white/5 text-[10px] font-black text-white/60 rounded-md uppercase tracking-tight">
+                      {manga.genres?.map((genre: string, idx: number) => (
+                        <span key={`${genre}-${idx}`} className="px-2 py-0.5 bg-white/5 text-[10px] font-black text-white/60 rounded-md uppercase tracking-tight">
                           {genre}
                         </span>
                       ))}
@@ -184,11 +184,11 @@ export default async function MangaDetailPage({ params }: PageProps) {
                 {relations.length > 0 && (
                   <div className="pt-6 border-t border-white/5 space-y-4">
                     <span className="text-[10px] font-black text-white/20 uppercase tracking-widest block">Relations</span>
-                     {relations.slice(0, 3).map((rel: any) => {
+                     {relations.slice(0, 3).map((rel: any, idx: number) => {
                        const relTitle = getAnimeTitle(rel.title);
                        const relSlug = slugify(relTitle);
                        return (
-                         <Link key={rel.id} href={rel.type === 'MANGA' ? `/reader/${rel.id}/${relSlug}` : `/anime/${rel.id}/${relSlug}`} className="flex items-center gap-3 group">
+                         <Link key={`rel-${rel.id || idx}-${idx}`} href={rel.type === 'MANGA' ? `/reader/${rel.id}/${relSlug}` : `/anime/${rel.id}/${relSlug}`} className="flex items-center gap-3 group">
                            <div className="w-12 h-16 rounded-lg overflow-hidden bg-white/5 relative shrink-0">
                              <Image src={rel.image || ""} alt="" fill sizes="48px" className="object-cover" />
                            </div>
@@ -215,9 +215,9 @@ export default async function MangaDetailPage({ params }: PageProps) {
                <div className="h-[2px] flex-1 bg-white/10" />
             </h2>
             <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 md:gap-x-6 md:gap-y-6 no-scrollbar momentum-scroll -mx-6 px-6 md:mx-0 md:px-0">
-              {recommendations.map((rec: any) => (
-                <MangaCard 
-                  key={rec.id}
+              {recommendations.map((rec: any, idx: number) => (
+                <ReaderCard 
+                  key={`rec-${rec.id || idx}-${idx}`}
                   id={rec.id}
                   title={getAnimeTitle(rec.title)}
                   slug={slugify(getAnimeTitle(rec.title))}

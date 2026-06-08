@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FolderOpen, ChevronDown, Check, BookmarkPlus, BookmarkCheck, Share2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
-interface MangaActionsProps {
+interface ReaderActionsProps {
   mangaId: string;
   title: string;
   slug: string;
@@ -13,7 +13,7 @@ interface MangaActionsProps {
 
 const statusOptions = ["Reading", "On-Hold", "Planning", "Completed", "Dropped"];
 
-export function MangaActions({ mangaId, title, slug, image }: MangaActionsProps) {
+export function ReaderActions({ mangaId, title, slug, image }: ReaderActionsProps) {
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string | null>(null);
   const [isAdded, setIsAdded] = useState(false);

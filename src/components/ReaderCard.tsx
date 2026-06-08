@@ -13,7 +13,7 @@ import { RoomModal } from "./RoomModal";
 import { getMangaDetails } from "@/lib/consumet";
 import { getMangaFormat, slugify } from "@/lib/anime-utils";
 
-interface MangaCardProps {
+interface ReaderCardProps {
   id: string;
   title: string;
   slug?: string;
@@ -36,7 +36,7 @@ function getDisplayTitle(title: string | { english?: string; romaji?: string; us
   return title.english || title.romaji || title.userPreferred || title.native || "Unknown";
 }
 
-export const MangaCard = ({
+export const ReaderCard = ({
   id,
   title,
   slug,
@@ -49,7 +49,7 @@ export const MangaCard = ({
   countryOfOrigin,
   href,
   variant = "default"
-}: MangaCardProps) => {
+}: ReaderCardProps) => {
   const format = getMangaFormat(countryOfOrigin, type, id);
   const isNovelCard = type === "WEBNOVEL" || type === "NOVEL" || id?.startsWith("novelfull-");
   const fallbackImage = isNovelCard

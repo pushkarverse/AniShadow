@@ -5,11 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { getAnimeTitle, getMangaFormat, slugify } from "@/lib/anime-utils";
 
-interface MangaTrendingSidebarProps {
+interface ReaderTrendingSidebarProps {
   initialData: any[];
 }
 
-export function MangaTrendingSidebar({ initialData }: MangaTrendingSidebarProps) {
+export function ReaderTrendingSidebar({ initialData }: ReaderTrendingSidebarProps) {
   const [trendingManga] = useState<any[]>(initialData);
 
   return (
@@ -26,7 +26,7 @@ export function MangaTrendingSidebar({ initialData }: MangaTrendingSidebarProps)
           const title = getAnimeTitle(manga.title);
           const slug = manga.slug || slugify(title);
           return (
-            <Link href={`/reader/${manga.id}/${slug}`} key={`manga-side-${manga.id}`} className={`flex gap-4 items-center group hover:bg-white/5 p-4 transition-colors ${idx !== 0 ? 'border-t border-white/5' : ''}`}>
+            <Link href={`/reader/${manga.id}/${slug}`} key={`reader-side-${manga.id || idx}-${idx}`} className={`flex gap-4 items-center group hover:bg-white/5 p-4 transition-colors ${idx !== 0 ? 'border-t border-white/5' : ''}`}>
               <div className={`w-8 text-center text-xl font-black transition-colors italic ${
                 idx === 0 ? 'text-[#ffd700]' : 
                 idx === 1 ? 'text-[#c0c0c0]' : 

@@ -1,6 +1,6 @@
 import { Navbar } from "@/components/Navbar";
 import { AnimeCard } from "@/components/AnimeCard";
-import { MangaCard } from "@/components/MangaCard";
+import { ReaderCard } from "@/components/ReaderCard";
 import { SearchFilters } from "@/components/SearchFilters";
 import { Pagination } from "@/components/Pagination";
 import { advancedSearchAnime, searchNovel } from "@/lib/consumet";
@@ -215,10 +215,10 @@ export default async function SearchPage({
                     <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-8 ${themeClass}`}>
                       {searchResults.map((anime, idx) => {
                         const isComicOrBook = currentType === "MANGA" || currentType === "MANHWA" || currentType === "NOVEL";
-                        const Card = isComicOrBook ? MangaCard : AnimeCard;
+                        const Card = isComicOrBook ? ReaderCard : AnimeCard;
                         return (
                           <Card
-                            key={`${anime.id || 'search'}-${idx}`}
+                            key={`search-result-${anime.id || 'search'}-${idx}`}
                             id={anime.id}
                             variant="search"
                             title={getAnimeTitle(anime.title)}

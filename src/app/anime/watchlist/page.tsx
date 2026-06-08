@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { AnimeCard } from "@/components/AnimeCard";
-import { MangaCard } from "@/components/MangaCard";
+import { ReaderCard } from "@/components/ReaderCard";
 import { Bookmark, LayoutGrid, List, MonitorPlay, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -120,9 +120,9 @@ export default function WatchlistPage() {
                             />
                         ))
                     ) : (
-                        mangaWatchlist.map((manga: any) => (
-                            <MangaCard 
-                                key={manga.mangaId} 
+                        mangaWatchlist.map((manga: any, idx: number) => (
+                            <ReaderCard 
+                                key={`watchlist-manga-${manga.mangaId || idx}-${idx}`} 
                                 id={manga.mangaId} 
                                 title={manga.title} 
                                 image={manga.image} 

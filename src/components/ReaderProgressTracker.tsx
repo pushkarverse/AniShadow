@@ -33,7 +33,7 @@ function getProgressMap(): Record<string, SavedProgress> {
 }
 
 // 1. Poster badge overlay
-export function MangaProgressPosterBadge({ mangaId }: { mangaId: string }) {
+export function ReaderProgressPosterBadge({ mangaId }: { mangaId: string }) {
   const [progress, setProgress] = useState<SavedProgress | null>(null);
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export function MangaProgressPosterBadge({ mangaId }: { mangaId: string }) {
 }
 
 // 2. Info text shown under the title
-export function MangaProgressText({ mangaId }: { mangaId: string }) {
+export function ReaderProgressText({ mangaId }: { mangaId: string }) {
   const [progress, setProgress] = useState<SavedProgress | null>(null);
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export function MangaProgressText({ mangaId }: { mangaId: string }) {
 }
 
 // 3. Dynamic Read Button
-export function MangaProgressButton({ 
+export function ReaderProgressButton({ 
   mangaId, 
   slug, 
   chapters 

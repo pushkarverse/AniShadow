@@ -10,7 +10,7 @@ export function getAnimeTitle(title: string | { english?: string; romaji?: strin
  * Maps country code and format type to manga/novel format
  */
 export function getMangaFormat(country?: string, formatOrType?: string, id?: string): string {
-    if (id?.startsWith('novelfull-') || formatOrType === 'WEBNOVEL' || formatOrType === 'WEB_NOVEL' || formatOrType?.toLowerCase() === 'webnovel') return 'Web Novel';
+    if (formatOrType === 'WEBNOVEL' || formatOrType === 'WEB_NOVEL' || formatOrType?.toLowerCase() === 'webnovel') return 'Web Novel';
     if (formatOrType === 'NOVEL' || formatOrType?.toLowerCase() === 'novel') return 'Light Novel';
     if (country === 'KR') return 'Manhwa';
     if (country === 'CN') return 'Manhua';

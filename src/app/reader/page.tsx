@@ -1,6 +1,6 @@
 import { Navbar } from "@/components/Navbar";
-import { MangaCard } from "@/components/MangaCard";
-import { MangaTrendingSidebar } from "@/components/MangaTrendingSidebar";
+import { ReaderCard } from "@/components/ReaderCard";
+import { ReaderTrendingSidebar } from "@/components/ReaderTrendingSidebar";
 import {
   getTrendingManga,
   getPopularManga,
@@ -74,8 +74,8 @@ export default async function ReaderPage({
                 </div>
                 <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-3 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
                   {trendingManga.results.map((manga: any, idx: number) => (
-                    <MangaCard
-                      key={`manga-trending-${manga.id || idx}`}
+                    <ReaderCard
+                      key={`manga-trending-${manga.id || idx}-${idx}`}
                       id={manga.id}
                       title={getAnimeTitle(manga.title)}
                       slug={manga.slug}
@@ -104,8 +104,8 @@ export default async function ReaderPage({
                 </div>
                 <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-3 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
                   {trendingManhwa.results.map((manhwa: any, idx: number) => (
-                    <MangaCard
-                      key={`manhwa-trending-${manhwa.id || idx}`}
+                    <ReaderCard
+                      key={`manhwa-trending-${manhwa.id || idx}-${idx}`}
                       id={manhwa.id}
                       title={getAnimeTitle(manhwa.title)}
                       slug={manhwa.slug}
@@ -121,7 +121,7 @@ export default async function ReaderPage({
             </div>
 
             <aside className="hidden lg:block w-full lg:w-96 shrink-0">
-              <MangaTrendingSidebar initialData={trendingManga.results} />
+              <ReaderTrendingSidebar initialData={trendingManga.results} />
             </aside>
           </div>
         )}
@@ -145,15 +145,15 @@ export default async function ReaderPage({
               <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
                 {trendingNovels.results.length > 0 ? (
                   trendingNovels.results.map((novel: any, idx: number) => (
-                    <MangaCard
-                      key={`trendingnovel-${novel.id || idx}`}
+                    <ReaderCard
+                      key={`trendingnovel-${novel.id || idx}-${idx}`}
                       id={novel.id}
                       title={novel.title}
                       slug={novel.slug}
                       image={novel.image}
                       rating={novel.rating ? novel.rating / 10 : undefined}
                       countryOfOrigin={novel.countryOfOrigin}
-                      type="WEBNOVEL"
+                      type={novel.type}
                       chapters={novel.chapters}
                     />
                   ))
@@ -181,15 +181,15 @@ export default async function ReaderPage({
               <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
                 {popularNovels.results.length > 0 ? (
                   popularNovels.results.map((novel: any, idx: number) => (
-                    <MangaCard
-                      key={`popularnovel-${novel.id || idx}`}
+                    <ReaderCard
+                      key={`popularnovel-${novel.id || idx}-${idx}`}
                       id={novel.id}
                       title={novel.title}
                       slug={novel.slug}
                       image={novel.image}
                       rating={novel.rating ? novel.rating / 10 : undefined}
                       countryOfOrigin={novel.countryOfOrigin}
-                      type="WEBNOVEL"
+                      type={novel.type}
                       chapters={novel.chapters}
                     />
                   ))
