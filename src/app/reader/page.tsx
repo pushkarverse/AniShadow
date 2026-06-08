@@ -142,7 +142,7 @@ export default async function ReaderPage({
                   </p>
                 </div>
               </div>
-              <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
+              <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-3 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
                 {trendingNovels.results.length > 0 ? (
                   trendingNovels.results.map((novel: any, idx: number) => (
                     <ReaderCard
@@ -178,7 +178,7 @@ export default async function ReaderPage({
                   </p>
                 </div>
               </div>
-              <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
+              <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-3 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
                 {popularNovels.results.length > 0 ? (
                   popularNovels.results.map((novel: any, idx: number) => (
                     <ReaderCard

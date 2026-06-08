@@ -1709,12 +1709,12 @@ export async function getMangaDetails(id: string) {
         const ajaxUrl = `https://novelfull.com/ajax/chapter-option?novelId=${truyenId}`;
         const ajaxRes = await gotScraping({ url: ajaxUrl, http2: false });
         const ajax$ = load(ajaxRes.body);
-        
+
         ajax$('option').each((idx, optionEl) => {
           const href = ajax$(optionEl).attr('value') || "";
           const text = ajax$(optionEl).text().trim();
           const cleanHref = href.replace(/^\//, '');
-          
+
           const match = text.match(/chapter\s+(\d+(\.\d+)?)/i);
           const chapNum = match ? match[1] : (idx + 1).toString();
 
@@ -1908,9 +1908,9 @@ export async function getMangaChapterPages(chapterId: string) {
 
       const contentEl = $('#chapter-content');
       contentEl.find('script, style, iframe, ads, .ads, .adsbygoogle, div[class*="ads"], div[id*="ads"]').remove();
-      
+
       const htmlText = contentEl.html() || contentEl.text() || "Content load failed.";
-      
+
       return [{
         page: 1,
         text: htmlText
@@ -2078,23 +2078,102 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
   }
 };
 
+async function getHQCover(title: string): Promise<string | null> {
+  const cleanTitle = (t: string) => t.toLowerCase().replace(/\[.*?\]|\(.*?\)/g, '').replace(/[^a-z0-9\s]/g, '').trim();
+  const cleanedSearch = cleanTitle(title);
+
+  // 1. Try MangaDex
+  try {
+    const res = await gotScraping({
+      url: `https://api.mangadex.org/manga?title=${encodeURIComponent(title)}&limit=3&includes[]=cover_art`,
+      http2: false,
+      timeout: { request: 2000 }
+    });
+    const body = JSON.parse(res.body);
+    const results = body.data || [];
+    for (const m of results) {
+      const matchTitle = m.attributes.title.en || Object.values(m.attributes.title)[0] || '';
+      if (cleanTitle(matchTitle).includes(cleanedSearch) || cleanedSearch.includes(cleanTitle(matchTitle))) {
+        const coverRel = m.relationships.find((r: any) => r.type === 'cover_art');
+        const coverFileName = coverRel?.attributes?.fileName;
+        if (coverFileName) {
+          return `https://uploads.mangadex.org/covers/${m.id}/${coverFileName}`;
+        }
+      }
+    }
+  } catch (e: any) {
+    // Silent
+  }
+
+  // 2. Try AniList
+  try {
+    const query = `
+      query ($search: String) {
+        Page(page: 1, perPage: 3) {
+          media(search: $search, type: MANGA) {
+            title {
+              english
+              romaji
+              userPreferred
+            }
+            coverImage {
+              extraLarge
+              large
+            }
+          }
+        }
+      }
+    `;
+    const response = await gotScraping({
+      url: 'https://graphql.anilist.co',
+      method: 'POST',
+      json: {
+        query,
+        variables: { search: title }
+      },
+      http2: false,
+      timeout: { request: 2000 }
+    });
+    const body = JSON.parse(response.body);
+    const results = body.data?.Page?.media || [];
+    for (const m of results) {
+      const matchTitle = m.title.english || m.title.romaji || m.title.userPreferred || '';
+      if (cleanTitle(matchTitle).includes(cleanedSearch) || cleanedSearch.includes(cleanTitle(matchTitle))) {
+        return m.coverImage.extraLarge || m.coverImage.large;
+      }
+    }
+  } catch (e: any) {
+    // Silent
+  }
+
+  return null;
+}
+
 async function enrichNovelCovers(results: any[]) {
   const promises = results.map(async (novel) => {
+    const hqCover = await getHQCover(novel.title);
+    if (hqCover) {
+      novel.image = hqCover;
+      novel.cover = hqCover;
+    }
+
     const realId = novel.id.replace("novelfull-", "");
     const url = `https://novelfull.com/${realId}.html`;
     try {
       const res = await gotScraping({ url, http2: false });
       const $ = load(res.body);
-      let image = $('.info-holder .book img').attr('src') || "";
-      if (image && image.startsWith('/')) {
-        image = `https://novelfull.com${image}`;
-      }
-      if (image) {
-        novel.image = image;
-        novel.cover = image;
+
+      if (!hqCover) {
+        let image = $('.info-holder .book img').attr('src') || "";
+        if (image && image.startsWith('/')) {
+          image = `https://novelfull.com${image}`;
+        }
+        if (image) {
+          novel.image = image;
+          novel.cover = image;
+        }
       }
 
-      // Parse genres to determine if it is a Light Novel or Web Novel
       const genres: string[] = [];
       $('.info-holder .info div').each((i, divEl) => {
         const h3Text = $(divEl).find('h3').text().trim().toLowerCase();
