@@ -31,6 +31,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "witchculttranslation.com" },
       { protocol: "https", hostname: "novelbin.com" },
       { protocol: "https", hostname: "images.novelbin.com" },
+      { protocol: "https", hostname: "book-pic.webnovel.com" },
     ],
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",

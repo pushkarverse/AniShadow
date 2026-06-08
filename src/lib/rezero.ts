@@ -2,9 +2,9 @@
 
 export const WITCHCULT_NOVEL_ID = "witchcult-re-zero-web-novel";
 
-/** Official Re:Zero promotional art via AniList */
+/** Official Re:Zero promotional art via webnovel.com */
 export const REZERO_COVER =
-  "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx85737-WkWOr5EgwPyo.jpg";
+  "https://book-pic.webnovel.com/bookcover/27200483305740105?imageMogr2/thumbnail/600x&imageId=1692046605695";
 export const REZERO_BANNER =
   "https://witchculttranslation.com/wp-content/uploads/2024/09/Banner_new.jpg?x20762";
 

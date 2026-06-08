@@ -10,7 +10,7 @@ async function scrapeRequest(options: { url: string; method?: string; headers?: 
     "Accept-Language": "en-US,en;q=0.5",
     ...(options.headers || {})
   };
-  
+
   let body = options.body;
   if (options.json) {
     headers["Content-Type"] = "application/json";
@@ -39,7 +39,7 @@ async function scrapeRequest(options: { url: string; method?: string; headers?: 
       cache: "no-store"
     });
     clearTimeout(tId);
-    
+
     const text = await res.text();
     return {
       body: text,
@@ -1724,9 +1724,7 @@ export async function getReaderDetails(id: string) {
       const anilistData = await fetchAnilistNovelDetails(realId);
       if (!anilistData) return null;
 
-      // Find a matching NovelFull or NovelBin scraper representation by matching titles
       const searchRes = await searchNovel(anilistData.title);
-      // Exclude WITCHCULT and the anilistnovel ID itself to avoid infinite recursion
       const match = searchRes.results.find((r: any) =>
         (r.id.startsWith("novelfull-") || r.id.startsWith("novelbin-")) && r.id !== id
       );
@@ -1743,7 +1741,7 @@ export async function getReaderDetails(id: string) {
 
       return {
         ...anilistData,
-        id: mappedId, // Swap ID so chapter routes like /reader/read/... use provider chapters
+        id: mappedId,
         chapters
       };
     } catch (err) {
@@ -2536,7 +2534,6 @@ export async function searchNovel(query: string, page: number = 1) {
 
     let hasNextPage = fullRes.hasNextPage || binRes.hasNextPage;
 
-    // Fallback to AniList search if empty (typically due to scraping block on Vercel deployment)
     const isSearchEmpty = combinedResults.filter(r => r.id !== WITCHCULT_NOVEL_ID).length === 0;
     if (isSearchEmpty) {
       console.log(`[searchNovel] Scrapers returned empty, falling back to AniList search for: ${query}`);
@@ -2787,16 +2784,14 @@ export async function searchAniListNovels(search: string, page: number = 1) {
 export async function getTrendingNovels(page: number = 1, perPage: number = 20): Promise<{ results: any[], hasNextPage: boolean }> {
   const url = `https://novelfull.com/hot-novel?page=${page}`;
   let data = await scrapeNovelList(url);
-  
-  // Fallback to AniList if NovelFull is blocked (common on Vercel deployment)
+
   if (!data || !data.results || data.results.length === 0) {
     console.log("[getTrendingNovels] NovelFull scraping failed, falling back to AniList...");
     data = await fetchAniListNovels(page, perPage, ["TRENDING_DESC", "POPULARITY_DESC"]);
   }
 
   if (page !== 1) return data;
-  
-  // Filter out duplicate Re:Zero card if it got loaded from AniList to avoid key collisions
+
   const resultsWithoutReZero = data.results.filter(n => n.id !== WITCHCULT_NOVEL_ID && !n.title.toLowerCase().includes("re:zero"));
   return {
     ...data,
@@ -2808,15 +2803,13 @@ export async function getPopularNovels(page: number = 1, perPage: number = 20): 
   const url = `https://novelfull.com/completed-novel?page=${page}`;
   let data = await scrapeNovelList(url);
 
-  // Fallback to AniList if NovelFull is blocked (common on Vercel deployment)
   if (!data || !data.results || data.results.length === 0) {
     console.log("[getPopularNovels] NovelFull scraping failed, falling back to AniList...");
     data = await fetchAniListNovels(page, perPage, ["POPULARITY_DESC"]);
   }
 
   if (page !== 1) return data;
-  
-  // Filter out duplicate Re:Zero card if it got loaded from AniList to avoid key collisions
+
   const resultsWithoutReZero = data.results.filter(n => n.id !== WITCHCULT_NOVEL_ID && !n.title.toLowerCase().includes("re:zero"));
   return {
     ...data,
