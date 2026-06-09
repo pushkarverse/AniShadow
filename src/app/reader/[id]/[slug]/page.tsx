@@ -91,7 +91,12 @@ export default async function MangaDetailPage({ params }: PageProps) {
                     <div className="w-1 h-1 bg-white/10 rounded-full" />
                     <span>{manga.status?.replace(/_/g, ' ') || "Unknown"}</span>
                     <div className="w-1 h-1 bg-white/10 rounded-full" />
-                    <span>{chapters.length} Chapters{arcCount > 0 ? ` · ${arcCount} Arcs` : ""}</span>
+                    <span>
+                      {formatText === 'Light Novel' 
+                        ? `${manga.volumesCount || 20} Volumes` 
+                        : `${chapters.length} Chapters${arcCount > 0 ? ` · ${arcCount} Arcs` : ""}`
+                      }
+                    </span>
                   </div>
                   <ReaderProgressText mangaId={id} />
                 </div>
