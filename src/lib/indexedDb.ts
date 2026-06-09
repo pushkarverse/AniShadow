@@ -29,7 +29,7 @@ function getDB(): Promise<IDBDatabase> {
       resolve(request.result);
     };
 
-    request.onupgradeneeded = (event) => {
+    request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, { keyPath: "key" });
@@ -41,7 +41,7 @@ function getDB(): Promise<IDBDatabase> {
 export async function saveVolume(
   novelId: string,
   volumeNum: number,
-  file: File
+  file: File,
 ): Promise<void> {
   const db = await getDB();
   return new Promise((resolve, reject) => {
@@ -54,21 +54,26 @@ export async function saveVolume(
       novelId,
       volumeNum,
       fileName: file.name,
-      fileType: file.type || (file.name.endsWith(".epub") ? "application/epub+zip" : "application/pdf"),
+      fileType:
+        file.type ||
+        (file.name.endsWith(".epub")
+          ? "application/epub+zip"
+          : "application/pdf"),
       fileBlob: file,
-      uploadedAt: new Date().toISOString()
+      uploadedAt: new Date().toISOString(),
     };
 
     const request = store.put(record);
 
     request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error || new Error("Failed to save volume"));
+    request.onerror = () =>
+      reject(request.error || new Error("Failed to save volume"));
   });
 }
 
 export async function getVolume(
   novelId: string,
-  volumeNum: number
+  volumeNum: number,
 ): Promise<StoredVolume | null> {
   const db = await getDB();
   return new Promise((resolve, reject) => {
@@ -79,13 +84,14 @@ export async function getVolume(
     const request = store.get(key);
 
     request.onsuccess = () => resolve(request.result || null);
-    request.onerror = () => reject(request.error || new Error("Failed to retrieve volume"));
+    request.onerror = () =>
+      reject(request.error || new Error("Failed to retrieve volume"));
   });
 }
 
 export async function deleteVolume(
   novelId: string,
-  volumeNum: number
+  volumeNum: number,
 ): Promise<void> {
   const db = await getDB();
   return new Promise((resolve, reject) => {
@@ -96,12 +102,13 @@ export async function deleteVolume(
     const request = store.delete(key);
 
     request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error || new Error("Failed to delete volume"));
+    request.onerror = () =>
+      reject(request.error || new Error("Failed to delete volume"));
   });
 }
 
 export async function getUploadedVolumesForNovel(
-  novelId: string
+  novelId: string,
 ): Promise<Record<number, { fileName: string; uploadedAt: string }>> {
   try {
     const db = await getDB();
@@ -112,12 +119,15 @@ export async function getUploadedVolumesForNovel(
 
       request.onsuccess = () => {
         const results = request.result || [];
-        const filtered = results.filter((r: StoredVolume) => r.novelId === novelId);
-        const map: Record<number, { fileName: string; uploadedAt: string }> = {};
+        const filtered = results.filter(
+          (r: StoredVolume) => r.novelId === novelId,
+        );
+        const map: Record<number, { fileName: string; uploadedAt: string }> =
+          {};
         for (const item of filtered) {
           map[item.volumeNum] = {
             fileName: item.fileName,
-            uploadedAt: item.uploadedAt
+            uploadedAt: item.uploadedAt,
           };
         }
         resolve(map);

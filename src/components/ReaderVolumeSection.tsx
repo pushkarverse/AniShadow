@@ -1,8 +1,20 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { BookOpen, Upload, Search, Trash2, ArrowUpRight, Check, FileText } from "lucide-react";
-import { getUploadedVolumesForNovel, saveVolume, deleteVolume } from "@/lib/indexedDb";
+import {
+  BookOpen,
+  Upload,
+  Search,
+  Trash2,
+  ArrowUpRight,
+  Check,
+  FileText,
+} from "lucide-react";
+import {
+  getUploadedVolumesForNovel,
+  saveVolume,
+  deleteVolume,
+} from "@/lib/indexedDb";
 import Link from "next/link";
 
 interface ReaderVolumeSectionProps {
@@ -12,13 +24,23 @@ interface ReaderVolumeSectionProps {
   volumesCount?: number;
 }
 
-export function ReaderVolumeSection({ mangaId, slug, title, volumesCount = 20 }: ReaderVolumeSectionProps) {
-  const [uploadedMap, setUploadedMap] = useState<Record<number, { fileName: string; uploadedAt: string }>>({});
+export function ReaderVolumeSection({
+  mangaId,
+  slug,
+  title,
+  volumesCount = 20,
+}: ReaderVolumeSectionProps) {
+  const [uploadedMap, setUploadedMap] = useState<
+    Record<number, { fileName: string; uploadedAt: string }>
+  >({});
   const [uploadingVol, setUploadingVol] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const activeVolUploadRef = useRef<number | null>(null);
 
   const count = volumesCount && volumesCount > 0 ? volumesCount : 20;
+
+  const getFileKind = (fileName: string) =>
+    fileName.toLowerCase().endsWith(".pdf") ? "PDF" : "EPUB";
 
   useEffect(() => {
     async function loadUploads() {
@@ -38,6 +60,18 @@ export function ReaderVolumeSection({ mangaId, slug, title, volumesCount = 20 }:
     const vol = activeVolUploadRef.current;
     if (!file || vol === null) return;
 
+    const lowerName = file.name.toLowerCase();
+    const isPdf = file.type === "application/pdf" || lowerName.endsWith(".pdf");
+    const isEpub =
+      file.type === "application/epub+zip" || lowerName.endsWith(".epub");
+
+    if (!isPdf && !isEpub) {
+      alert("Only PDF and EPUB files are supported.");
+      activeVolUploadRef.current = null;
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     setUploadingVol(vol);
     try {
       await saveVolume(mangaId, vol, file);
@@ -54,7 +88,12 @@ export function ReaderVolumeSection({ mangaId, slug, title, volumesCount = 20 }:
   };
 
   const handleDeleteClick = async (vol: number) => {
-    if (!confirm(`Are you sure you want to delete the local file for Volume ${vol}?`)) return;
+    if (
+      !confirm(
+        `Are you sure you want to delete the local file for Volume ${vol}?`,
+      )
+    )
+      return;
     try {
       await deleteVolume(mangaId, vol);
       const uploads = await getUploadedVolumesForNovel(mangaId);
@@ -69,7 +108,9 @@ export function ReaderVolumeSection({ mangaId, slug, title, volumesCount = 20 }:
       <div className="flex items-center gap-4 pb-4 border-b border-white/5">
         <BookOpen className="w-6 h-6 text-primary shrink-0" />
         <div>
-          <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Light Novel Volumes</h2>
+          <h2 className="text-2xl font-black uppercase tracking-tighter text-white">
+            Light Novel Volumes
+          </h2>
           <p className="text-[10px] font-bold uppercase tracking-widest text-white/25 mt-1">
             {count} Official Volumes · Import EPUB/PDF to read
           </p>
@@ -81,7 +122,7 @@ export function ReaderVolumeSection({ mangaId, slug, title, volumesCount = 20 }:
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept=".epub,.pdf"
+        accept=".epub,.pdf,application/epub+zip,application/pdf"
         className="hidden"
       />
 
@@ -90,18 +131,20 @@ export function ReaderVolumeSection({ mangaId, slug, title, volumesCount = 20 }:
           const vol = i + 1;
           const uploaded = uploadedMap[vol];
           const isUploading = uploadingVol === vol;
-          const isPdf = uploaded?.fileName.toLowerCase().endsWith(".pdf");
 
-          const searchTitleClean = title.replace(/\(Light Novel\)/gi, "").trim();
-          const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(`${searchTitleClean} Volume ${vol} epub download`)}`;
+          const searchTitleClean = title
+            .replace(/\(Light Novel\)/gi, "")
+            .trim();
+          const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(`${searchTitleClean} Volume ${vol} epub pdf download`)}`;
 
           return (
             <div
               key={vol}
-              className={`p-5 border rounded-[2rem] transition-all flex flex-col justify-between gap-4 ${uploaded
-                ? "bg-primary/5 border-primary/20 shadow-lg shadow-primary/5"
-                : "bg-white/5 hover:bg-white/[0.07] border-white/5"
-                }`}
+              className={`p-5 border rounded-4xl transition-all flex flex-col justify-between gap-4 ${
+                uploaded
+                  ? "bg-primary/5 border-primary/20 shadow-lg shadow-primary/5"
+                  : "bg-white/5 hover:bg-white/[0.07] border-white/5"
+              }`}
             >
               <div className="flex justify-between items-start gap-4">
                 <div>
@@ -110,7 +153,7 @@ export function ReaderVolumeSection({ mangaId, slug, title, volumesCount = 20 }:
                     {uploaded && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[9px] font-black uppercase tracking-widest shrink-0">
                         <Check className="w-3 h-3" />
-                        Uploaded
+                        {getFileKind(uploaded.fileName)} Uploaded
                       </span>
                     )}
                   </h4>
