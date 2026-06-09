@@ -2812,7 +2812,7 @@ export async function getTrendingNovels(page: number = 1, perPage: number = 20):
   });
 
   if (page === 1) {
-    const resultsWithoutReZero = results.filter(n => n.id !== WITCHCULT_NOVEL_ID && !n.title.toLowerCase().includes("re:zero"));
+    const resultsWithoutReZero = results.filter(n => n.id !== WITCHCULT_NOVEL_ID && !(n.title.toLowerCase().includes("re:zero") && (n.id.startsWith("novelfull-") || n.id.startsWith("novelbin-"))));
     results = [getWitchCultNovelCard(), ...resultsWithoutReZero];
   }
 
@@ -2848,7 +2848,7 @@ export async function getPopularNovels(page: number = 1, perPage: number = 20): 
   });
 
   if (page === 1) {
-    const resultsWithoutReZero = results.filter(n => n.id !== WITCHCULT_NOVEL_ID && !n.title.toLowerCase().includes("re:zero"));
+    const resultsWithoutReZero = results.filter(n => n.id !== WITCHCULT_NOVEL_ID && !(n.title.toLowerCase().includes("re:zero") && (n.id.startsWith("novelfull-") || n.id.startsWith("novelbin-"))));
     results = [getWitchCultNovelCard(), ...resultsWithoutReZero];
   }
 
