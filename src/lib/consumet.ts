@@ -2353,7 +2353,7 @@ async function getHQCover(title: string): Promise<string | null> {
 async function enrichNovelCovers(results: any[]) {
   const promises = results.map(async (novel) => {
     const realId = novel.id.replace("novelfull-", "");
-    const url = `https://novelfull.com/${realId}.html`;
+    const url = `https://novelfull.net/${realId}.html`;
     try {
       const [hqCover, res] = await Promise.all([
         getHQCover(novel.title),
@@ -2361,8 +2361,8 @@ async function enrichNovelCovers(results: any[]) {
       ]);
 
       if (hqCover) {
-        novel.image = hqCover;
-        novel.cover = hqCover;
+        novel.image = hqCover.startsWith('/') ? hqCover : `/api/proxy?url=${encodeURIComponent(hqCover)}`;
+        novel.cover = hqCover.startsWith('/') ? hqCover : `/api/proxy?url=${encodeURIComponent(hqCover)}`;
       }
 
       if (res && res.body) {
@@ -2370,12 +2370,13 @@ async function enrichNovelCovers(results: any[]) {
 
         if (!hqCover) {
           let image = $('.info-holder .book img').attr('src') || "";
-          if (image && image.startsWith('/')) {
-            image = `https://novelfull.com${image}`;
-          }
           if (image) {
-            novel.image = image;
-            novel.cover = image;
+            if (image.startsWith('/')) {
+              image = `https://novelfull.net${image}`;
+            }
+            const proxiedImage = `/api/proxy?url=${encodeURIComponent(image)}`;
+            novel.image = proxiedImage;
+            novel.cover = proxiedImage;
           }
         }
 
@@ -2570,8 +2571,11 @@ async function scrapeNovelList(url: string) {
         const id = href.replace(/^\//, '').replace(/\.html$/, '');
 
         let img = $(el).find('img.cover').attr('src') || $(el).find('img').attr('src') || "";
-        if (img && img.startsWith('/')) {
-          img = `https://novelfull.com${img}`;
+        if (img) {
+          if (img.startsWith('/')) {
+            img = `https://novelfull.net${img}`;
+          }
+          img = `/api/proxy?url=${encodeURIComponent(img)}`;
         }
 
         const chapterText = $(el).find('.col-xs-2 a.chapter-text, .col-xs-2 a').text().trim();
@@ -2783,36 +2787,71 @@ export async function searchAniListNovels(search: string, page: number = 1) {
 
 export async function getTrendingNovels(page: number = 1, perPage: number = 20): Promise<{ results: any[], hasNextPage: boolean }> {
   const url = `https://novelfull.net/hot-novel?page=${page}`;
-  let data = await scrapeNovelList(url);
 
-  if (!data || !data.results || data.results.length === 0) {
-    console.log("[getTrendingNovels] NovelFull scraping failed, falling back to AniList...");
-    data = await fetchAniListNovels(page, perPage, ["TRENDING_DESC", "POPULARITY_DESC"]);
+  // Fetch both concurrently
+  const [webNovelsData, lnData] = await Promise.all([
+    scrapeNovelList(url).catch(() => ({ results: [], hasNextPage: false })),
+    fetchAniListNovels(page, perPage, ["TRENDING_DESC", "POPULARITY_DESC"]).catch(() => ({ results: [], hasNextPage: false }))
+  ]);
+
+  const mixed: any[] = [];
+  const maxLength = Math.max(webNovelsData.results.length, lnData.results.length);
+  for (let i = 0; i < maxLength; i++) {
+    if (i < webNovelsData.results.length) mixed.push(webNovelsData.results[i]);
+    if (i < lnData.results.length) mixed.push(lnData.results[i]);
   }
 
-  if (page !== 1) return data;
+  const seen = new Set<string>();
+  let results = mixed.filter((item) => {
+    const key = item.title.toLowerCase().trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
-  const resultsWithoutReZero = data.results.filter(n => n.id !== WITCHCULT_NOVEL_ID && !n.title.toLowerCase().includes("re:zero"));
+  if (page === 1) {
+    const resultsWithoutReZero = results.filter(n => n.id !== WITCHCULT_NOVEL_ID && !n.title.toLowerCase().includes("re:zero"));
+    results = [getWitchCultNovelCard(), ...resultsWithoutReZero];
+  }
+
   return {
-    ...data,
-    results: [getWitchCultNovelCard(), ...resultsWithoutReZero].slice(0, perPage)
+    results: results.slice(0, perPage),
+    hasNextPage: webNovelsData.hasNextPage || lnData.hasNextPage
   };
 }
 
 export async function getPopularNovels(page: number = 1, perPage: number = 20): Promise<{ results: any[], hasNextPage: boolean }> {
   const url = `https://novelfull.net/completed-novel?page=${page}`;
-  let data = await scrapeNovelList(url);
 
-  if (!data || !data.results || data.results.length === 0) {
-    console.log("[getPopularNovels] NovelFull scraping failed, falling back to AniList...");
-    data = await fetchAniListNovels(page, perPage, ["POPULARITY_DESC"]);
+  // Fetch both concurrently
+  const [webNovelsData, lnData] = await Promise.all([
+    scrapeNovelList(url).catch(() => ({ results: [], hasNextPage: false })),
+    fetchAniListNovels(page, perPage, ["POPULARITY_DESC"]).catch(() => ({ results: [], hasNextPage: false }))
+  ]);
+
+  // Interleave web novels and light novels
+  const mixed: any[] = [];
+  const maxLength = Math.max(webNovelsData.results.length, lnData.results.length);
+  for (let i = 0; i < maxLength; i++) {
+    if (i < webNovelsData.results.length) mixed.push(webNovelsData.results[i]);
+    if (i < lnData.results.length) mixed.push(lnData.results[i]);
   }
 
-  if (page !== 1) return data;
+  const seen = new Set<string>();
+  let results = mixed.filter((item) => {
+    const key = item.title.toLowerCase().trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
-  const resultsWithoutReZero = data.results.filter(n => n.id !== WITCHCULT_NOVEL_ID && !n.title.toLowerCase().includes("re:zero"));
+  if (page === 1) {
+    const resultsWithoutReZero = results.filter(n => n.id !== WITCHCULT_NOVEL_ID && !n.title.toLowerCase().includes("re:zero"));
+    results = [getWitchCultNovelCard(), ...resultsWithoutReZero];
+  }
+
   return {
-    ...data,
-    results: [getWitchCultNovelCard(), ...resultsWithoutReZero].slice(0, perPage)
+    results: results.slice(0, perPage),
+    hasNextPage: webNovelsData.hasNextPage || lnData.hasNextPage
   };
 }
