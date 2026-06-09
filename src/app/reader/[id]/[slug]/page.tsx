@@ -7,7 +7,7 @@ import { BookOpen, Star, Calendar, Info } from "lucide-react";
 import { ReaderCard } from "@/components/ReaderCard";
 import { ReaderActions } from "@/components/ReaderActions";
 import { ReaderProgressPosterBadge, ReaderProgressText, ReaderProgressButton } from "@/components/ReaderProgressTracker";
-import { ReaderChapterSection } from "@/components/ReaderChapterSection";
+import { ReaderDetailTabs } from "@/components/ReaderDetailTabs";
 import { CollapsibleDescription } from "@/components/CollapsibleDescription";
 
 import { slugify } from "@/lib/anime-utils";
@@ -136,9 +136,11 @@ export default async function MangaDetailPage({ params }: PageProps) {
         <div className="flex flex-col lg:flex-row gap-12">
           {/* Chapter List */}
           <div className="flex-1">
-            <ReaderChapterSection
+            <ReaderDetailTabs
               mangaId={id}
               slug={slug}
+              title={manga.title}
+              volumesCount={manga.volumesCount}
               chapters={chapters}
               arcs={arcs}
               isNovel={isNovel}

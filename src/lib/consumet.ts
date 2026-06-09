@@ -2686,6 +2686,7 @@ export async function fetchAnilistNovelDetails(id: string) {
         genres
         status
         chapters
+        volumes
         averageScore
         startDate { year }
       }
@@ -2719,6 +2720,7 @@ export async function fetchAnilistNovelDetails(id: string) {
       type: "NOVEL",
       format: "NOVEL",
       countryOfOrigin: "JP",
+      volumesCount: media.volumes || 0,
       chapters: []
     };
   } catch (err) {
