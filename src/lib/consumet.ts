@@ -310,6 +310,31 @@ function buildTitleVariants(title: HeroResult["title"] | string): string[] {
   return [...variants].slice(0, MAX_TITLE_VARIANTS);
 }
 
+function getKnownLightNovelVolumeCount(title: string, fallback = 0): number {
+  const normalized = normalizeCompareTitle(title);
+
+  // AniList often lags behind long-running light novels. Keep this scoped to titles
+  // with a stable, commonly checked main-series count.
+  if (
+    normalized.includes("rezero kara hajimeru isekai seikatsu") ||
+    normalized.includes("re zero starting life in another world") ||
+    normalized === "rezero" ||
+    normalized.includes("re zero")
+  ) {
+    return Math.max(fallback, 44);
+  }
+
+  return fallback;
+}
+
+function getMaxVolumeNumberFromChapters(chapters: any[] = []): number {
+  return chapters.reduce((max, chapter) => {
+    const raw = chapter?.volumeNumber ?? chapter?.volume ?? chapter?.vol;
+    const value = typeof raw === "number" ? raw : parseFloat(String(raw || ""));
+    return Number.isFinite(value) ? Math.max(max, Math.floor(value)) : max;
+  }, 0);
+}
+
 async function getHianimeSubDubCounts(titleVariants: string[]): Promise<{ sub: number; dub: number } | null> {
   const variants = titleVariants.filter(Boolean);
   if (!variants.length) return null;
@@ -1731,17 +1756,25 @@ export async function getReaderDetails(id: string) {
 
       let chapters: any[] = [];
       let mappedId = id;
+      let mappedVolumesCount = (anilistData as any).volumesCount || 0;
       if (match) {
         mappedId = match.id;
         const matchedDetails = await getReaderDetails(match.id);
         if (matchedDetails && matchedDetails.chapters) {
           chapters = matchedDetails.chapters;
+          mappedVolumesCount = Math.max(
+            mappedVolumesCount,
+            (matchedDetails as any).volumesCount || 0,
+            getMaxVolumeNumberFromChapters(chapters)
+          );
         }
       }
 
       return {
         ...anilistData,
         id: mappedId,
+        volumesCount: mappedVolumesCount,
+        volumes: mappedVolumesCount,
         chapters
       };
     } catch (err) {
@@ -1829,6 +1862,7 @@ export async function getReaderDetails(id: string) {
         genres,
         rating: ratingVal,
         chapters: chapters.reverse(), // reverse to return latest first
+        volumesCount: getMaxVolumeNumberFromChapters(chapters),
         type: "NOVEL",
         format: "NOVEL",
         countryOfOrigin: "US"
@@ -1918,6 +1952,7 @@ export async function getReaderDetails(id: string) {
         genres,
         rating: ratingVal,
         chapters: chapters.reverse(), // reverse to return latest first (descending) as AniShadow expects
+        volumesCount: getMaxVolumeNumberFromChapters(chapters),
         type: "NOVEL",
         format: "NOVEL",
         countryOfOrigin: "US"
@@ -2630,6 +2665,7 @@ export async function fetchAniListNovels(page: number, perPage: number, sort: st
           genres
           status
           chapters
+          volumes
           averageScore
         }
       }
@@ -2650,6 +2686,7 @@ export async function fetchAniListNovels(page: number, perPage: number, sort: st
 
     const results = media.map((m: any) => {
       const title = m.title.english || m.title.romaji || m.title.native || "Unknown Title";
+      const volumesCount = getKnownLightNovelVolumeCount(title, m.volumes || 0);
       return {
         id: `anilistnovel-${m.id}`,
         title,
@@ -2658,12 +2695,14 @@ export async function fetchAniListNovels(page: number, perPage: number, sort: st
         cover: m.bannerImage || m.coverImage?.large || "",
         type: "NOVEL",
         rating: m.averageScore || 85,
-        episodeNumber: m.chapters || 0,
-        subEpisodes: m.chapters || 0,
+        episodeNumber: volumesCount,
+        subEpisodes: volumesCount,
         format: "NOVEL",
         status: m.status || "RELEASING",
         countryOfOrigin: "JP",
-        chapters: m.chapters || 0
+        chapters: volumesCount,
+        volumesCount,
+        chaptersCount: m.chapters || 0
       };
     });
 
@@ -2706,6 +2745,7 @@ export async function fetchAnilistNovelDetails(id: string) {
     if (!media) return null;
 
     const title = media.title.english || media.title.romaji || media.title.native || "Unknown Title";
+    const volumesCount = getKnownLightNovelVolumeCount(title, media.volumes || 0);
     return {
       id: `anilistnovel-${media.id}`,
       title,
@@ -2720,7 +2760,9 @@ export async function fetchAnilistNovelDetails(id: string) {
       type: "NOVEL",
       format: "NOVEL",
       countryOfOrigin: "JP",
-      volumesCount: media.volumes || 0,
+      volumesCount,
+      volumes: volumesCount,
+      chaptersCount: media.chapters || 0,
       chapters: []
     };
   } catch (err) {
@@ -2743,6 +2785,7 @@ export async function searchAniListNovels(search: string, page: number = 1) {
           genres
           status
           chapters
+          volumes
           averageScore
         }
       }
@@ -2763,6 +2806,7 @@ export async function searchAniListNovels(search: string, page: number = 1) {
 
     const results = media.map((m: any) => {
       const title = m.title.english || m.title.romaji || m.title.native || "Unknown Title";
+      const volumesCount = getKnownLightNovelVolumeCount(title, m.volumes || 0);
       return {
         id: `anilistnovel-${m.id}`,
         title,
@@ -2771,12 +2815,14 @@ export async function searchAniListNovels(search: string, page: number = 1) {
         cover: m.bannerImage || m.coverImage?.large || "",
         type: "NOVEL",
         rating: m.averageScore || 85,
-        episodeNumber: m.chapters || 0,
-        subEpisodes: m.chapters || 0,
+        episodeNumber: volumesCount,
+        subEpisodes: volumesCount,
         format: "NOVEL",
         status: m.status || "RELEASING",
         countryOfOrigin: "JP",
-        chapters: m.chapters || 0
+        chapters: volumesCount,
+        volumesCount,
+        chaptersCount: m.chapters || 0
       };
     });
 

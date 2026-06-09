@@ -42,6 +42,10 @@ export default async function MangaDetailPage({ params }: PageProps) {
   const isNovel = id.startsWith("novelfull-") || id.startsWith("novelbin-") || id.startsWith("witchcult-") || formatText === 'Light Novel' || formatText === 'Web Novel';
   const themeClass = isNovel ? "novel-theme" : "manga-theme";
   const arcCount = arcs.length;
+  const volumeCount = Number(manga.volumesCount || manga.volumes || 0);
+  const countLabel = formatText === 'Light Novel' && volumeCount > 0
+    ? `${volumeCount} Volumes`
+    : `${chapters.length} Chapters${arcCount > 0 ? ` - ${arcCount} Arcs` : ""}`;
 
   return (
     <div className={`min-h-screen bg-background text-foreground pb-20 ${themeClass}`}>
@@ -91,12 +95,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
                     <div className="w-1 h-1 bg-white/10 rounded-full" />
                     <span>{manga.status?.replace(/_/g, ' ') || "Unknown"}</span>
                     <div className="w-1 h-1 bg-white/10 rounded-full" />
-                    <span>
-                      {formatText === 'Light Novel' 
-                        ? `${manga.volumesCount || 20} Volumes` 
-                        : `${chapters.length} Chapters${arcCount > 0 ? ` · ${arcCount} Arcs` : ""}`
-                      }
-                    </span>
+                    <span>{countLabel}</span>
                   </div>
                   <ReaderProgressText mangaId={id} />
                 </div>
@@ -145,7 +144,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
               mangaId={id}
               slug={slug}
               title={manga.title}
-              volumesCount={manga.volumesCount}
+              volumesCount={volumeCount}
               chapters={chapters}
               arcs={arcs}
               isNovel={isNovel}

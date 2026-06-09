@@ -269,7 +269,7 @@ export const ReaderCard = ({
           <div className="absolute bottom-2 left-2 right-2 flex items-center justify-center z-10 pointer-events-none select-none">
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-sm border border-white/5 text-[9px] font-bold text-white/90">
               <span className="flex items-center gap-0.5 text-white/60">
-                <span>CH</span>
+                <span>{format === "Light Novel" ? "VOL" : "CH"}</span>
                 <span>{chapters || chapterNumber || "?"}</span>
               </span>
             </div>
@@ -388,10 +388,17 @@ export const ReaderCard = ({
                           </div>
                           <div className="h-6 w-[1px] bg-white/10" />
                           <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-0.5">Chapters</span>
+                            <span className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-0.5">
+                              {format === "Light Novel" ? "Volumes" : "Chapters"}
+                            </span>
                             <div className="flex items-center gap-1.5 text-white/80">
                               <BookOpen className="w-3.5 h-3.5" />
-                              <span className="text-sm font-black tracking-tighter">{(infoData as any).chapters || "N/A"}</span>
+                              <span className="text-sm font-black tracking-tighter">
+                                {format === "Light Novel" 
+                                  ? ((infoData as any).volumes || (infoData as any).chapters || "N/A")
+                                  : ((infoData as any).chapters || "N/A")
+                                }
+                              </span>
                             </div>
                           </div>
                         </div>

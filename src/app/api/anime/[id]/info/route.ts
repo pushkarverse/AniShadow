@@ -17,6 +17,9 @@ export async function GET(
       if (!details) {
         return NextResponse.json({ error: "Reader details not found" }, { status: 404 });
       }
+
+      const chaptersCount = details.chapters?.length || 0;
+      const volumesCount = (details as any).volumesCount || (details as any).volumes || 0;
       
       return NextResponse.json({
         id: details.id,
@@ -28,7 +31,9 @@ export async function GET(
         status: details.status || "RELEASING",
         genres: details.genres || [],
         type: details.type || type || "MANGA",
-        chapters: details.chapters?.length || 0,
+        chapters: chaptersCount,
+        volumes: volumesCount,
+        volumesCount,
       });
     }
 
