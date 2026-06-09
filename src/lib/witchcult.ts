@@ -1,6 +1,6 @@
 import { load } from "cheerio";
 import { slugify } from "./anime-utils";
-import { REZERO_BANNER, REZERO_COVER, WITCHCULT_NOVEL_ID } from "./rezero";
+import { REZERO_BANNER, REZERO_COVER, REZERO_ENGLISH_TITLE, REZERO_LIGHT_NOVEL_VOLUME_COUNT, WITCHCULT_NOVEL_ID } from "./rezero";
 
 async function fetchHtml(url: string): Promise<string> {
   const res = await fetch(url, {
@@ -18,7 +18,7 @@ async function fetchHtml(url: string): Promise<string> {
 }
 
 
-export { REZERO_BANNER, REZERO_COVER, WITCHCULT_NOVEL_ID } from "./rezero";
+export { REZERO_BANNER, REZERO_COVER, REZERO_ENGLISH_TITLE, REZERO_LIGHT_NOVEL_VOLUME_COUNT, WITCHCULT_NOVEL_ID } from "./rezero";
 
 const WITCHCULT_BASE_URL = "https://witchculttranslation.com";
 const WITCHCULT_TOC_URL = `${WITCHCULT_BASE_URL}/table-of-content/`;
@@ -55,7 +55,7 @@ export interface ReaderArc {
 export function getWitchCultNovelCard(chapters = 0) {
   return {
     id: WITCHCULT_NOVEL_ID,
-    title: "Re:Zero Web Novel",
+    title: REZERO_ENGLISH_TITLE,
     slug: "re-zero-web-novel",
     image: REZERO_COVER,
     cover: REZERO_BANNER,
@@ -67,7 +67,9 @@ export function getWitchCultNovelCard(chapters = 0) {
     status: "RELEASING",
     year: 2012,
     countryOfOrigin: "JP",
-    chapters
+    chapters,
+    volumesCount: REZERO_LIGHT_NOVEL_VOLUME_COUNT,
+    volumes: REZERO_LIGHT_NOVEL_VOLUME_COUNT
   };
 }
 
@@ -439,7 +441,9 @@ export async function getWitchCultReaderDetails() {
     chapters,
     arcs,
     type: "WEBNOVEL",
-    format: "WEBNOVEL"
+    format: "WEBNOVEL",
+    volumesCount: REZERO_LIGHT_NOVEL_VOLUME_COUNT,
+    volumes: REZERO_LIGHT_NOVEL_VOLUME_COUNT
   };
 }
 

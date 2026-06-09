@@ -10,9 +10,10 @@ interface ChapterSectionProps {
   chapters: any[];
   arcs: any[];
   isNovel: boolean;
+  heading?: string;
 }
 
-export function ReaderChapterSection({ mangaId, slug, chapters, arcs, isNovel }: ChapterSectionProps) {
+export function ReaderChapterSection({ mangaId, slug, chapters, arcs, isNovel, heading }: ChapterSectionProps) {
   const [selectedArc, setSelectedArc] = useState<number>(arcs[0]?.number || 1);
   const arcCount = arcs.length;
   return (
@@ -22,7 +23,7 @@ export function ReaderChapterSection({ mangaId, slug, chapters, arcs, isNovel }:
           <ListOrdered className="w-6 h-6 text-primary shrink-0" />
           <div>
             <h2 className="text-2xl font-black uppercase tracking-tighter text-white">
-              {isNovel ? "Chapters" : "Chapters List"}
+              {heading || (isNovel ? "Chapters" : "Chapters List")}
             </h2>
             <p className="text-[10px] font-bold uppercase tracking-widest text-white/25 mt-1">
               {arcCount > 0 ? `${arcCount} Arcs · ` : ""}{chapters.length} Total

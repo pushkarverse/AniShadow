@@ -5,6 +5,7 @@ import { BookOpen, ListOrdered } from "lucide-react";
 import { ReaderChapterSection } from "./ReaderChapterSection";
 import { ReaderVolumeSection } from "./ReaderVolumeSection";
 import { motion } from "framer-motion";
+import { WITCHCULT_NOVEL_ID } from "@/lib/rezero";
 
 interface ReaderDetailTabsProps {
   mangaId: string;
@@ -29,8 +30,12 @@ export function ReaderDetailTabs({
     isNovel && chapters.length === 0 ? "volumes" : "chapters"
   );
 
+  const isReZero = mangaId === WITCHCULT_NOVEL_ID;
   const showVolumesOption = isNovel;
   const showChaptersOption = chapters.length > 0 || !isNovel;
+  const chaptersTabLabel = isReZero ? "WN" : "Chapters";
+  const volumesTabLabel = isReZero ? "LN" : "Volumes";
+  const chaptersHeading = isReZero ? "Web Novel Chapters" : undefined;
 
   if (!showVolumesOption) {
     return (
@@ -40,6 +45,7 @@ export function ReaderDetailTabs({
         chapters={chapters}
         arcs={arcs}
         isNovel={isNovel}
+        heading={chaptersHeading}
       />
     );
   }
@@ -62,7 +68,7 @@ export function ReaderDetailTabs({
                 />
               )}
               <ListOrdered className="w-4 h-4" />
-              <span>Chapters</span>
+              <span>{chaptersTabLabel}</span>
             </button>
 
             <button
@@ -78,7 +84,7 @@ export function ReaderDetailTabs({
                 />
               )}
               <BookOpen className="w-4 h-4" />
-              <span>Volumes</span>
+              <span>{volumesTabLabel}</span>
             </button>
           </div>
         </div>
@@ -92,6 +98,7 @@ export function ReaderDetailTabs({
             chapters={chapters}
             arcs={arcs}
             isNovel={isNovel}
+            heading={chaptersHeading}
           />
         ) : (
           <ReaderVolumeSection

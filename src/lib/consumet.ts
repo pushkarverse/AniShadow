@@ -321,7 +321,7 @@ function getKnownLightNovelVolumeCount(title: string, fallback = 0): number {
     normalized === "rezero" ||
     normalized.includes("re zero")
   ) {
-    return Math.max(fallback, 44);
+    return Math.max(fallback, REZERO_LIGHT_NOVEL_VOLUME_COUNT);
   }
 
   return fallback;
@@ -333,6 +333,11 @@ function getMaxVolumeNumberFromChapters(chapters: any[] = []): number {
     const value = typeof raw === "number" ? raw : parseFloat(String(raw || ""));
     return Number.isFinite(value) ? Math.max(max, Math.floor(value)) : max;
   }, 0);
+}
+
+function isReZeroTitle(title: string) {
+  const normalized = normalizeCompareTitle(title);
+  return normalized === "rezero" || normalized.includes("re zero") || normalized.includes("rezero");
 }
 
 async function getHianimeSubDubCounts(titleVariants: string[]): Promise<{ sub: number; dub: number } | null> {
@@ -491,6 +496,7 @@ const getAnimePahe = () => {
 import { getAnimeTitle, slugify } from "./anime-utils";
 import type { HeroResult } from "@/types/anime";
 import {
+  REZERO_LIGHT_NOVEL_VOLUME_COUNT,
   WITCHCULT_NOVEL_ID,
   getWitchCultChapterPages,
   getWitchCultNovelCard,
@@ -2684,7 +2690,10 @@ export async function fetchAniListNovels(page: number, perPage: number, sort: st
     const media = data?.data?.Page?.media || [];
     const hasNextPage = data?.data?.Page?.pageInfo?.hasNextPage || false;
 
-    const results = media.map((m: any) => {
+    const results = media.filter((m: any) => {
+      const title = m.title.english || m.title.romaji || m.title.native || "";
+      return !isReZeroTitle(title);
+    }).map((m: any) => {
       const title = m.title.english || m.title.romaji || m.title.native || "Unknown Title";
       const volumesCount = getKnownLightNovelVolumeCount(title, m.volumes || 0);
       return {
@@ -2804,7 +2813,10 @@ export async function searchAniListNovels(search: string, page: number = 1) {
     const media = data?.data?.Page?.media || [];
     const hasNextPage = data?.data?.Page?.pageInfo?.hasNextPage || false;
 
-    const results = media.map((m: any) => {
+    const results = media.filter((m: any) => {
+      const title = m.title.english || m.title.romaji || m.title.native || "";
+      return !isReZeroTitle(title);
+    }).map((m: any) => {
       const title = m.title.english || m.title.romaji || m.title.native || "Unknown Title";
       const volumesCount = getKnownLightNovelVolumeCount(title, m.volumes || 0);
       return {

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  REZERO_ENGLISH_TITLE,
   WITCHCULT_NOVEL_ID,
   findReaderChapter,
   getChapterDisplayTitle,
@@ -329,7 +330,7 @@ export function NovelReaderClient({
     ? `Arc ${currentChapter.arc}${currentChapter.arcTitle ? ` · ${currentChapter.arcTitle}` : ""}`
     : null;
 
-  const headerLabel = isReZero ? "Re:Zero Web Novel" : (slug?.replace(/-/g, ' ') || 'Novel Reader');
+  const headerLabel = isReZero ? REZERO_ENGLISH_TITLE : (slug?.replace(/-/g, ' ') || 'Novel Reader');
 
   return (
     <div className={`min-h-screen ${currentThemeBg} transition-colors duration-300 relative pb-32 reader-theme novel-theme`}>

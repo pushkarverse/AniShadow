@@ -1,6 +1,8 @@
 /** Client-safe Re:Zero constants (no server/scraper imports). */
 
 export const WITCHCULT_NOVEL_ID = "witchcult-re-zero-web-novel";
+export const REZERO_ENGLISH_TITLE = "Re:ZERO -Starting Life in Another World-";
+export const REZERO_LIGHT_NOVEL_VOLUME_COUNT = 44;
 
 /** Official Re:Zero promotional art via webnovel.com proxied to bypass hotlink protection */
 export const REZERO_COVER =
