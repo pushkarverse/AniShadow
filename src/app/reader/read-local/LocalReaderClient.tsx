@@ -135,6 +135,8 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [pdfReadingMode, setPdfReadingMode] =
     useState<PdfReadingMode>("scroll");
+  const [pdfControlsVisible, setPdfControlsVisible] = useState(true);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [pdfTurnOverlay, setPdfTurnOverlay] = useState<ActivePdfTurn | null>(
     null,
   );
@@ -155,9 +157,51 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
   const pdfFlipCanvasRef = useRef<HTMLCanvasElement>(null);
   const pdfPageRefs = useRef<Array<HTMLDivElement | null>>([]);
   const pendingPdfTurnRef = useRef<PendingPdfTurn | null>(null);
+  const pinchStartDistanceRef = useRef<number | null>(null);
+  const pinchStartZoomRef = useRef(1);
+  const controlsHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const bookInstanceRef = useRef<any>(null);
 
   const isPdf = storedVolume?.fileType?.toLowerCase().includes("pdf") ?? false;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(max-width: 768px)");
+    const updateViewport = () => setIsMobileViewport(mediaQuery.matches);
+
+    updateViewport();
+    mediaQuery.addEventListener("change", updateViewport);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateViewport);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isPdf || !isMobileViewport) {
+      setPdfControlsVisible(true);
+      return;
+    }
+
+    setPdfControlsVisible(true);
+
+    if (controlsHideTimerRef.current) {
+      clearTimeout(controlsHideTimerRef.current);
+    }
+
+    controlsHideTimerRef.current = setTimeout(() => {
+      setPdfControlsVisible(false);
+    }, 2600);
+
+    return () => {
+      if (controlsHideTimerRef.current) {
+        clearTimeout(controlsHideTimerRef.current);
+      }
+    };
+  }, [isMobileViewport, isPdf, pdfReadingMode]);
 
   useEffect(() => {
     let objectUrl = "";
@@ -376,8 +420,78 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
   }, [isPdf, pdfPageCount, pdfReadingMode, pdfZoom]);
 
   const updatePdfZoom = useCallback((nextZoom: number) => {
-    setPdfZoom(Math.max(0.5, Math.min(2.5, Number(nextZoom.toFixed(2)))));
+    setPdfZoom(Math.max(0.5, Math.min(2.8, Number(nextZoom.toFixed(2)))));
   }, []);
+
+  const showPdfControls = useCallback(() => {
+    if (!isMobileViewport) return;
+
+    setPdfControlsVisible(true);
+
+    if (controlsHideTimerRef.current) {
+      clearTimeout(controlsHideTimerRef.current);
+    }
+
+    controlsHideTimerRef.current = setTimeout(() => {
+      setPdfControlsVisible(false);
+    }, 2600);
+  }, [isMobileViewport]);
+
+  const getTouchDistance = (touches: React.TouchList) => {
+    if (touches.length < 2) return null;
+
+    const first = touches.item(0);
+    const second = touches.item(1);
+    if (!first || !second) return null;
+
+    return Math.hypot(
+      first.clientX - second.clientX,
+      first.clientY - second.clientY,
+    );
+  };
+
+  const handlePdfTouchStart = useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      showPdfControls();
+
+      const distance = getTouchDistance(event.touches);
+      if (distance) {
+        pinchStartDistanceRef.current = distance;
+        pinchStartZoomRef.current = pdfZoom;
+      }
+    },
+    [pdfZoom, showPdfControls],
+  );
+
+  const handlePdfTouchMove = useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      const startDistance = pinchStartDistanceRef.current;
+      const currentDistance = getTouchDistance(event.touches);
+
+      if (!startDistance || !currentDistance) return;
+
+      event.preventDefault();
+      updatePdfZoom(
+        pinchStartZoomRef.current * (currentDistance / startDistance),
+      );
+    },
+    [updatePdfZoom],
+  );
+
+  const handlePdfTouchEnd = useCallback(() => {
+    pinchStartDistanceRef.current = null;
+    showPdfControls();
+  }, [showPdfControls]);
+
+  const handlePdfScreenTap = useCallback(() => {
+    if (!isMobileViewport) return;
+
+    if (controlsHideTimerRef.current) {
+      clearTimeout(controlsHideTimerRef.current);
+    }
+
+    setPdfControlsVisible((visible) => !visible);
+  }, [isMobileViewport]);
 
   const scrollToPdfPage = useCallback(
     (nextPage: number) => {
@@ -493,11 +607,13 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
     setPdfDragOverlay(null);
 
     if (shouldTurn) {
-      pendingPdfTurnRef.current = {
+      pendingPdfTurnRef.current = null;
+      setPdfTurnOverlay({
         image: drag.image,
         direction: drag.direction,
         targetPage: drag.targetPage,
-      };
+        key: Date.now(),
+      });
       setPdfPage(drag.targetPage);
       setPdfPageInput(String(drag.targetPage));
     }
@@ -749,9 +865,14 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
       )}
 
       <header
+        onClick={(event) => event.stopPropagation()}
         className={
           isPdf
-            ? "sticky top-0 z-50 border-b border-white/10 bg-[#323639]/95 text-white backdrop-blur-xl"
+            ? `sticky top-0 z-50 border-b border-primary/25 bg-[#120418]/95 text-white shadow-lg shadow-primary/10 backdrop-blur-xl transition-all duration-300 ${
+                isMobileViewport && !pdfControlsVisible
+                  ? "-translate-y-full opacity-0 pointer-events-none"
+                  : "translate-y-0 opacity-100"
+              }`
             : `px-6 py-4 flex items-center justify-between border-b ${theme === "dark" ? "bg-black/80 border-white/5 text-white" : theme === "sepia" ? "bg-[#e5d8b6]/80 border-[#8b7355]/20 text-[#4f3824]" : "bg-white/80 border-black/5 text-black"} backdrop-blur-xl sticky top-0 z-50`
         }
       >
@@ -761,7 +882,7 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <Link
                   href={`/reader/${id}/${slug}`}
-                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors shrink-0"
+                  className="p-2 rounded-lg bg-primary/15 text-primary hover:bg-primary/25 transition-colors shrink-0"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </Link>
@@ -778,7 +899,7 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
                   href={fileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hidden md:inline-flex items-center justify-center px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-medium transition-colors"
+                  className="hidden md:inline-flex items-center justify-center px-3 py-2 rounded-lg bg-primary/15 hover:bg-primary/25 text-xs font-medium text-primary transition-colors"
                 >
                   Open in New Tab
                 </a>
@@ -1012,7 +1133,11 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
         {isPdf ? (
           <div
             ref={pdfScrollContainerRef}
-            className="flex-1 overflow-auto px-3 py-4 md:px-8 md:py-8"
+            onClick={handlePdfScreenTap}
+            onTouchStart={handlePdfTouchStart}
+            onTouchMove={handlePdfTouchMove}
+            onTouchEnd={handlePdfTouchEnd}
+            className="flex-1 overflow-auto px-3 py-4 md:px-8 md:py-8 overscroll-contain"
           >
             {pdfError ? (
               <div className="max-w-2xl mx-auto rounded-3xl border border-red-500/20 bg-red-500/5 p-6 text-center text-white space-y-4">
@@ -1069,6 +1194,33 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
                     style={{ perspective: "2200px" }}
                   >
                     <canvas ref={pdfFlipCanvasRef} className="block bg-white" />
+
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        goToPdfPage(pdfPage - 1);
+                      }}
+                      disabled={pdfPage <= 1}
+                      className="hidden md:flex absolute left-3 top-1/2 z-20 -translate-y-1/2 items-center justify-center w-12 h-12 rounded-full bg-[#120418]/80 text-primary border border-primary/30 shadow-lg shadow-primary/20 backdrop-blur hover:bg-primary/20 disabled:opacity-25 disabled:cursor-not-allowed transition-all"
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="w-7 h-7" />
+                    </button>
+
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        goToPdfPage(pdfPage + 1);
+                      }}
+                      disabled={pdfPageCount === 0 || pdfPage >= pdfPageCount}
+                      className="hidden md:flex absolute right-3 top-1/2 z-20 -translate-y-1/2 items-center justify-center w-12 h-12 rounded-full bg-[#120418]/80 text-primary border border-primary/30 shadow-lg shadow-primary/20 backdrop-blur hover:bg-primary/20 disabled:opacity-25 disabled:cursor-not-allowed transition-all"
+                      aria-label="Next page"
+                    >
+                      <ChevronLeft className="w-7 h-7 rotate-180" />
+                    </button>
+
+                    <div className="pointer-events-none absolute inset-y-0 left-0 w-[18%] bg-linear-to-r from-primary/10 to-transparent opacity-0 md:opacity-100" />
+                    <div className="pointer-events-none absolute inset-y-0 right-0 w-[18%] bg-linear-to-l from-primary/10 to-transparent opacity-0 md:opacity-100" />
 
                     <AnimatePresence>
                       {pdfDragOverlay && (
