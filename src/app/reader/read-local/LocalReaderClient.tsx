@@ -36,6 +36,7 @@ interface PdfPageCanvasProps {
   pageNumber: number;
   zoom: number;
   viewportWidth: number;
+  active: boolean;
   onError: (message: string) => void;
 }
 
@@ -44,12 +45,19 @@ function PdfPageCanvas({
   pageNumber,
   zoom,
   viewportWidth,
+  active,
   onError,
 }: PdfPageCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    if (!pdfDoc || !canvasRef.current || typeof window === "undefined") return;
+    if (
+      !active ||
+      !pdfDoc ||
+      !canvasRef.current ||
+      typeof window === "undefined"
+    )
+      return;
 
     let cancelled = false;
     let renderTask: { cancel?: () => void; promise?: Promise<void> } | null =
@@ -114,7 +122,15 @@ function PdfPageCanvas({
       cancelled = true;
       renderTask?.cancel?.();
     };
-  }, [onError, pageNumber, pdfDoc, viewportWidth, zoom]);
+  }, [active, onError, pageNumber, pdfDoc, viewportWidth, zoom]);
+
+  if (!active) {
+    return (
+      <div className="flex h-[72vh] min-h-130 w-[min(92vw,720px)] items-center justify-center bg-white text-xs font-bold uppercase tracking-widest text-black/20">
+        Page {pageNumber}
+      </div>
+    );
+  }
 
   return <canvas ref={canvasRef} className="block bg-white" />;
 }
@@ -129,7 +145,6 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [pdfPage, setPdfPage] = useState(1);
   const [pdfPageCount, setPdfPageCount] = useState(0);
-  const [pdfPageInput, setPdfPageInput] = useState("1");
   const [pdfZoom, setPdfZoom] = useState(1);
   const [pdfViewportWidth, setPdfViewportWidth] = useState(0);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -159,6 +174,8 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
   const pendingPdfTurnRef = useRef<PendingPdfTurn | null>(null);
   const pinchStartDistanceRef = useRef<number | null>(null);
   const pinchStartZoomRef = useRef(1);
+  const pinchZoomFrameRef = useRef<number | null>(null);
+  const pendingPinchZoomRef = useRef<number | null>(null);
   const controlsHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -327,7 +344,6 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
         setPdfDoc(pdf);
         setPdfPageCount(pdf.numPages);
         setPdfPage(1);
-        setPdfPageInput("1");
       } catch (err) {
         console.error("Error rendering PDF:", err);
         if (!cancelled) {
@@ -401,7 +417,6 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
 
         if (!Number.isNaN(pageNumber)) {
           setPdfPage(pageNumber);
-          setPdfPageInput(String(pageNumber));
         }
       },
       {
@@ -471,15 +486,30 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
       if (!startDistance || !currentDistance) return;
 
       event.preventDefault();
-      updatePdfZoom(
-        pinchStartZoomRef.current * (currentDistance / startDistance),
-      );
+      pendingPinchZoomRef.current =
+        pinchStartZoomRef.current * (currentDistance / startDistance);
+
+      if (pinchZoomFrameRef.current !== null) return;
+
+      pinchZoomFrameRef.current = window.requestAnimationFrame(() => {
+        if (pendingPinchZoomRef.current !== null) {
+          updatePdfZoom(pendingPinchZoomRef.current);
+        }
+        pinchZoomFrameRef.current = null;
+      });
     },
     [updatePdfZoom],
   );
 
   const handlePdfTouchEnd = useCallback(() => {
     pinchStartDistanceRef.current = null;
+    pendingPinchZoomRef.current = null;
+
+    if (pinchZoomFrameRef.current !== null) {
+      window.cancelAnimationFrame(pinchZoomFrameRef.current);
+      pinchZoomFrameRef.current = null;
+    }
+
     showPdfControls();
   }, [showPdfControls]);
 
@@ -507,7 +537,6 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
       });
 
       setPdfPage(clampedPage);
-      setPdfPageInput(String(clampedPage));
     },
     [pdfPageCount],
   );
@@ -531,7 +560,6 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
       }
 
       setPdfPage(clampedPage);
-      setPdfPageInput(String(clampedPage));
     },
     [pdfPage, pdfPageCount],
   );
@@ -615,7 +643,6 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
         key: Date.now(),
       });
       setPdfPage(drag.targetPage);
-      setPdfPageInput(String(drag.targetPage));
     }
   }, [pdfDragOverlay]);
 
@@ -797,16 +824,6 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
     });
   };
 
-  const submitPdfPageInput = () => {
-    const parsed = Number.parseInt(pdfPageInput, 10);
-    if (Number.isNaN(parsed)) {
-      setPdfPageInput(String(pdfPage));
-      return;
-    }
-
-    goToPdfPage(parsed);
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-[#020202] flex items-center justify-center">
@@ -868,7 +885,7 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
         onClick={(event) => event.stopPropagation()}
         className={
           isPdf
-            ? `sticky top-0 z-50 border-b border-primary/25 bg-[#120418]/95 text-white shadow-lg shadow-primary/10 backdrop-blur-xl transition-all duration-300 ${
+            ? `fixed top-0 left-0 right-0 z-50 border-b border-primary/25 bg-[#120418]/95 text-white shadow-lg shadow-primary/10 backdrop-blur-xl transition-all duration-300 ${
                 isMobileViewport && !pdfControlsVisible
                   ? "-translate-y-full opacity-0 pointer-events-none"
                   : "translate-y-0 opacity-100"
@@ -894,106 +911,17 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
                 </div>
               </div>
 
-              {fileUrl && (
-                <a
-                  href={fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hidden md:inline-flex items-center justify-center px-3 py-2 rounded-lg bg-primary/15 hover:bg-primary/25 text-xs font-medium text-primary transition-colors"
-                >
-                  Open in New Tab
-                </a>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 md:gap-3">
-              <div className="flex items-center rounded-lg bg-black/20 border border-white/10 overflow-hidden">
-                <button
-                  onClick={() => goToPdfPage(pdfPage - 1)}
-                  disabled={pdfPage <= 1}
-                  className="px-3 py-2 text-sm text-white/90 hover:bg-white/8 disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
-                >
-                  Prev
-                </button>
-                <div className="flex items-center gap-2 px-3 py-2 border-x border-white/10">
-                  <input
-                    value={pdfPageInput}
-                    onChange={(event) =>
-                      setPdfPageInput(event.target.value.replace(/\D/g, ""))
-                    }
-                    onBlur={submitPdfPageInput}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        submitPdfPageInput();
-                        (event.target as HTMLInputElement).blur();
-                      }
-                    }}
-                    className="w-12 bg-transparent text-center text-sm outline-none"
-                    inputMode="numeric"
-                    aria-label="Current page"
-                  />
-                  <span className="text-sm text-white/45">/</span>
-                  <span className="text-sm text-white/70 min-w-8 text-center">
-                    {pdfPageCount || "-"}
-                  </span>
-                </div>
-                <button
-                  onClick={() => goToPdfPage(pdfPage + 1)}
-                  disabled={pdfPageCount === 0 || pdfPage >= pdfPageCount}
-                  className="px-3 py-2 text-sm text-white/90 hover:bg-white/8 disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next
-                </button>
-              </div>
-
-              <div className="flex items-center rounded-lg bg-black/20 border border-white/10 overflow-hidden">
-                <button
-                  onClick={() => updatePdfZoom(pdfZoom - 0.1)}
-                  className="p-2.5 text-white/90 hover:bg-white/8 transition-colors"
-                  aria-label="Zoom out"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => updatePdfZoom(1)}
-                  className="px-3 py-2 text-sm font-medium text-white/90 border-x border-white/10 hover:bg-white/8 transition-colors"
-                >
-                  {pdfZoomPercent}%
-                </button>
-                <button
-                  onClick={() => updatePdfZoom(pdfZoom + 0.1)}
-                  className="p-2.5 text-white/90 hover:bg-white/8 transition-colors"
-                  aria-label="Zoom in"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="flex items-center rounded-lg bg-black/20 border border-white/10 overflow-hidden">
-                {(["scroll", "flip"] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => {
-                      pendingPdfTurnRef.current = null;
-                      setPdfTurnOverlay(null);
-                      setPdfReadingMode(mode);
-                    }}
-                    className={`px-3 py-2 text-xs font-medium capitalize transition-colors ${
-                      pdfReadingMode === mode
-                        ? "bg-white/15 text-white"
-                        : "text-white/55 hover:bg-white/8 hover:text-white"
-                    }`}
+              <div className="hidden md:flex items-center gap-3">
+                {fileUrl && (
+                  <a
+                    href={fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center px-3 py-2 rounded-lg bg-primary/15 hover:bg-primary/25 text-xs font-medium text-primary transition-colors"
                   >
-                    {mode}
-                  </button>
-                ))}
-              </div>
-
-              <div className="text-xs text-white/45 md:ml-1">
-                {pdfReadingMode === "scroll"
-                  ? "Scroll to read • PageUp/PageDown or arrow keys to jump pages"
-                  : "Flip mode • Tap or drag page edges to turn pages"}{" "}
-                • Ctrl/Cmd +/- to zoom
+                    Open in New Tab
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -1129,232 +1057,382 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
         )}
       </AnimatePresence>
 
-      <main className="flex-1 w-full flex flex-col relative">
+      <main
+        className={`flex-1 w-full flex flex-col md:flex-row relative overflow-hidden ${isPdf ? "pt-16 md:pt-20" : ""}`}
+      >
+        {isPdf && !isMobileViewport && (
+          <div className="hidden md:flex flex-col gap-4 p-4 border-r border-primary/10 bg-[#0c0410]/50 backdrop-blur-sm items-center z-30 justify-center">
+            <div className="flex flex-col rounded-xl bg-black/40 border border-white/5 overflow-hidden">
+              <button
+                onClick={() => updatePdfZoom(pdfZoom + 0.1)}
+                className="p-3 text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                title="Zoom In"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => updatePdfZoom(1)}
+                className="p-3 border-y border-white/5 text-[10px] font-black text-white/50 hover:bg-white/10 hover:text-white transition-colors"
+              >
+                {pdfZoomPercent}%
+              </button>
+              <button
+                onClick={() => updatePdfZoom(pdfZoom - 0.1)}
+                className="p-3 text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                title="Zoom Out"
+              >
+                <Minus className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {isPdf ? (
-          <div
-            ref={pdfScrollContainerRef}
-            onClick={handlePdfScreenTap}
-            onTouchStart={handlePdfTouchStart}
-            onTouchMove={handlePdfTouchMove}
-            onTouchEnd={handlePdfTouchEnd}
-            className="flex-1 overflow-auto px-3 py-4 md:px-8 md:py-8 overscroll-contain"
-          >
-            {pdfError ? (
-              <div className="max-w-2xl mx-auto rounded-3xl border border-red-500/20 bg-red-500/5 p-6 text-center text-white space-y-4">
-                <h2 className="text-xl font-black uppercase tracking-widest text-red-300">
-                  PDF Viewer Error
-                </h2>
-                <p className="text-sm text-white/70">{pdfError}</p>
-                {fileUrl && (
-                  <a
-                    href={fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center px-5 py-3 bg-primary hover:bg-primary/90 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all"
-                  >
-                    Open PDF in New Tab
-                  </a>
-                )}
-              </div>
-            ) : pdfDoc ? (
-              pdfReadingMode === "scroll" ? (
-                <div className="flex flex-col items-center gap-6">
-                  {Array.from({ length: pdfPageCount }, (_, index) => {
-                    const pageNumber = index + 1;
-
-                    return (
-                      <div
-                        key={pageNumber}
-                        ref={(element) => {
-                          pdfPageRefs.current[index] = element;
-                        }}
-                        data-page-number={pageNumber}
-                        className="rounded-sm bg-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] border border-black/8 overflow-hidden"
-                      >
-                        <PdfPageCanvas
-                          pdfDoc={pdfDoc}
-                          pageNumber={pageNumber}
-                          zoom={pdfZoom}
-                          viewportWidth={pdfViewportWidth}
-                          onError={(message) => setPdfError(message)}
-                        />
-                      </div>
-                    );
-                  })}
+          <div className="flex-1 flex flex-col relative h-full">
+            <div
+              ref={pdfScrollContainerRef}
+              onClick={handlePdfScreenTap}
+              onTouchStart={handlePdfTouchStart}
+              onTouchMove={handlePdfTouchMove}
+              onTouchEnd={handlePdfTouchEnd}
+              className="flex-1 overflow-auto px-3 py-4 md:px-8 md:py-8 overscroll-contain"
+            >
+              {pdfError ? (
+                <div className="max-w-2xl mx-auto rounded-3xl border border-red-500/20 bg-red-500/5 p-6 text-center text-white space-y-4">
+                  <h2 className="text-xl font-black uppercase tracking-widest text-red-300">
+                    PDF Viewer Error
+                  </h2>
+                  <p className="text-sm text-white/70">{pdfError}</p>
+                  {fileUrl && (
+                    <a
+                      href={fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center px-5 py-3 bg-primary hover:bg-primary/90 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all"
+                    >
+                      Open PDF in New Tab
+                    </a>
+                  )}
                 </div>
-              ) : (
-                <div className="min-w-max flex justify-center">
-                  <div
-                    ref={pdfFlipStageRef}
-                    onPointerDown={startManualPdfFlip}
-                    onPointerMove={moveManualPdfFlip}
-                    onPointerUp={finishManualPdfFlip}
-                    onPointerCancel={() => setPdfDragOverlay(null)}
-                    className="relative rounded-sm bg-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] border border-black/8 touch-none select-none cursor-pointer overflow-hidden"
-                    style={{ perspective: "2200px" }}
-                  >
-                    <canvas ref={pdfFlipCanvasRef} className="block bg-white" />
+              ) : pdfDoc ? (
+                pdfReadingMode === "scroll" ? (
+                  <div className="flex flex-col items-center gap-6">
+                    {Array.from({ length: pdfPageCount }, (_, index) => {
+                      const pageNumber = index + 1;
+                      const shouldRenderPage =
+                        !isMobileViewport ||
+                        Math.abs(pageNumber - pdfPage) <= 2;
 
-                    <button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        goToPdfPage(pdfPage - 1);
-                      }}
-                      disabled={pdfPage <= 1}
-                      className="hidden md:flex absolute left-3 top-1/2 z-20 -translate-y-1/2 items-center justify-center w-12 h-12 rounded-full bg-[#120418]/80 text-primary border border-primary/30 shadow-lg shadow-primary/20 backdrop-blur hover:bg-primary/20 disabled:opacity-25 disabled:cursor-not-allowed transition-all"
-                      aria-label="Previous page"
-                    >
-                      <ChevronLeft className="w-7 h-7" />
-                    </button>
-
-                    <button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        goToPdfPage(pdfPage + 1);
-                      }}
-                      disabled={pdfPageCount === 0 || pdfPage >= pdfPageCount}
-                      className="hidden md:flex absolute right-3 top-1/2 z-20 -translate-y-1/2 items-center justify-center w-12 h-12 rounded-full bg-[#120418]/80 text-primary border border-primary/30 shadow-lg shadow-primary/20 backdrop-blur hover:bg-primary/20 disabled:opacity-25 disabled:cursor-not-allowed transition-all"
-                      aria-label="Next page"
-                    >
-                      <ChevronLeft className="w-7 h-7 rotate-180" />
-                    </button>
-
-                    <div className="pointer-events-none absolute inset-y-0 left-0 w-[18%] bg-linear-to-r from-primary/10 to-transparent opacity-0 md:opacity-100" />
-                    <div className="pointer-events-none absolute inset-y-0 right-0 w-[18%] bg-linear-to-l from-primary/10 to-transparent opacity-0 md:opacity-100" />
-
-                    <AnimatePresence>
-                      {pdfDragOverlay && (
-                        <motion.div
-                          key="manual-drag-flip"
-                          className="pointer-events-none absolute inset-0"
-                          style={{
-                            transformStyle: "preserve-3d",
-                            transformOrigin:
-                              pdfDragOverlay.direction === "next"
-                                ? "right center"
-                                : "left center",
-                            clipPath:
-                              pdfDragOverlay.direction === "next"
-                                ? "polygon(0 0, 100% 0, 72% 100%, 0 100%)"
-                                : "polygon(28% 0, 100% 0, 100% 100%, 0 100%)",
-                            rotateY:
-                              pdfDragOverlay.direction === "next"
-                                ? -88 * pdfDragOverlay.progress
-                                : 88 * pdfDragOverlay.progress,
-                            x:
-                              pdfDragOverlay.direction === "next"
-                                ? -12 * pdfDragOverlay.progress
-                                : 12 * pdfDragOverlay.progress,
+                      return (
+                        <div
+                          key={pageNumber}
+                          ref={(element) => {
+                            pdfPageRefs.current[index] = element;
                           }}
-                          initial={false}
+                          data-page-number={pageNumber}
+                          className="rounded-sm bg-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] border border-black/8 overflow-hidden"
                         >
-                          <div
-                            className="absolute inset-0 bg-no-repeat bg-cover bg-center"
-                            style={{
-                              backgroundImage: `url(${pdfDragOverlay.image})`,
-                              backgroundSize: "100% 100%",
-                            }}
+                          <PdfPageCanvas
+                            pdfDoc={pdfDoc}
+                            pageNumber={pageNumber}
+                            zoom={pdfZoom}
+                            viewportWidth={pdfViewportWidth}
+                            active={shouldRenderPage}
+                            onError={(message) => setPdfError(message)}
                           />
-                          <div
-                            className={`absolute inset-0 ${
-                              pdfDragOverlay.direction === "next"
-                                ? "bg-linear-to-l from-black/45 via-white/10 to-white/70"
-                                : "bg-linear-to-r from-black/45 via-white/10 to-white/70"
-                            }`}
-                            style={{
-                              opacity: 0.2 + pdfDragOverlay.progress * 0.65,
-                            }}
-                          />
-                          <div
-                            className={`absolute top-0 bottom-0 ${
-                              pdfDragOverlay.direction === "next"
-                                ? "right-0 w-[22%] bg-linear-to-l from-white via-white/65 to-transparent"
-                                : "left-0 w-[22%] bg-linear-to-r from-white via-white/65 to-transparent"
-                            }`}
-                          />
-                        </motion.div>
-                      )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="min-w-max flex justify-center">
+                    <div
+                      ref={pdfFlipStageRef}
+                      onPointerDown={startManualPdfFlip}
+                      onPointerMove={moveManualPdfFlip}
+                      onPointerUp={finishManualPdfFlip}
+                      onPointerCancel={() => setPdfDragOverlay(null)}
+                      className="relative rounded-sm bg-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] border border-black/8 touch-none select-none cursor-pointer overflow-hidden"
+                      style={{ perspective: "2200px" }}
+                    >
+                      <canvas
+                        ref={pdfFlipCanvasRef}
+                        className="block bg-white"
+                      />
 
-                      {pdfTurnOverlay && (
-                        <>
-                          <motion.div
-                            key={`shadow-${pdfTurnOverlay.key}`}
-                            className={`pointer-events-none absolute inset-0 ${
-                              pdfTurnOverlay.direction === "next"
-                                ? "bg-linear-to-l from-black/25 via-black/10 to-transparent"
-                                : "bg-linear-to-r from-black/25 via-black/10 to-transparent"
-                            }`}
-                            initial={{ opacity: 0.2 }}
-                            animate={{ opacity: 0 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.65, ease: "easeOut" }}
-                          />
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          goToPdfPage(pdfPage - 1);
+                        }}
+                        disabled={pdfPage <= 1}
+                        className="hidden md:flex absolute left-3 top-1/2 z-20 -translate-y-1/2 items-center justify-center w-12 h-12 rounded-full bg-[#120418]/80 text-primary border border-primary/30 shadow-lg shadow-primary/20 backdrop-blur hover:bg-primary/20 disabled:opacity-25 disabled:cursor-not-allowed transition-all"
+                        aria-label="Previous page"
+                      >
+                        <ChevronLeft className="w-7 h-7" />
+                      </button>
 
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          goToPdfPage(pdfPage + 1);
+                        }}
+                        disabled={pdfPageCount === 0 || pdfPage >= pdfPageCount}
+                        className="hidden md:flex absolute right-3 top-1/2 z-20 -translate-y-1/2 items-center justify-center w-12 h-12 rounded-full bg-[#120418]/80 text-primary border border-primary/30 shadow-lg shadow-primary/20 backdrop-blur hover:bg-primary/20 disabled:opacity-25 disabled:cursor-not-allowed transition-all"
+                        aria-label="Next page"
+                      >
+                        <ChevronLeft className="w-7 h-7 rotate-180" />
+                      </button>
+
+                      <div className="pointer-events-none absolute inset-y-0 left-0 w-[18%] bg-linear-to-r from-primary/10 to-transparent opacity-0 md:opacity-100" />
+                      <div className="pointer-events-none absolute inset-y-0 right-0 w-[18%] bg-linear-to-l from-primary/10 to-transparent opacity-0 md:opacity-100" />
+
+                      <AnimatePresence>
+                        {pdfDragOverlay && (
                           <motion.div
-                            key={pdfTurnOverlay.key}
+                            key="manual-drag-flip"
                             className="pointer-events-none absolute inset-0"
                             style={{
                               transformStyle: "preserve-3d",
                               transformOrigin:
-                                pdfTurnOverlay.direction === "next"
+                                pdfDragOverlay.direction === "next"
                                   ? "right center"
                                   : "left center",
                               clipPath:
-                                pdfTurnOverlay.direction === "next"
+                                pdfDragOverlay.direction === "next"
                                   ? "polygon(0 0, 100% 0, 72% 100%, 0 100%)"
                                   : "polygon(28% 0, 100% 0, 100% 100%, 0 100%)",
-                            }}
-                            initial={{ rotateY: 0, x: 0, opacity: 1 }}
-                            animate={{
                               rotateY:
-                                pdfTurnOverlay.direction === "next" ? -88 : 88,
-                              x: pdfTurnOverlay.direction === "next" ? -10 : 10,
-                              opacity: 0.14,
+                                pdfDragOverlay.direction === "next"
+                                  ? -88 * pdfDragOverlay.progress
+                                  : 88 * pdfDragOverlay.progress,
+                              x:
+                                pdfDragOverlay.direction === "next"
+                                  ? -12 * pdfDragOverlay.progress
+                                  : 12 * pdfDragOverlay.progress,
                             }}
-                            exit={{ opacity: 0 }}
-                            transition={{
-                              duration: 0.72,
-                              ease: [0.22, 0.61, 0.36, 1],
-                            }}
-                            onAnimationComplete={() => setPdfTurnOverlay(null)}
+                            initial={false}
                           >
                             <div
                               className="absolute inset-0 bg-no-repeat bg-cover bg-center"
                               style={{
-                                backgroundImage: `url(${pdfTurnOverlay.image})`,
+                                backgroundImage: `url(${pdfDragOverlay.image})`,
                                 backgroundSize: "100% 100%",
                               }}
                             />
                             <div
                               className={`absolute inset-0 ${
-                                pdfTurnOverlay.direction === "next"
-                                  ? "bg-linear-to-l from-black/45 via-black/15 to-white/10"
-                                  : "bg-linear-to-r from-black/45 via-black/15 to-white/10"
+                                pdfDragOverlay.direction === "next"
+                                  ? "bg-linear-to-l from-black/45 via-white/10 to-white/70"
+                                  : "bg-linear-to-r from-black/45 via-white/10 to-white/70"
                               }`}
+                              style={{
+                                opacity: 0.2 + pdfDragOverlay.progress * 0.65,
+                              }}
                             />
                             <div
                               className={`absolute top-0 bottom-0 ${
-                                pdfTurnOverlay.direction === "next"
-                                  ? "right-0 w-[18%] bg-linear-to-l from-white/80 via-white/35 to-transparent"
-                                  : "left-0 w-[18%] bg-linear-to-r from-white/80 via-white/35 to-transparent"
+                                pdfDragOverlay.direction === "next"
+                                  ? "right-0 w-[22%] bg-linear-to-l from-white via-white/65 to-transparent"
+                                  : "left-0 w-[22%] bg-linear-to-r from-white via-white/65 to-transparent"
                               }`}
                             />
                           </motion.div>
-                        </>
-                      )}
-                    </AnimatePresence>
+                        )}
+
+                        {pdfTurnOverlay && (
+                          <>
+                            <motion.div
+                              key={`shadow-${pdfTurnOverlay.key}`}
+                              className={`pointer-events-none absolute inset-0 ${
+                                pdfTurnOverlay.direction === "next"
+                                  ? "bg-linear-to-l from-black/25 via-black/10 to-transparent"
+                                  : "bg-linear-to-r from-black/25 via-black/10 to-transparent"
+                              }`}
+                              initial={{ opacity: 0.2 }}
+                              animate={{ opacity: 0 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.65, ease: "easeOut" }}
+                            />
+
+                            <motion.div
+                              key={pdfTurnOverlay.key}
+                              className="pointer-events-none absolute inset-0"
+                              style={{
+                                transformStyle: "preserve-3d",
+                                transformOrigin:
+                                  pdfTurnOverlay.direction === "next"
+                                    ? "right center"
+                                    : "left center",
+                                clipPath:
+                                  pdfTurnOverlay.direction === "next"
+                                    ? "polygon(0 0, 100% 0, 72% 100%, 0 100%)"
+                                    : "polygon(28% 0, 100% 0, 100% 100%, 0 100%)",
+                              }}
+                              initial={{ rotateY: 0, x: 0, opacity: 1 }}
+                              animate={{
+                                rotateY:
+                                  pdfTurnOverlay.direction === "next"
+                                    ? -88
+                                    : 88,
+                                x:
+                                  pdfTurnOverlay.direction === "next"
+                                    ? -10
+                                    : 10,
+                                opacity: 0.14,
+                              }}
+                              exit={{ opacity: 0 }}
+                              transition={{
+                                duration: 0.72,
+                                ease: [0.22, 0.61, 0.36, 1],
+                              }}
+                              onAnimationComplete={() =>
+                                setPdfTurnOverlay(null)
+                              }
+                            >
+                              <div
+                                className="absolute inset-0 bg-no-repeat bg-cover bg-center"
+                                style={{
+                                  backgroundImage: `url(${pdfTurnOverlay.image})`,
+                                  backgroundSize: "100% 100%",
+                                }}
+                              />
+                              <div
+                                className={`absolute inset-0 ${
+                                  pdfTurnOverlay.direction === "next"
+                                    ? "bg-linear-to-l from-black/45 via-white/10 to-white/10"
+                                    : "bg-linear-to-r from-black/45 via-white/10 to-white/10"
+                                }`}
+                              />
+                              <div
+                                className={`absolute top-0 bottom-0 ${
+                                  pdfTurnOverlay.direction === "next"
+                                    ? "right-0 w-[18%] bg-linear-to-l from-white/80 via-white/35 to-transparent"
+                                    : "left-0 w-[18%] bg-linear-to-r from-white/80 via-white/35 to-transparent"
+                                }`}
+                              />
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                )
+              ) : (
+                <div className="flex items-center justify-center text-white/60 text-sm min-h-[50vh]">
+                  Loading PDF pages...
+                </div>
+              )}
+            </div>
+
+            {isMobileViewport && (
+              <div
+                className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md transition-all duration-300 ${
+                  pdfControlsVisible
+                    ? "translate-y-0 opacity-100"
+                    : "translate-y-20 opacity-0 pointer-events-none"
+                }`}
+              >
+                <div className="bg-[#120418]/90 border border-primary/25 backdrop-blur-xl rounded-2xl shadow-2xl p-4 flex flex-col gap-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center bg-black/40 rounded-xl border border-white/5 overflow-hidden">
+                      <button
+                        onClick={() => goToPdfPage(pdfPage - 1)}
+                        disabled={pdfPage <= 1}
+                        className="px-4 py-2 text-white/70 hover:bg-white/10 disabled:opacity-30"
+                      >
+                        Prev
+                      </button>
+                      <div className="px-4 py-2 border-x border-white/5 text-xs font-black">
+                        {pdfPage} / {pdfPageCount || "-"}
+                      </div>
+                      <button
+                        onClick={() => goToPdfPage(pdfPage + 1)}
+                        disabled={pdfPageCount === 0 || pdfPage >= pdfPageCount}
+                        className="px-4 py-2 text-white/70 hover:bg-white/10 disabled:opacity-30"
+                      >
+                        Next
+                      </button>
+                    </div>
+
+                    <div className="flex items-center bg-black/40 rounded-xl border border-white/5 overflow-hidden">
+                      <button
+                        onClick={() => updatePdfZoom(pdfZoom - 0.1)}
+                        className="p-2 text-white/70"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => updatePdfZoom(1)}
+                        className="px-2 text-[10px] font-black border-x border-white/5"
+                      >
+                        {pdfZoomPercent}%
+                      </button>
+                      <button
+                        onClick={() => updatePdfZoom(pdfZoom + 0.1)}
+                        className="p-2 text-white/70"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex bg-black/40 rounded-xl border border-white/5 overflow-hidden flex-1">
+                      {(["scroll", "flip"] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          onClick={() => {
+                            pendingPdfTurnRef.current = null;
+                            setPdfTurnOverlay(null);
+                            setPdfReadingMode(mode);
+                          }}
+                          className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest transition-colors ${
+                            pdfReadingMode === mode
+                              ? "bg-primary text-white"
+                              : "text-white/40"
+                          }`}
+                        >
+                          {mode}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              )
-            ) : (
-              <div className="flex items-center justify-center text-white/60 text-sm min-h-[50vh]">
-                Loading PDF pages...
               </div>
             )}
           </div>
         ) : (
           <div className="max-w-3xl w-full mx-auto px-6 py-10 flex-1 flex flex-col justify-between">
             <div ref={epubViewerRef} className="flex-1 min-h-[75vh]" />
+          </div>
+        )}
+
+        {isPdf && !isMobileViewport && (
+          <div className="hidden md:flex flex-col gap-4 p-4 border-l border-primary/10 bg-[#0c0410]/50 backdrop-blur-sm items-center z-30 justify-center">
+            <div className="flex flex-col rounded-xl bg-black/40 border border-white/5 overflow-hidden">
+              {(["scroll", "flip"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => {
+                    pendingPdfTurnRef.current = null;
+                    setPdfTurnOverlay(null);
+                    setPdfReadingMode(mode);
+                  }}
+                  className={`p-3 text-[10px] font-black uppercase tracking-widest vertical-text transition-all ${
+                    pdfReadingMode === mode
+                      ? "bg-primary text-white"
+                      : "text-white/40 hover:bg-white/10"
+                  } ${mode === "scroll" ? "border-b border-white/5" : ""}`}
+                  style={{
+                    writingMode: "vertical-rl",
+                    textOrientation: "mixed",
+                  }}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </main>
