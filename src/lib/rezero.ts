@@ -4,9 +4,9 @@ export const WITCHCULT_NOVEL_ID = "witchcult-re-zero-web-novel";
 export const REZERO_ENGLISH_TITLE = "Re:ZERO -Starting Life in Another World-";
 export const REZERO_LIGHT_NOVEL_VOLUME_COUNT = 44;
 
-/** Official Re:Zero promotional art via webnovel.com proxied to bypass hotlink protection */
+/** Stable Re:Zero key art from AniList CDN; the old WebNovel cover endpoint blocks often. */
 export const REZERO_COVER =
-  "/api/proxy?url=" + encodeURIComponent("https://book-pic.webnovel.com/bookcover/27200483305740105?imageMogr2/thumbnail/600x&imageId=1692046605695");
+  "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx163134-yieRFbvUOH9a.jpg";
 export const REZERO_BANNER =
   "https://witchculttranslation.com/wp-content/uploads/2024/09/Banner_new.jpg?x20762";
 

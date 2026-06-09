@@ -9,6 +9,7 @@ import { ReaderActions } from "@/components/ReaderActions";
 import { ReaderProgressPosterBadge, ReaderProgressText, ReaderProgressButton } from "@/components/ReaderProgressTracker";
 import { ReaderDetailTabs } from "@/components/ReaderDetailTabs";
 import { CollapsibleDescription } from "@/components/CollapsibleDescription";
+import { REZERO_COVER, WITCHCULT_NOVEL_ID } from "@/lib/rezero";
 
 import { slugify } from "@/lib/anime-utils";
 
@@ -46,6 +47,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
   const countLabel = formatText === 'Light Novel' && volumeCount > 0
     ? `${volumeCount} Volumes`
     : `${chapters.length} Chapters${arcCount > 0 ? ` - ${arcCount} Arcs` : ""}`;
+  const posterImage = manga.image || (id === WITCHCULT_NOVEL_ID ? REZERO_COVER : "");
 
   return (
     <div className={`min-h-screen bg-background text-foreground pb-20 ${themeClass}`}>
@@ -73,7 +75,7 @@ export default async function MangaDetailPage({ params }: PageProps) {
           <div className="flex flex-col lg:flex-row gap-12 items-start lg:items-end">
             <div className="w-48 sm:w-56 lg:w-64 shrink-0 rounded-3xl overflow-hidden shadow-2xl border border-white/5 relative aspect-[2/3] mx-auto lg:mx-0">
               <Image
-                src={manga.image || ""}
+                src={posterImage}
                 alt="Poster"
                 fill
                 sizes="256px"
