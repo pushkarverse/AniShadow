@@ -1,16 +1,122 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, Minus, Plus, Type, X } from "lucide-react";
 import Link from "next/link";
-import { getVolume, StoredVolume } from "@/lib/indexedDb";
 import Script from "next/script";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { getVolume, StoredVolume } from "@/lib/indexedDb";
 
 interface LocalReaderClientProps {
   id: string;
   slug: string;
   vol: number;
+}
+
+type PdfReadingMode = "scroll" | "flip";
+type PdfFlipDirection = "next" | "prev";
+
+interface PendingPdfTurn {
+  image: string;
+  direction: PdfFlipDirection;
+  targetPage: number;
+}
+
+interface ActivePdfTurn extends PendingPdfTurn {
+  key: number;
+}
+
+interface ActivePdfDrag extends PendingPdfTurn {
+  progress: number;
+  startX: number;
+}
+
+interface PdfPageCanvasProps {
+  pdfDoc: any;
+  pageNumber: number;
+  zoom: number;
+  viewportWidth: number;
+  onError: (message: string) => void;
+}
+
+function PdfPageCanvas({
+  pdfDoc,
+  pageNumber,
+  zoom,
+  viewportWidth,
+  onError,
+}: PdfPageCanvasProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!pdfDoc || !canvasRef.current || typeof window === "undefined") return;
+
+    let cancelled = false;
+    let renderTask: { cancel?: () => void; promise?: Promise<void> } | null =
+      null;
+
+    async function renderPage() {
+      try {
+        const page = await pdfDoc.getPage(pageNumber);
+        if (cancelled || !canvasRef.current) return;
+
+        const canvas = canvasRef.current;
+        const context = canvas.getContext("2d", { alpha: false });
+
+        if (!context) {
+          throw new Error("Canvas context unavailable.");
+        }
+
+        const baseViewport = page.getViewport({ scale: 1 });
+        const availableWidth = viewportWidth
+          ? Math.max(viewportWidth - 64, 320)
+          : baseViewport.width;
+        const fitWidthScale = availableWidth / baseViewport.width;
+        const finalScale = fitWidthScale * zoom;
+        const viewport = page.getViewport({ scale: finalScale });
+        const outputScale = window.devicePixelRatio || 1;
+
+        canvas.width = Math.floor(viewport.width * outputScale);
+        canvas.height = Math.floor(viewport.height * outputScale);
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
+
+        context.setTransform(outputScale, 0, 0, outputScale, 0, 0);
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = "high";
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, viewport.width, viewport.height);
+
+        const currentRenderTask = page.render({
+          canvasContext: context,
+          viewport,
+        });
+        renderTask = currentRenderTask;
+
+        await currentRenderTask.promise;
+      } catch (err) {
+        if (
+          (err as { name?: string })?.name === "RenderingCancelledException"
+        ) {
+          return;
+        }
+
+        console.error(`Failed to render PDF page ${pageNumber}:`, err);
+        if (!cancelled) {
+          onError(`Page ${pageNumber} could not be displayed.`);
+        }
+      }
+    }
+
+    renderPage();
+
+    return () => {
+      cancelled = true;
+      renderTask?.cancel?.();
+    };
+  }, [onError, pageNumber, pdfDoc, viewportWidth, zoom]);
+
+  return <canvas ref={canvasRef} className="block bg-white" />;
 }
 
 export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
@@ -23,7 +129,18 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [pdfPage, setPdfPage] = useState(1);
   const [pdfPageCount, setPdfPageCount] = useState(0);
+  const [pdfPageInput, setPdfPageInput] = useState("1");
+  const [pdfZoom, setPdfZoom] = useState(1);
+  const [pdfViewportWidth, setPdfViewportWidth] = useState(0);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfReadingMode, setPdfReadingMode] =
+    useState<PdfReadingMode>("scroll");
+  const [pdfTurnOverlay, setPdfTurnOverlay] = useState<ActivePdfTurn | null>(
+    null,
+  );
+  const [pdfDragOverlay, setPdfDragOverlay] = useState<ActivePdfDrag | null>(
+    null,
+  );
 
   const [fontSize, setFontSize] = useState(100);
   const [theme, setTheme] = useState<"dark" | "sepia" | "light">("dark");
@@ -32,9 +149,15 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const viewerRef = useRef<HTMLDivElement>(null);
-  const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
+  const epubViewerRef = useRef<HTMLDivElement>(null);
+  const pdfScrollContainerRef = useRef<HTMLDivElement>(null);
+  const pdfFlipStageRef = useRef<HTMLDivElement>(null);
+  const pdfFlipCanvasRef = useRef<HTMLCanvasElement>(null);
+  const pdfPageRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const pendingPdfTurnRef = useRef<PendingPdfTurn | null>(null);
   const bookInstanceRef = useRef<any>(null);
+
+  const isPdf = storedVolume?.fileType?.toLowerCase().includes("pdf") ?? false;
 
   useEffect(() => {
     let objectUrl = "";
@@ -71,16 +194,15 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
     };
   }, [id, vol]);
 
-  const isPdf = storedVolume?.fileType?.toLowerCase().includes("pdf") ?? false;
-
   useEffect(() => {
     if (!epubLibLoaded || !storedVolume || isPdf) return;
     if (
       typeof window === "undefined" ||
       !(window as any).ePub ||
-      !viewerRef.current
-    )
+      !epubViewerRef.current
+    ) {
       return;
+    }
 
     if (bookInstanceRef.current) {
       try {
@@ -94,7 +216,7 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
       const book = (window as any).ePub(storedVolume.fileBlob);
       bookInstanceRef.current = book;
 
-      const rendition = book.renderTo(viewerRef.current, {
+      const rendition = book.renderTo(epubViewerRef.current, {
         width: "100%",
         height: "100%",
         spread: "none",
@@ -117,13 +239,13 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
         bookInstanceRef.current = null;
       }
     };
-  }, [epubLibLoaded, storedVolume, isPdf]);
+  }, [epubLibLoaded, isPdf, storedVolume]);
 
   useEffect(() => {
     if (epubRendition && !isPdf) {
       applyReaderStyles(epubRendition, theme, fontSize, fontFamily);
     }
-  }, [theme, fontSize, fontFamily, epubRendition, isPdf]);
+  }, [epubRendition, fontFamily, fontSize, isPdf, theme]);
 
   useEffect(() => {
     if (
@@ -131,8 +253,9 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
       !storedVolume ||
       !isPdf ||
       typeof window === "undefined"
-    )
+    ) {
       return;
+    }
 
     let cancelled = false;
     const pdfBlob = storedVolume.fileBlob;
@@ -154,13 +277,13 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
 
         if (cancelled) return;
 
+        pendingPdfTurnRef.current = null;
+        setPdfTurnOverlay(null);
+        setPdfDragOverlay(null);
         setPdfDoc(pdf);
         setPdfPageCount(pdf.numPages);
-        setPdfPage((current) => {
-          if (current < 1) return 1;
-          if (current > pdf.numPages) return pdf.numPages;
-          return current;
-        });
+        setPdfPage(1);
+        setPdfPageInput("1");
       } catch (err) {
         console.error("Error rendering PDF:", err);
         if (!cancelled) {
@@ -174,57 +297,342 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
     return () => {
       cancelled = true;
     };
-  }, [pdfLibLoaded, storedVolume, isPdf]);
+  }, [isPdf, pdfLibLoaded, storedVolume]);
 
   useEffect(() => {
-    if (!pdfDoc || !isPdf || !pdfCanvasRef.current) return;
+    if (
+      !isPdf ||
+      !pdfScrollContainerRef.current ||
+      typeof ResizeObserver === "undefined"
+    ) {
+      return;
+    }
+
+    const element = pdfScrollContainerRef.current;
+    const updateWidth = () => {
+      setPdfViewportWidth(element.clientWidth);
+    };
+
+    updateWidth();
+
+    const observer = new ResizeObserver(() => {
+      updateWidth();
+    });
+
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [isPdf]);
+
+  useEffect(() => {
+    if (
+      !isPdf ||
+      pdfReadingMode !== "scroll" ||
+      !pdfPageCount ||
+      !pdfScrollContainerRef.current
+    ) {
+      return;
+    }
+
+    const container = pdfScrollContainerRef.current;
+    const pageElements = pdfPageRefs.current.filter(
+      Boolean,
+    ) as HTMLDivElement[];
+    if (!pageElements.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntries = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        const mostVisible = visibleEntries[0];
+        if (!mostVisible) return;
+
+        const pageNumber = Number(
+          (mostVisible.target as HTMLDivElement).dataset.pageNumber,
+        );
+
+        if (!Number.isNaN(pageNumber)) {
+          setPdfPage(pageNumber);
+          setPdfPageInput(String(pageNumber));
+        }
+      },
+      {
+        root: container,
+        threshold: [0.25, 0.5, 0.75],
+      },
+    );
+
+    for (const element of pageElements) {
+      observer.observe(element);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [isPdf, pdfPageCount, pdfReadingMode, pdfZoom]);
+
+  const updatePdfZoom = useCallback((nextZoom: number) => {
+    setPdfZoom(Math.max(0.5, Math.min(2.5, Number(nextZoom.toFixed(2)))));
+  }, []);
+
+  const scrollToPdfPage = useCallback(
+    (nextPage: number) => {
+      if (!pdfPageCount) return;
+
+      const clampedPage = Math.max(1, Math.min(pdfPageCount, nextPage));
+      const element = pdfPageRefs.current[clampedPage - 1];
+      if (!element) return;
+
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+
+      setPdfPage(clampedPage);
+      setPdfPageInput(String(clampedPage));
+    },
+    [pdfPageCount],
+  );
+
+  const changeFlipPdfPage = useCallback(
+    (nextPage: number) => {
+      if (!pdfPageCount) return;
+
+      const clampedPage = Math.max(1, Math.min(pdfPageCount, nextPage));
+      if (clampedPage === pdfPage) return;
+
+      const canvas = pdfFlipCanvasRef.current;
+      if (canvas && canvas.width > 0 && canvas.height > 0) {
+        pendingPdfTurnRef.current = {
+          image: canvas.toDataURL("image/png"),
+          direction: clampedPage > pdfPage ? "next" : "prev",
+          targetPage: clampedPage,
+        };
+      } else {
+        pendingPdfTurnRef.current = null;
+      }
+
+      setPdfPage(clampedPage);
+      setPdfPageInput(String(clampedPage));
+    },
+    [pdfPage, pdfPageCount],
+  );
+
+  const startManualPdfFlip = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (pdfReadingMode !== "flip" || !pdfPageCount || pdfTurnOverlay) return;
+
+      const stage = pdfFlipStageRef.current;
+      const canvas = pdfFlipCanvasRef.current;
+      if (!stage || !canvas || canvas.width === 0 || canvas.height === 0)
+        return;
+
+      const rect = stage.getBoundingClientRect();
+      const pointerX = event.clientX - rect.left;
+      const edgeSize = Math.max(56, rect.width * 0.18);
+
+      let direction: PdfFlipDirection | null = null;
+      let targetPage = pdfPage;
+
+      if (pointerX >= rect.width - edgeSize && pdfPage < pdfPageCount) {
+        direction = "next";
+        targetPage = pdfPage + 1;
+      } else if (pointerX <= edgeSize && pdfPage > 1) {
+        direction = "prev";
+        targetPage = pdfPage - 1;
+      }
+
+      if (!direction) return;
+
+      event.currentTarget.setPointerCapture(event.pointerId);
+      event.preventDefault();
+
+      pendingPdfTurnRef.current = null;
+      setPdfTurnOverlay(null);
+      setPdfDragOverlay({
+        image: canvas.toDataURL("image/png"),
+        direction,
+        targetPage,
+        progress: 0,
+        startX: event.clientX,
+      });
+    },
+    [pdfPage, pdfPageCount, pdfReadingMode, pdfTurnOverlay],
+  );
+
+  const moveManualPdfFlip = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      setPdfDragOverlay((current) => {
+        if (!current || !pdfFlipStageRef.current) return current;
+
+        const rect = pdfFlipStageRef.current.getBoundingClientRect();
+        const dragDistance =
+          current.direction === "next"
+            ? current.startX - event.clientX
+            : event.clientX - current.startX;
+        const progress = Math.max(0, Math.min(1, dragDistance / rect.width));
+
+        return {
+          ...current,
+          progress,
+        };
+      });
+    },
+    [],
+  );
+
+  const finishManualPdfFlip = useCallback(() => {
+    const drag = pdfDragOverlay;
+    if (!drag) return;
+
+    const shouldTurn = drag.progress > 0.28 || drag.progress < 0.03;
+    setPdfDragOverlay(null);
+
+    if (shouldTurn) {
+      pendingPdfTurnRef.current = {
+        image: drag.image,
+        direction: drag.direction,
+        targetPage: drag.targetPage,
+      };
+      setPdfPage(drag.targetPage);
+      setPdfPageInput(String(drag.targetPage));
+    }
+  }, [pdfDragOverlay]);
+
+  const goToPdfPage = useCallback(
+    (nextPage: number) => {
+      if (pdfReadingMode === "flip") {
+        changeFlipPdfPage(nextPage);
+      } else {
+        scrollToPdfPage(nextPage);
+      }
+    },
+    [changeFlipPdfPage, pdfReadingMode, scrollToPdfPage],
+  );
+
+  useEffect(() => {
+    if (
+      pdfReadingMode !== "flip" ||
+      !pdfDoc ||
+      !isPdf ||
+      !pdfFlipCanvasRef.current ||
+      typeof window === "undefined"
+    ) {
+      return;
+    }
 
     let cancelled = false;
+    let renderTask: { cancel?: () => void; promise?: Promise<void> } | null =
+      null;
 
-    async function renderPdfPage() {
+    async function renderFlipPage() {
       try {
         const page = await pdfDoc.getPage(pdfPage);
-        if (cancelled || !pdfCanvasRef.current) return;
+        if (cancelled || !pdfFlipCanvasRef.current) return;
 
-        const baseViewport = page.getViewport({ scale: 1 });
-        const containerWidth = viewerRef.current?.clientWidth
-          ? Math.max(viewerRef.current.clientWidth - 32, 320)
-          : baseViewport.width;
-        const scale = containerWidth / baseViewport.width;
-        const viewport = page.getViewport({ scale });
-
-        const canvas = pdfCanvasRef.current;
-        const context = canvas.getContext("2d");
+        const canvas = pdfFlipCanvasRef.current;
+        const context = canvas.getContext("2d", { alpha: false });
 
         if (!context) {
           throw new Error("Canvas context unavailable.");
         }
 
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
+        const baseViewport = page.getViewport({ scale: 1 });
+        const availableWidth = pdfViewportWidth
+          ? Math.max(pdfViewportWidth - 64, 320)
+          : baseViewport.width;
+        const fitWidthScale = availableWidth / baseViewport.width;
+        const finalScale = fitWidthScale * pdfZoom;
+        const viewport = page.getViewport({ scale: finalScale });
+        const outputScale = window.devicePixelRatio || 1;
+
+        canvas.width = Math.floor(viewport.width * outputScale);
+        canvas.height = Math.floor(viewport.height * outputScale);
         canvas.style.width = `${viewport.width}px`;
         canvas.style.height = `${viewport.height}px`;
 
-        const renderTask = page.render({
+        context.setTransform(outputScale, 0, 0, outputScale, 0, 0);
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = "high";
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, viewport.width, viewport.height);
+
+        const currentRenderTask = page.render({
           canvasContext: context,
           viewport,
         });
+        renderTask = currentRenderTask;
 
-        await renderTask.promise;
+        await currentRenderTask.promise;
+
+        const pendingTurn = pendingPdfTurnRef.current;
+        if (pendingTurn && pendingTurn.targetPage === pdfPage) {
+          setPdfTurnOverlay({
+            ...pendingTurn,
+            key: Date.now(),
+          });
+          pendingPdfTurnRef.current = null;
+        }
       } catch (err) {
-        console.error("Failed to render PDF page:", err);
+        if (
+          (err as { name?: string })?.name === "RenderingCancelledException"
+        ) {
+          return;
+        }
+
+        console.error("Failed to render PDF flip page:", err);
         if (!cancelled) {
           setPdfError("The selected PDF page could not be displayed.");
         }
       }
     }
 
-    renderPdfPage();
+    renderFlipPage();
 
     return () => {
       cancelled = true;
+      renderTask?.cancel?.();
     };
-  }, [pdfDoc, pdfPage, isPdf]);
+  }, [isPdf, pdfDoc, pdfPage, pdfReadingMode, pdfViewportWidth, pdfZoom]);
+
+  useEffect(() => {
+    if (!isPdf || typeof window === "undefined") return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName;
+      if (tagName === "INPUT" || tagName === "TEXTAREA") return;
+
+      if (event.key === "ArrowRight" || event.key === "PageDown") {
+        event.preventDefault();
+        goToPdfPage(pdfPage + 1);
+      }
+
+      if (event.key === "ArrowLeft" || event.key === "PageUp") {
+        event.preventDefault();
+        goToPdfPage(pdfPage - 1);
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key === "=") {
+        event.preventDefault();
+        updatePdfZoom(pdfZoom + 0.1);
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key === "-") {
+        event.preventDefault();
+        updatePdfZoom(pdfZoom - 0.1);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [goToPdfPage, isPdf, pdfPage, pdfZoom, updatePdfZoom]);
 
   const applyReaderStyles = (
     rendition: any,
@@ -273,6 +681,16 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
     });
   };
 
+  const submitPdfPageInput = () => {
+    const parsed = Number.parseInt(pdfPageInput, 10);
+    if (Number.isNaN(parsed)) {
+      setPdfPageInput(String(pdfPage));
+      return;
+    }
+
+    goToPdfPage(parsed);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#020202] flex items-center justify-center">
@@ -293,8 +711,8 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
           File Not Found
         </h1>
         <p className="text-white/40 text-sm max-w-sm mb-8">
-          No uploaded file was found for this volume in your browser's local
-          library.
+          No uploaded file was found for this volume in your browser&apos;s
+          local library.
         </p>
         <Link
           href={`/reader/${id}/${slug}`}
@@ -307,11 +725,13 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
   }
 
   const titleText = `${slug.replace(/-/g, " ")} - Volume ${vol}`;
+  const pdfZoomPercent = Math.round(pdfZoom * 100);
+  const pdfShellClass = isPdf
+    ? "min-h-screen bg-[#525659] flex flex-col"
+    : `min-h-screen ${theme === "dark" ? "bg-[#09090b]" : theme === "sepia" ? "bg-[#f4ebd0]" : "bg-white"} flex flex-col`;
 
   return (
-    <div
-      className={`min-h-screen ${theme === "dark" ? "bg-[#09090b]" : theme === "sepia" ? "bg-[#f4ebd0]" : "bg-white"} flex flex-col`}
-    >
+    <div className={pdfShellClass}>
       {!isPdf && (
         <Script
           src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"
@@ -329,43 +749,161 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
       )}
 
       <header
-        className={`px-6 py-4 flex items-center justify-between border-b ${
-          theme === "dark"
-            ? "bg-black/80 border-white/5 text-white"
-            : theme === "sepia"
-              ? "bg-[#e5d8b6]/80 border-[#8b7355]/20 text-[#4f3824]"
-              : "bg-white/80 border-black/5 text-black"
-        } backdrop-blur-xl sticky top-0 z-50`}
+        className={
+          isPdf
+            ? "sticky top-0 z-50 border-b border-white/10 bg-[#323639]/95 text-white backdrop-blur-xl"
+            : `px-6 py-4 flex items-center justify-between border-b ${theme === "dark" ? "bg-black/80 border-white/5 text-white" : theme === "sepia" ? "bg-[#e5d8b6]/80 border-[#8b7355]/20 text-[#4f3824]" : "bg-white/80 border-black/5 text-black"} backdrop-blur-xl sticky top-0 z-50`
+        }
       >
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <Link
-            href={`/reader/${id}/${slug}`}
-            className="p-2 hover:bg-white/5 rounded-full transition-colors shrink-0"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </Link>
-          <div className="min-w-0">
-            <h1 className="text-xs font-black uppercase tracking-widest truncate">
-              {titleText}
-            </h1>
-            <p className="text-[9px] font-bold uppercase tracking-widest opacity-40 mt-0.5">
-              Local {isPdf ? "PDF Reader" : "EPUB Reader"}
-              {isPdf && pdfPageCount > 0
-                ? ` · Page ${pdfPage} / ${pdfPageCount}`
-                : ""}
-            </p>
-          </div>
-        </div>
+        {isPdf ? (
+          <div className="px-4 md:px-6 py-3 flex flex-col gap-3 w-full">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <Link
+                  href={`/reader/${id}/${slug}`}
+                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors shrink-0"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </Link>
+                <div className="min-w-0">
+                  <h1 className="text-sm font-semibold truncate">
+                    {storedVolume.fileName}
+                  </h1>
+                  <p className="text-xs text-white/55 truncate">{titleText}</p>
+                </div>
+              </div>
 
-        {!isPdf && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setSettingsOpen(!settingsOpen)}
-              className="p-2.5 hover:bg-white/5 rounded-full transition-all"
-              title="Reader Customization"
-            >
-              <Type className="w-4 h-4" />
-            </button>
+              {fileUrl && (
+                <a
+                  href={fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden md:inline-flex items-center justify-center px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-medium transition-colors"
+                >
+                  Open in New Tab
+                </a>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 md:gap-3">
+              <div className="flex items-center rounded-lg bg-black/20 border border-white/10 overflow-hidden">
+                <button
+                  onClick={() => goToPdfPage(pdfPage - 1)}
+                  disabled={pdfPage <= 1}
+                  className="px-3 py-2 text-sm text-white/90 hover:bg-white/8 disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
+                >
+                  Prev
+                </button>
+                <div className="flex items-center gap-2 px-3 py-2 border-x border-white/10">
+                  <input
+                    value={pdfPageInput}
+                    onChange={(event) =>
+                      setPdfPageInput(event.target.value.replace(/\D/g, ""))
+                    }
+                    onBlur={submitPdfPageInput}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        submitPdfPageInput();
+                        (event.target as HTMLInputElement).blur();
+                      }
+                    }}
+                    className="w-12 bg-transparent text-center text-sm outline-none"
+                    inputMode="numeric"
+                    aria-label="Current page"
+                  />
+                  <span className="text-sm text-white/45">/</span>
+                  <span className="text-sm text-white/70 min-w-8 text-center">
+                    {pdfPageCount || "-"}
+                  </span>
+                </div>
+                <button
+                  onClick={() => goToPdfPage(pdfPage + 1)}
+                  disabled={pdfPageCount === 0 || pdfPage >= pdfPageCount}
+                  className="px-3 py-2 text-sm text-white/90 hover:bg-white/8 disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+
+              <div className="flex items-center rounded-lg bg-black/20 border border-white/10 overflow-hidden">
+                <button
+                  onClick={() => updatePdfZoom(pdfZoom - 0.1)}
+                  className="p-2.5 text-white/90 hover:bg-white/8 transition-colors"
+                  aria-label="Zoom out"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => updatePdfZoom(1)}
+                  className="px-3 py-2 text-sm font-medium text-white/90 border-x border-white/10 hover:bg-white/8 transition-colors"
+                >
+                  {pdfZoomPercent}%
+                </button>
+                <button
+                  onClick={() => updatePdfZoom(pdfZoom + 0.1)}
+                  className="p-2.5 text-white/90 hover:bg-white/8 transition-colors"
+                  aria-label="Zoom in"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex items-center rounded-lg bg-black/20 border border-white/10 overflow-hidden">
+                {(["scroll", "flip"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => {
+                      pendingPdfTurnRef.current = null;
+                      setPdfTurnOverlay(null);
+                      setPdfReadingMode(mode);
+                    }}
+                    className={`px-3 py-2 text-xs font-medium capitalize transition-colors ${
+                      pdfReadingMode === mode
+                        ? "bg-white/15 text-white"
+                        : "text-white/55 hover:bg-white/8 hover:text-white"
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+
+              <div className="text-xs text-white/45 md:ml-1">
+                {pdfReadingMode === "scroll"
+                  ? "Scroll to read • PageUp/PageDown or arrow keys to jump pages"
+                  : "Flip mode • Tap or drag page edges to turn pages"}{" "}
+                • Ctrl/Cmd +/- to zoom
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="px-6 py-4 flex items-center justify-between w-full">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <Link
+                href={`/reader/${id}/${slug}`}
+                className="p-2 hover:bg-white/5 rounded-full transition-colors shrink-0"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </Link>
+              <div className="min-w-0">
+                <h1 className="text-xs font-black uppercase tracking-widest truncate">
+                  {titleText}
+                </h1>
+                <p className="text-[9px] font-bold uppercase tracking-widest opacity-40 mt-0.5">
+                  Local EPUB Reader
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSettingsOpen(!settingsOpen)}
+                className="p-2.5 hover:bg-white/5 rounded-full transition-all"
+                title="Reader Customization"
+              >
+                <Type className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
       </header>
@@ -470,9 +1008,12 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
         )}
       </AnimatePresence>
 
-      <main ref={viewerRef} className="flex-1 w-full flex flex-col relative">
+      <main className="flex-1 w-full flex flex-col relative">
         {isPdf ? (
-          <div className="flex-1 min-h-[90vh] bg-[#111] px-4 py-6 md:px-8 md:py-8 overflow-auto">
+          <div
+            ref={pdfScrollContainerRef}
+            className="flex-1 overflow-auto px-3 py-4 md:px-8 md:py-8"
+          >
             {pdfError ? (
               <div className="max-w-2xl mx-auto rounded-3xl border border-red-500/20 bg-red-500/5 p-6 text-center text-white space-y-4">
                 <h2 className="text-xl font-black uppercase tracking-widest text-red-300">
@@ -490,44 +1031,178 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
                   </a>
                 )}
               </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-center gap-3 mb-4">
-                  <button
-                    onClick={() => setPdfPage((page) => Math.max(1, page - 1))}
-                    disabled={pdfPage <= 1}
-                    className="px-4 py-2 rounded-xl bg-white/5 text-white text-xs font-black uppercase tracking-widest border border-white/10 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-all"
-                  >
-                    Previous
-                  </button>
-                  <span className="text-xs font-black uppercase tracking-widest text-white/60">
-                    {pdfPageCount > 0
-                      ? `Page ${pdfPage} of ${pdfPageCount}`
-                      : "Loading pages..."}
-                  </span>
-                  <button
-                    onClick={() =>
-                      setPdfPage((page) => Math.min(pdfPageCount, page + 1))
-                    }
-                    disabled={pdfPageCount === 0 || pdfPage >= pdfPageCount}
-                    className="px-4 py-2 rounded-xl bg-white/5 text-white text-xs font-black uppercase tracking-widest border border-white/10 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10 transition-all"
-                  >
-                    Next
-                  </button>
-                </div>
+            ) : pdfDoc ? (
+              pdfReadingMode === "scroll" ? (
+                <div className="flex flex-col items-center gap-6">
+                  {Array.from({ length: pdfPageCount }, (_, index) => {
+                    const pageNumber = index + 1;
 
-                <div className="flex justify-center">
-                  <canvas
-                    ref={pdfCanvasRef}
-                    className="max-w-full h-auto rounded-2xl shadow-2xl bg-white"
-                  />
+                    return (
+                      <div
+                        key={pageNumber}
+                        ref={(element) => {
+                          pdfPageRefs.current[index] = element;
+                        }}
+                        data-page-number={pageNumber}
+                        className="rounded-sm bg-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] border border-black/8 overflow-hidden"
+                      >
+                        <PdfPageCanvas
+                          pdfDoc={pdfDoc}
+                          pageNumber={pageNumber}
+                          zoom={pdfZoom}
+                          viewportWidth={pdfViewportWidth}
+                          onError={(message) => setPdfError(message)}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
-              </>
+              ) : (
+                <div className="min-w-max flex justify-center">
+                  <div
+                    ref={pdfFlipStageRef}
+                    onPointerDown={startManualPdfFlip}
+                    onPointerMove={moveManualPdfFlip}
+                    onPointerUp={finishManualPdfFlip}
+                    onPointerCancel={() => setPdfDragOverlay(null)}
+                    className="relative rounded-sm bg-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] border border-black/8 touch-none select-none cursor-pointer overflow-hidden"
+                    style={{ perspective: "2200px" }}
+                  >
+                    <canvas ref={pdfFlipCanvasRef} className="block bg-white" />
+
+                    <AnimatePresence>
+                      {pdfDragOverlay && (
+                        <motion.div
+                          key="manual-drag-flip"
+                          className="pointer-events-none absolute inset-0"
+                          style={{
+                            transformStyle: "preserve-3d",
+                            transformOrigin:
+                              pdfDragOverlay.direction === "next"
+                                ? "right center"
+                                : "left center",
+                            clipPath:
+                              pdfDragOverlay.direction === "next"
+                                ? "polygon(0 0, 100% 0, 72% 100%, 0 100%)"
+                                : "polygon(28% 0, 100% 0, 100% 100%, 0 100%)",
+                            rotateY:
+                              pdfDragOverlay.direction === "next"
+                                ? -88 * pdfDragOverlay.progress
+                                : 88 * pdfDragOverlay.progress,
+                            x:
+                              pdfDragOverlay.direction === "next"
+                                ? -12 * pdfDragOverlay.progress
+                                : 12 * pdfDragOverlay.progress,
+                          }}
+                          initial={false}
+                        >
+                          <div
+                            className="absolute inset-0 bg-no-repeat bg-cover bg-center"
+                            style={{
+                              backgroundImage: `url(${pdfDragOverlay.image})`,
+                              backgroundSize: "100% 100%",
+                            }}
+                          />
+                          <div
+                            className={`absolute inset-0 ${
+                              pdfDragOverlay.direction === "next"
+                                ? "bg-linear-to-l from-black/45 via-white/10 to-white/70"
+                                : "bg-linear-to-r from-black/45 via-white/10 to-white/70"
+                            }`}
+                            style={{
+                              opacity: 0.2 + pdfDragOverlay.progress * 0.65,
+                            }}
+                          />
+                          <div
+                            className={`absolute top-0 bottom-0 ${
+                              pdfDragOverlay.direction === "next"
+                                ? "right-0 w-[22%] bg-linear-to-l from-white via-white/65 to-transparent"
+                                : "left-0 w-[22%] bg-linear-to-r from-white via-white/65 to-transparent"
+                            }`}
+                          />
+                        </motion.div>
+                      )}
+
+                      {pdfTurnOverlay && (
+                        <>
+                          <motion.div
+                            key={`shadow-${pdfTurnOverlay.key}`}
+                            className={`pointer-events-none absolute inset-0 ${
+                              pdfTurnOverlay.direction === "next"
+                                ? "bg-linear-to-l from-black/25 via-black/10 to-transparent"
+                                : "bg-linear-to-r from-black/25 via-black/10 to-transparent"
+                            }`}
+                            initial={{ opacity: 0.2 }}
+                            animate={{ opacity: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.65, ease: "easeOut" }}
+                          />
+
+                          <motion.div
+                            key={pdfTurnOverlay.key}
+                            className="pointer-events-none absolute inset-0"
+                            style={{
+                              transformStyle: "preserve-3d",
+                              transformOrigin:
+                                pdfTurnOverlay.direction === "next"
+                                  ? "right center"
+                                  : "left center",
+                              clipPath:
+                                pdfTurnOverlay.direction === "next"
+                                  ? "polygon(0 0, 100% 0, 72% 100%, 0 100%)"
+                                  : "polygon(28% 0, 100% 0, 100% 100%, 0 100%)",
+                            }}
+                            initial={{ rotateY: 0, x: 0, opacity: 1 }}
+                            animate={{
+                              rotateY:
+                                pdfTurnOverlay.direction === "next" ? -88 : 88,
+                              x: pdfTurnOverlay.direction === "next" ? -10 : 10,
+                              opacity: 0.14,
+                            }}
+                            exit={{ opacity: 0 }}
+                            transition={{
+                              duration: 0.72,
+                              ease: [0.22, 0.61, 0.36, 1],
+                            }}
+                            onAnimationComplete={() => setPdfTurnOverlay(null)}
+                          >
+                            <div
+                              className="absolute inset-0 bg-no-repeat bg-cover bg-center"
+                              style={{
+                                backgroundImage: `url(${pdfTurnOverlay.image})`,
+                                backgroundSize: "100% 100%",
+                              }}
+                            />
+                            <div
+                              className={`absolute inset-0 ${
+                                pdfTurnOverlay.direction === "next"
+                                  ? "bg-linear-to-l from-black/45 via-black/15 to-white/10"
+                                  : "bg-linear-to-r from-black/45 via-black/15 to-white/10"
+                              }`}
+                            />
+                            <div
+                              className={`absolute top-0 bottom-0 ${
+                                pdfTurnOverlay.direction === "next"
+                                  ? "right-0 w-[18%] bg-linear-to-l from-white/80 via-white/35 to-transparent"
+                                  : "left-0 w-[18%] bg-linear-to-r from-white/80 via-white/35 to-transparent"
+                              }`}
+                            />
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              )
+            ) : (
+              <div className="flex items-center justify-center text-white/60 text-sm min-h-[50vh]">
+                Loading PDF pages...
+              </div>
             )}
           </div>
         ) : (
           <div className="max-w-3xl w-full mx-auto px-6 py-10 flex-1 flex flex-col justify-between">
-            <div ref={viewerRef} className="flex-1 min-h-[75vh]" />
+            <div ref={epubViewerRef} className="flex-1 min-h-[75vh]" />
           </div>
         )}
       </main>
