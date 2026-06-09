@@ -4,9 +4,7 @@ export const WITCHCULT_NOVEL_ID = "witchcult-re-zero-web-novel";
 export const REZERO_ENGLISH_TITLE = "Re:ZERO -Starting Life in Another World-";
 export const REZERO_LIGHT_NOVEL_VOLUME_COUNT = 44;
 
-/** Stable Re:Zero key art from AniList CDN; the old WebNovel cover endpoint blocks often. */
-export const REZERO_COVER =
-  "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx163134-yieRFbvUOH9a.jpg";
+export const REZERO_COVER = "https://images.pucloud.top/rezero-cover.jpg";
 export const REZERO_BANNER =
   "https://witchculttranslation.com/wp-content/uploads/2024/09/Banner_new.jpg?x20762";
 
@@ -41,7 +39,9 @@ export function isUrlLikeChapterTitle(title: string) {
 }
 
 /** Parse readable title from witchcult chapter id URL/hash (e.g. arc-6-chapter-26-stick-swinger). */
-export function parseWitchCultChapterTitleFromId(chapterId: string): string | null {
+export function parseWitchCultChapterTitleFromId(
+  chapterId: string,
+): string | null {
   const payload = getWitchCultPayload(chapterId);
   if (!payload) return null;
 
@@ -74,15 +74,17 @@ export function decodeReaderChapterPathId(segments: string[]) {
 
 export function findReaderChapter<T extends { id: string }>(
   chapters: T[],
-  chapterId: string
+  chapterId: string,
 ): T | undefined {
-  return chapters.find((chapter) => readerChapterIdsMatch(chapter.id, chapterId));
+  return chapters.find((chapter) =>
+    readerChapterIdsMatch(chapter.id, chapterId),
+  );
 }
 
 export function getChapterDisplayTitle(
   chapterId: string,
   chapter?: { title?: string; number?: string; chapterInArc?: number } | null,
-  fallbackNumber?: string
+  fallbackNumber?: string,
 ) {
   const title = chapter?.title;
   if (title && !isUrlLikeChapterTitle(title)) return title;
@@ -97,13 +99,17 @@ export function getChapterDisplayTitle(
 export function getChapterShortTitle(
   chapterId: string,
   chapter?: { title?: string; number?: string; chapterInArc?: number } | null,
-  fallbackNumber?: string
+  fallbackNumber?: string,
 ) {
   const full = getChapterDisplayTitle(chapterId, chapter, fallbackNumber);
   const stripped = full.replace(/^Chapter\s+[\d.]+[:\s–—-]?\s*/i, "").trim();
   return stripped || full;
 }
 
-export function getReaderChapterPath(mangaId: string, slug: string, chapterId: string) {
+export function getReaderChapterPath(
+  mangaId: string,
+  slug: string,
+  chapterId: string,
+) {
   return `/reader/read/${mangaId}/${slug}/${encodeReaderChapterPathId(chapterId)}`;
 }

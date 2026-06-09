@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 
 interface PdfPageProps {
   pdfDoc: any;
@@ -11,7 +11,7 @@ interface PdfPageProps {
   onError: (message: string) => void;
 }
 
-export function PdfPage({
+export const PdfPage = React.memo(function PdfPage({
   pdfDoc,
   pageNumber,
   viewportWidth,
@@ -47,7 +47,6 @@ export function PdfPage({
           ? Math.max(viewportWidth - 48, 300)
           : baseViewport.width;
         const fitWidthScale = availableWidth / baseViewport.width;
-
         const renderScale = fitWidthScale * baseScale;
         const viewport = page.getViewport({ scale: renderScale });
         const outputScale = window.devicePixelRatio || 1;
@@ -89,8 +88,8 @@ export function PdfPage({
 
   if (!active) {
     return (
-      <div className="flex aspect-[1/1.4] w-full max-w-200 items-center justify-center bg-white/5 rounded-sm text-[10px] font-black uppercase tracking-widest text-white/10 border border-white/5">
-        Loading Page {pageNumber}...
+      <div className="flex aspect-[1/1.4] w-full items-center justify-center bg-white/5 rounded-sm text-[10px] font-black uppercase tracking-widest text-white/10 border border-white/5 animate-pulse">
+        Page {pageNumber}
       </div>
     );
   }
@@ -98,7 +97,7 @@ export function PdfPage({
   return (
     <canvas
       ref={canvasRef}
-      className="block bg-white shadow-2xl shadow-black/80 rounded-sm mx-auto"
+      className="block bg-white shadow-2xl shadow-black/80 rounded-sm mx-auto transition-opacity duration-500"
     />
   );
-}
+});

@@ -65,6 +65,7 @@ export function PdfReader({
   useEffect(() => {
     if (pdfReadingMode !== "scroll" || !pdfPageCount || !pdfScrollRef.current)
       return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries
@@ -74,10 +75,13 @@ export function PdfReader({
           const page = Number(
             (visible.target as HTMLElement).dataset.pageNumber,
           );
-          if (!isNaN(page)) setPdfPage(page);
+          if (!isNaN(page)) {
+            // Use a slight timeout to prevent state spamming
+            requestAnimationFrame(() => setPdfPage(page));
+          }
         }
       },
-      { root: pdfScrollRef.current, threshold: [0.1, 0.5] },
+      { root: pdfScrollRef.current, threshold: [0.1, 0.4] },
     );
     pdfPageRefs.current.forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
@@ -269,13 +273,13 @@ export function PdfReader({
 
       <div
         ref={pdfScrollRef}
-        className="flex-1 overflow-auto relative overscroll-none scroll-smooth bg-[#08020c]"
+        className="flex-1 overflow-auto relative overscroll-none scroll-smooth bg-[#08020c] scrollbar-hide"
         onClick={onToggleControls}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
       >
         <div
-          className={`min-h-full p-4 md:p-12 flex flex-col items-center transition-transform duration-300 ease-out origin-top`}
+          className={`min-h-full p-4 md:p-12 flex flex-col items-center transition-transform duration-300 ease-out origin-top will-change-transform`}
           style={{
             transform: `scale(${pdfZoom})`,
             gap: pdfReadingMode === "scroll" ? "3rem" : "0",
