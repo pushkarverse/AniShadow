@@ -33,6 +33,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "novelbin.com" },
       { protocol: "https", hostname: "novelbin.net" },
       { protocol: "https", hostname: "images.novelbin.com" },
+      { protocol: "https", hostname: "images.pucloud.top" },
       { protocol: "https", hostname: "book-pic.webnovel.com" },
     ],
     dangerouslyAllowSVG: true,

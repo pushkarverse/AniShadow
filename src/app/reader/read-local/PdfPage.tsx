@@ -7,7 +7,8 @@ interface PdfPageProps {
   pageNumber: number;
   viewportWidth: number;
   active: boolean;
-  baseScale: number;
+  /** 1 = fit to viewport width; 0.25–5 for 25%–500% */
+  zoomScale?: number;
   onError: (message: string) => void;
 }
 
@@ -16,7 +17,7 @@ export const PdfPage = React.memo(function PdfPage({
   pageNumber,
   viewportWidth,
   active,
-  baseScale,
+  zoomScale = 1,
   onError,
 }: PdfPageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -44,10 +45,10 @@ export const PdfPage = React.memo(function PdfPage({
 
         const baseViewport = page.getViewport({ scale: 1 });
         const availableWidth = viewportWidth
-          ? Math.max(viewportWidth - 48, 300)
+          ? Math.max(viewportWidth, 120)
           : baseViewport.width;
         const fitWidthScale = availableWidth / baseViewport.width;
-        const renderScale = fitWidthScale * baseScale;
+        const renderScale = fitWidthScale * zoomScale;
         const viewport = page.getViewport({ scale: renderScale });
         const outputScale = window.devicePixelRatio || 1;
 
@@ -84,7 +85,7 @@ export const PdfPage = React.memo(function PdfPage({
         renderTaskRef.current.cancel();
       }
     };
-  }, [active, baseScale, onError, pageNumber, pdfDoc, viewportWidth]);
+  }, [active, zoomScale, onError, pageNumber, pdfDoc, viewportWidth]);
 
   if (!active) {
     return (

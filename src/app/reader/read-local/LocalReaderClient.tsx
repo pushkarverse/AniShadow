@@ -112,8 +112,11 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
 
   const titleText = `${slug.replace(/-/g, " ")} - Volume ${vol}`;
 
+  const showMobileHeader = isMobile || !isPdf;
+  const documentTitle = storedVolume.fileName.replace(/\.[^/.]+$/, "");
+
   return (
-    <div className={`min-h-screen flex flex-col bg-[#08020c]`}>
+    <div className={`min-h-screen flex flex-col bg-[#08020c] reader-theme`}>
       <Script
         src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"
         strategy="lazyOnload"
@@ -125,36 +128,36 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
         onLoad={() => setLibLoaded((p) => ({ ...p, epub: true }))}
       />
 
-      {/* Header - Fixed & Themed */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-100 border-b border-primary/20 bg-[#0c0410]/95 backdrop-blur-xl transition-all duration-500 ${isMobile && !pdfControlsVisible ? "-translate-y-full" : "translate-y-0"}`}
-      >
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link
-              href={`/reader/${id}/${slug}`}
-              className="p-2 rounded-xl bg-white/5 text-primary hover:bg-primary/20 transition-all"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </Link>
-            <div className="hidden sm:block">
-              <h1 className="max-w-50 text-xs font-black uppercase tracking-[0.2em] text-white/90 truncate">
-                {storedVolume.fileName}
-              </h1>
-              <p className="text-[10px] font-bold text-primary uppercase">
-                {isPdf ? "PDF" : "EPUB"} Reader
-              </p>
+      {showMobileHeader && (
+        <header
+          className={`fixed top-0 left-0 right-0 z-100 border-b border-primary/20 bg-[#0c0410]/95 backdrop-blur-xl transition-all duration-500 ${isMobile && !pdfControlsVisible ? "-translate-y-full" : "translate-y-0"}`}
+        >
+          <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link
+                href={`/reader/${id}/${slug}`}
+                className="p-2 rounded-xl bg-white/5 text-primary hover:bg-primary/20 transition-all"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </Link>
+              <div className="hidden sm:block">
+                <h1 className="max-w-50 text-xs font-black uppercase tracking-[0.2em] text-white/90 truncate">
+                  {documentTitle}
+                </h1>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">
+                {titleText}
+              </span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">
-              {titleText}
-            </span>
-          </div>
-        </div>
-      </header>
+        </header>
+      )}
 
-      <main className="flex-1 flex flex-col pt-16 relative">
+      <main
+        className={`flex-1 flex flex-col relative ${showMobileHeader ? "pt-16" : ""}`}
+      >
         {isPdf ? (
           pdfDoc ? (
             <PdfReader
@@ -162,6 +165,8 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
               isMobile={isMobile}
               pdfControlsVisible={pdfControlsVisible}
               onToggleControls={toggleControls}
+              documentTitle={documentTitle}
+              backHref={`/reader/${id}/${slug}`}
             />
           ) : (
             <div className="flex-1 flex items-center justify-center text-white/20 text-xs font-black tracking-widest">
