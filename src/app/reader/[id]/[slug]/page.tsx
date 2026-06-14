@@ -9,7 +9,7 @@ import { ReaderActions } from "@/components/ReaderActions";
 import { ReaderProgressPosterBadge, ReaderProgressText, ReaderProgressButton } from "@/components/ReaderProgressTracker";
 import { ReaderDetailTabs } from "@/components/ReaderDetailTabs";
 import { CollapsibleDescription } from "@/components/CollapsibleDescription";
-import { REZERO_COVER, WITCHCULT_NOVEL_ID } from "@/lib/rezero";
+import { REZERO_COVER, WITCHCULT_NOVEL_ID, isReZeroNovelId, REZERO_IF_ROUTES, getReaderChapterPath } from "@/lib/rezero";
 
 import { slugify } from "@/lib/anime-utils";
 
@@ -187,6 +187,8 @@ export default async function MangaDetailPage({ params }: PageProps) {
                     </div>
                   </div>
                 </div>
+
+
                 
                 {relations.length > 0 && (
                   <div className="pt-6 border-t border-white/5 space-y-4">
@@ -210,6 +212,36 @@ export default async function MangaDetailPage({ params }: PageProps) {
                 )}
               </div>
             </div>
+
+            {/* IF Routes Card */}
+            {isReZeroNovelId(manga.id) && (
+              <div className="p-8 bg-card/40 border border-white/5 rounded-[2.5rem] space-y-8">
+                <h3 className="text-lg font-black uppercase tracking-widest text-white flex items-center gap-3">
+                   <div className="w-2 h-2 bg-primary rounded-full shadow-[var(--shadow-primary)]" />
+                   IF Routes
+                </h3>
+                
+                <div className="space-y-6">
+                  <div className="flex flex-col gap-3">
+                    {REZERO_IF_ROUTES.map((route, idx) => (
+                      <Link 
+                        key={`if-route-${idx}`} 
+                        href={getReaderChapterPath(manga.id, manga.slug, `witchcult:${route.url}`)}
+                        className="flex items-center gap-4 group p-3 rounded-2xl bg-white/5 hover:bg-primary/10 transition-colors border border-transparent hover:border-primary/20"
+                      >
+                        <div className="p-2.5 rounded-xl bg-white/5 text-primary group-hover:bg-primary/20 group-hover:scale-110 transition-all shrink-0">
+                          <BookOpen className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-black text-white/80 group-hover:text-primary transition-colors">{route.title}</span>
+                          <span className="text-[10px] font-black text-white/30 uppercase tracking-widest mt-0.5">Side Story</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </aside>
         </div>
       </div>

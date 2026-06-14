@@ -99,14 +99,7 @@ export function SearchFilters() {
   };
 
   if (rawType === "NOVEL") {
-    return (
-      <div key="novel-filters-disabled" className="w-full text-center py-6 px-4 select-none border border-white/5 rounded-2xl bg-white/[0.01]">
-        <p className="text-[10px] font-black uppercase tracking-widest text-white/30">Filters Unavailable</p>
-        <p className="text-[10px] text-white/20 mt-1.5 font-bold leading-normal">
-          WebNovels searches do not support filter refinement.
-        </p>
-      </div>
-    );
+    return null;
   }
 
   return (

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { BookOpen, BookText } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import NProgress from "nprogress";
 
 interface ReaderTabSwitcherProps {
   activeTab: "manga" | "novel";
@@ -15,6 +16,7 @@ export function ReaderTabSwitcher({ activeTab }: ReaderTabSwitcherProps) {
   const handleTabChange = (tab: "manga" | "novel") => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
+    NProgress.start();
     router.push(`/reader?${params.toString()}`);
   };
 

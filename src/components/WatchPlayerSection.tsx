@@ -19,6 +19,9 @@ interface EpisodeEntry {
   number: number;
   title?: string;
   image?: string;
+  isUnaired?: boolean;
+  timeUntilAiring?: number;
+  airingAt?: number;
 }
 
 interface WatchPlayerSectionProps {
@@ -35,6 +38,59 @@ interface WatchPlayerSectionProps {
   anime?: any;
 }
 
+
+function CountdownDisplay({ airingAt }: { airingAt: number }) {
+  const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number } | null>(null);
+
+  useEffect(() => {
+    if (!airingAt) return;
+
+    const target = airingAt * 1000;
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const diff = target - now;
+      if (diff <= 0) {
+        setTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
+        return;
+      }
+
+      setTimeLeft({
+        d: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        h: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        m: Math.floor((diff / 1000 / 60) % 60),
+        s: Math.floor((diff / 1000) % 60)
+      });
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [airingAt]);
+
+  if (!timeLeft) return null;
+
+  return (
+    <div className="flex gap-4 items-center justify-center">
+      <div className="flex flex-col items-center p-3 bg-white/5 border border-white/10 rounded-xl backdrop-blur-md min-w-[70px]">
+        <span className="text-3xl font-black text-primary font-mono">{String(timeLeft.d).padStart(2, "0")}</span>
+        <span className="text-[9px] uppercase tracking-widest text-white/40 font-bold mt-1">Days</span>
+      </div>
+      <div className="flex flex-col items-center p-3 bg-white/5 border border-white/10 rounded-xl backdrop-blur-md min-w-[70px]">
+        <span className="text-3xl font-black text-white font-mono">{String(timeLeft.h).padStart(2, "0")}</span>
+        <span className="text-[9px] uppercase tracking-widest text-white/40 font-bold mt-1">Hours</span>
+      </div>
+      <div className="flex flex-col items-center p-3 bg-white/5 border border-white/10 rounded-xl backdrop-blur-md min-w-[70px]">
+        <span className="text-3xl font-black text-white font-mono">{String(timeLeft.m).padStart(2, "0")}</span>
+        <span className="text-[9px] uppercase tracking-widest text-white/40 font-bold mt-1">Mins</span>
+      </div>
+      <div className="flex flex-col items-center p-3 bg-white/5 border border-white/10 rounded-xl backdrop-blur-md min-w-[70px]">
+        <span className="text-3xl font-black text-white font-mono">{String(timeLeft.s).padStart(2, "0")}</span>
+        <span className="text-[9px] uppercase tracking-widest text-white/40 font-bold mt-1">Secs</span>
+      </div>
+    </div>
+  );
+}
 
 export function WatchPlayerSection({
   videoUrl,
@@ -114,7 +170,6 @@ export function WatchPlayerSection({
     setCurrentVideoUrl(nextServer.url);
   };
 
-  // Rendering Helper Sub-components for flexible grid options
   const renderBackButton = () => (
     <Link
       href={`/anime/${animeId}/${animeSlug}`}
@@ -134,11 +189,10 @@ export function WatchPlayerSection({
             onClick={() => switchGroup("other")}
             disabled={groupedServers.other.length === 0}
             suppressHydrationWarning={true}
-            className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest border transition-all ${
-              activeServerGroup === "other"
+            className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest border transition-all ${activeServerGroup === "other"
                 ? "bg-primary/15 border-primary text-primary"
                 : "bg-white/5 border-white/10 text-white/35 hover:text-white"
-            } ${groupedServers.other.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
+              } ${groupedServers.other.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
           >
             Sub
           </button>
@@ -157,11 +211,10 @@ export function WatchPlayerSection({
             onClick={() => switchGroup("dub")}
             disabled={groupedServers.dub.length === 0}
             suppressHydrationWarning={true}
-            className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest border transition-all ${
-              activeServerGroup === "dub"
+            className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest border transition-all ${activeServerGroup === "dub"
                 ? "bg-primary/15 border-primary text-primary"
                 : "bg-white/5 border-white/10 text-white/35 hover:text-white"
-            } ${groupedServers.dub.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
+              } ${groupedServers.dub.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
           >
             Dub
           </button>
@@ -170,37 +223,67 @@ export function WatchPlayerSection({
     </div>
   );
 
-  const renderPlayer = () => (
-    <div className="w-full md:rounded-3xl overflow-hidden bg-black md:border border-white/5 shadow-2xl relative group/player">
-      {currentVideoUrl ? (
-        <PlayerWrapper
-          videoUrl={currentVideoUrl}
-          title={title}
-          episodeTitle={episodeTitle}
-          poster={poster}
-          isTheaterMode={isTheaterMode}
-          onTheaterToggle={handleTheaterToggle}
-        />
-      ) : (
-        <div className="aspect-video relative flex items-center justify-center bg-[#080808] overflow-hidden">
-          {poster && (
-            <div
-              className="absolute inset-0 bg-cover bg-center blur-[80px] opacity-30 scale-110"
-              style={{ backgroundImage: `url(${poster})` }}
-            />
-          )}
-          <div className="relative z-10 flex flex-col items-center justify-center gap-4 text-center px-8">
-            <p className="text-xl font-black uppercase tracking-[0.2em] text-primary/40">
-              Episode Not Found
-            </p>
-            <p className="text-xs text-white/20 font-medium max-w-md">
-              This episode might not be released yet or is unavailable on all providers right now.
-            </p>
+  const renderPlayer = () => {
+    const currentEpisodeObj = episodes.find(e => e.number === currentEpisodeNumber);
+    const isUnaired = currentEpisodeObj?.isUnaired;
+
+    return (
+      <div className="w-full md:rounded-3xl overflow-hidden bg-black md:border border-white/5 shadow-2xl relative group/player">
+        {isUnaired ? (
+          <div className="aspect-video relative flex flex-col items-center justify-center bg-[#080808] overflow-hidden">
+            {poster && (
+              <div
+                className="absolute inset-0 bg-cover bg-center blur-[80px] opacity-30 scale-110"
+                style={{ backgroundImage: `url(${poster})` }}
+              />
+            )}
+            <div className="relative z-10 flex flex-col items-center justify-center gap-6 text-center px-8 w-full max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(var(--primary),0.8)]" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/80">
+                  Episode {currentEpisodeObj?.number} Premiering Soon
+                </span>
+              </div>
+
+              <h3 className="text-2xl md:text-4xl font-black text-white tracking-tight drop-shadow-xl">
+                {title}
+              </h3>
+
+              <div className="mt-4">
+                <CountdownDisplay airingAt={currentEpisodeObj?.airingAt || 0} />
+              </div>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
+        ) : currentVideoUrl ? (
+          <PlayerWrapper
+            videoUrl={currentVideoUrl}
+            title={title}
+            episodeTitle={episodeTitle}
+            poster={poster}
+            isTheaterMode={isTheaterMode}
+            onTheaterToggle={handleTheaterToggle}
+          />
+        ) : (
+          <div className="aspect-video relative flex items-center justify-center bg-[#080808] overflow-hidden">
+            {poster && (
+              <div
+                className="absolute inset-0 bg-cover bg-center blur-[80px] opacity-30 scale-110"
+                style={{ backgroundImage: `url(${poster})` }}
+              />
+            )}
+            <div className="relative z-10 flex flex-col items-center justify-center gap-4 text-center px-8">
+              <p className="text-xl font-black uppercase tracking-[0.2em] text-primary/40">
+                Episode Not Found
+              </p>
+              <p className="text-xs text-white/20 font-medium max-w-md">
+                This episode might not be released yet or is unavailable on all providers right now.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderMobileEpisodesSection = () => {
     if (!episodes || episodes.length === 0) return null;
@@ -208,9 +291,9 @@ export function WatchPlayerSection({
     const q = episodeSearch.toLowerCase();
     const filteredEps = episodeSearch
       ? episodes.filter((ep) => {
-          const t = (ep.title || `Episode ${ep.number}`).toLowerCase();
-          return t.includes(q) || ep.number.toString() === episodeSearch;
-        })
+        const t = (ep.title || `Episode ${ep.number}`).toLowerCase();
+        return t.includes(q) || ep.number.toString() === episodeSearch;
+      })
       : episodes;
 
     return (
@@ -246,9 +329,8 @@ export function WatchPlayerSection({
               <Link
                 key={episode.id}
                 href={targetUrl}
-                className={`flex items-center gap-3 py-3 border-b border-white/5 transition-all ${
-                  isActive ? "opacity-100" : "opacity-70 hover:opacity-100"
-                }`}
+                className={`flex items-center gap-3 py-3 border-b border-white/5 transition-all ${isActive ? "opacity-100" : "opacity-70 hover:opacity-100"
+                  }`}
               >
                 {/* Thumbnail */}
                 <div className="relative w-28 aspect-video rounded-xl overflow-hidden flex-shrink-0 bg-black">
@@ -259,9 +341,8 @@ export function WatchPlayerSection({
                   />
                   {/* Play icon overlay */}
                   <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center ${
-                      isActive ? "bg-primary" : "bg-white/20"
-                    }`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center ${isActive ? "bg-primary" : "bg-white/20"
+                      }`}>
                       <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-white ml-0.5" xmlns="http://www.w3.org/2000/svg">
                         <path d="M8 5v14l11-7z" />
                       </svg>
@@ -271,9 +352,8 @@ export function WatchPlayerSection({
 
                 {/* Info */}
                 <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                  <span className={`text-sm font-semibold truncate ${
-                    isActive ? "text-white" : "text-white/80"
-                  }`}>
+                  <span className={`text-sm font-semibold truncate ${isActive ? "text-white" : "text-white/80"
+                    }`}>
                     {episode.title || `Episode ${episode.number}`}
                   </span>
                   <span className="text-[11px] text-white/40 font-medium">
@@ -346,17 +426,17 @@ export function WatchPlayerSection({
           </h2>
           {anime?.title && (
             <p className="text-xs text-white/40 italic font-medium mt-1">
-              {typeof anime.title === 'object' 
-                ? (anime.title.romaji || anime.title.native) 
+              {typeof anime.title === 'object'
+                ? (anime.title.romaji || anime.title.native)
                 : anime.title}
             </p>
           )}
-          
+
           <p className="text-white/65 text-sm leading-relaxed mt-4 font-medium">
             {isDescExpanded ? cleanDescription : (cleanDescription.length > 220 ? `${cleanDescription.slice(0, 220)}...` : cleanDescription)}
             {cleanDescription.length > 220 && (
-              <button 
-                onClick={() => setIsDescExpanded(!isDescExpanded)} 
+              <button
+                onClick={() => setIsDescExpanded(!isDescExpanded)}
                 className="text-primary hover:text-white ml-2 font-black uppercase tracking-widest text-[10px] transition-colors cursor-pointer"
               >
                 {isDescExpanded ? " -less" : " +more"}
@@ -438,40 +518,39 @@ export function WatchPlayerSection({
             return title.includes(q) || ep.number.toString() === q;
           })
           .map((episode) => {
-          const isActive = episode.number === currentEpisodeNumber;
-          const targetUrl = `/anime/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
+            const isActive = episode.number === currentEpisodeNumber;
+            const targetUrl = `/anime/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
 
-          return (
-            <Link
-              key={episode.id}
-              href={targetUrl}
-              className={`flex items-center gap-4 p-3 rounded-2xl transition-all border ${
-                isActive
-                  ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                  : "bg-white/5 border-white/5 hover:border-white/20 text-white/40 hover:text-white"
-              }`}
-            >
-              <div className="relative w-24 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-[#121212]">
-                <img
-                  src={poster || "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx151807-m1gX3iqITmI6.png"}
-                  alt={episode.title || `Episode ${episode.number}`}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">{episode.number}</span>
+            return (
+              <Link
+                key={episode.id}
+                href={targetUrl}
+                className={`flex items-center gap-4 p-3 rounded-2xl transition-all border ${isActive
+                    ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                    : "bg-white/5 border-white/5 hover:border-white/20 text-white/40 hover:text-white"
+                  }`}
+              >
+                <div className="relative w-24 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-[#121212]">
+                  <img
+                    src={poster || "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx151807-m1gX3iqITmI6.png"}
+                    alt={episode.title || `Episode ${episode.number}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">{episode.number}</span>
+                  </div>
                 </div>
-              </div>
-              <div className="flex flex-col gap-1 overflow-hidden">
-                <span className="text-sm font-medium truncate">
-                  {episode.title || `Episode ${episode.number}`}
-                </span>
-                <span className="text-[10px] text-white/30 font-medium">
-                  Episode {episode.number}
-                </span>
-              </div>
-            </Link>
-          );
-        })}
+                <div className="flex flex-col gap-1 overflow-hidden">
+                  <span className="text-sm font-medium truncate">
+                    {episode.title || `Episode ${episode.number}`}
+                  </span>
+                  <span className="text-[10px] text-white/30 font-medium">
+                    Episode {episode.number}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
       </div>
     </div>
   );
@@ -525,41 +604,40 @@ export function WatchPlayerSection({
                     return title.includes(q) || ep.number.toString() === q;
                   })
                   .map((episode) => {
-                  const isActive = episode.number === currentEpisodeNumber;
-                  const targetUrl = `/anime/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
+                    const isActive = episode.number === currentEpisodeNumber;
+                    const targetUrl = `/anime/watch/${animeId}/${animeSlug}?ep=${episode.number}`;
 
-                  return (
-                    <Link
-                      key={episode.id}
-                      href={targetUrl}
-                      onClick={() => setShowEpisodesSheet(false)}
-                      className={`flex items-center gap-4 p-3 rounded-2xl transition-all border ${
-                        isActive
-                          ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                          : "bg-white/5 border-white/5 hover:border-white/20 text-white/50 hover:text-white"
-                      }`}
-                    >
-                      <div className="relative w-20 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-[#121212]">
-                        <img
-                          src={poster || "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx151807-m1gX3iqITmI6.png"}
-                          alt={episode.title || `Episode ${episode.number}`}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">{episode.number}</span>
+                    return (
+                      <Link
+                        key={episode.id}
+                        href={targetUrl}
+                        onClick={() => setShowEpisodesSheet(false)}
+                        className={`flex items-center gap-4 p-3 rounded-2xl transition-all border ${isActive
+                            ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                            : "bg-white/5 border-white/5 hover:border-white/20 text-white/50 hover:text-white"
+                          }`}
+                      >
+                        <div className="relative w-20 aspect-video rounded-lg overflow-hidden flex-shrink-0 bg-[#121212]">
+                          <img
+                            src={poster || "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx151807-m1gX3iqITmI6.png"}
+                            alt={episode.title || `Episode ${episode.number}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">{episode.number}</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex flex-col gap-0.5 overflow-hidden">
-                        <span className="text-xs font-semibold truncate leading-tight">
-                          {episode.title || `Episode ${episode.number}`}
-                        </span>
-                        <span className="text-[9px] text-white/30 font-medium">
-                          Episode {episode.number}
-                        </span>
-                      </div>
-                    </Link>
-                  );
-                })}
+                        <div className="flex flex-col gap-0.5 overflow-hidden">
+                          <span className="text-xs font-semibold truncate leading-tight">
+                            {episode.title || `Episode ${episode.number}`}
+                          </span>
+                          <span className="text-[9px] text-white/30 font-medium">
+                            Episode {episode.number}
+                          </span>
+                        </div>
+                      </Link>
+                    );
+                  })}
               </div>
             </div>
           </motion.div>

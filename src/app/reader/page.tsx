@@ -19,6 +19,8 @@ export const metadata: Metadata = {
     "Explore thousands of manga, manhwa, light novels, and web novels with our sleek, ad-free Reader.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function ReaderPage({
   searchParams,
 }: {
@@ -40,8 +42,8 @@ export default async function ReaderPage({
     activeTab === "manga" ? getPopularManga(1, 15, "JP") : Promise.resolve({ results: [] }),
     activeTab === "manga" ? getTrendingManga(1, 15, "KR") : Promise.resolve({ results: [] }),
     activeTab === "manga" ? getPopularManga(1, 15, "KR") : Promise.resolve({ results: [] }),
-    activeTab === "novel" ? getTrendingNovels(1, 20) : Promise.resolve({ results: [] }),
-    activeTab === "novel" ? getPopularNovels(1, 20) : Promise.resolve({ results: [] }),
+    activeTab === "novel" ? getTrendingNovels(1, 50) : Promise.resolve({ results: [] }),
+    activeTab === "novel" ? getPopularNovels(1, 50) : Promise.resolve({ results: [] }),
   ]);
 
   return (
@@ -67,9 +69,6 @@ export default async function ReaderPage({
                     <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white uppercase">
                       Trending Manga
                     </h2>
-                    <p className="text-xs text-white/30 font-medium mt-0.5">
-                      Japanese comics & graphic novels
-                    </p>
                   </div>
                 </div>
                 <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-3 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
@@ -97,9 +96,6 @@ export default async function ReaderPage({
                     <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white uppercase">
                       Trending Manhwa
                     </h2>
-                    <p className="text-xs text-white/30 font-medium mt-0.5">
-                      Korean webtoons & comics
-                    </p>
                   </div>
                 </div>
                 <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-3 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
@@ -127,82 +123,147 @@ export default async function ReaderPage({
         )}
 
         {/* ── NOVEL TAB ── */}
-        {activeTab === "novel" && (
-          <div className="flex flex-col gap-16">
-            {/* Trending Novels & Web novels */}
-            <section>
-              <div className="flex items-center gap-4 mb-8">
-                <TrendingUp className="w-6 h-6 text-primary" />
-                <div>
-                  <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white uppercase">
-                    Trending Novels
-                  </h2>
-                  <p className="text-xs text-white/30 font-medium mt-0.5">
-                    Re:Zero web novel and more from NovelFull
-                  </p>
-                </div>
-              </div>
-              <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-3 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
-                {trendingNovels.results.length > 0 ? (
-                  trendingNovels.results.map((novel: any, idx: number) => (
-                    <ReaderCard
-                      key={`trendingnovel-${novel.id || idx}-${idx}`}
-                      id={novel.id}
-                      title={novel.title}
-                      slug={novel.slug}
-                      image={novel.image}
-                      rating={novel.rating ? novel.rating / 10 : undefined}
-                      countryOfOrigin={novel.countryOfOrigin}
-                      type={novel.type}
-                      chapters={novel.chapters}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-5 py-10 text-center text-white/30 text-sm">
-                    No trending novels found.
-                  </div>
-                )}
-              </div>
-            </section>
+        {activeTab === "novel" && (() => {
+          const trendingLN = trendingNovels.results.filter((n: any) => n.type === "NOVEL").slice(0, 15);
+          const trendingWN = trendingNovels.results.filter((n: any) => n.type === "WEBNOVEL").slice(0, 15);
+          const popularLN = popularNovels.results.filter((n: any) => n.type === "NOVEL").slice(0, 15);
+          const popularWN = popularNovels.results.filter((n: any) => n.type === "WEBNOVEL").slice(0, 15);
 
-            {/* Completed Novels & Web novels */}
-            <section>
-              <div className="flex items-center gap-4 mb-8">
-                <Star className="w-6 h-6 text-primary" />
-                <div>
-                  <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white uppercase">
-                    Completed Novels
-                  </h2>
-                  <p className="text-xs text-white/30 font-medium mt-0.5">
-                    All-time completed novels & webnovels
-                  </p>
-                </div>
-              </div>
-              <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-3 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
-                {popularNovels.results.length > 0 ? (
-                  popularNovels.results.map((novel: any, idx: number) => (
-                    <ReaderCard
-                      key={`popularnovel-${novel.id || idx}-${idx}`}
-                      id={novel.id}
-                      title={novel.title}
-                      slug={novel.slug}
-                      image={novel.image}
-                      rating={novel.rating ? novel.rating / 10 : undefined}
-                      countryOfOrigin={novel.countryOfOrigin}
-                      type={novel.type}
-                      chapters={novel.chapters}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-5 py-10 text-center text-white/30 text-sm">
-                    No popular novels found.
+          return (
+            <div className="flex flex-col lg:flex-row gap-8 overflow-x-hidden">
+              <div className="flex-1 min-w-0">
+
+                {/* Trending Light Novels */}
+                <section className="mb-16">
+                  <div className="flex items-center gap-4 mb-8">
+                    <TrendingUp className="w-6 h-6 text-primary" />
+                    <div>
+                      <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white uppercase">
+                        Trending Light Novels
+                      </h2>
+                    </div>
                   </div>
-                )}
+                  <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-3 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
+                    {trendingLN.length > 0 ? trendingLN.map((novel: any, idx: number) => (
+                      <ReaderCard
+                        key={`trend-ln-${novel.id || idx}-${idx}`}
+                        id={novel.id}
+                        title={novel.title}
+                        slug={novel.slug}
+                        image={novel.image}
+                        rating={novel.rating ? novel.rating / 10 : undefined}
+                        countryOfOrigin={novel.countryOfOrigin}
+                        type={novel.type}
+                        chapters={novel.chapters}
+                        priority={idx < 2}
+                      />
+                    )) : (
+                      <div className="col-span-5 py-10 text-center text-white/30 text-sm italic">No trending light novels found.</div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Trending Web Novels */}
+                <section className="mb-16">
+                  <div className="flex items-center gap-4 mb-8">
+                    <TrendingUp className="w-6 h-6 text-primary" />
+                    <div>
+                      <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white uppercase">
+                        Trending Web Novels
+                      </h2>
+                    </div>
+                  </div>
+                  <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-3 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
+                    {trendingWN.length > 0 ? trendingWN.map((novel: any, idx: number) => (
+                      <ReaderCard
+                        key={`trend-wn-${novel.id || idx}-${idx}`}
+                        id={novel.id}
+                        title={novel.title}
+                        slug={novel.slug}
+                        image={novel.image}
+                        rating={novel.rating ? novel.rating / 10 : undefined}
+                        countryOfOrigin={novel.countryOfOrigin}
+                        type={novel.type}
+                        chapters={novel.chapters}
+                        priority={idx < 2}
+                      />
+                    )) : (
+                      <div className="col-span-5 py-10 text-center text-white/30 text-sm italic">No trending web novels found.</div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Popular Light Novels */}
+                <section className="mb-16">
+                  <div className="flex items-center gap-4 mb-8">
+                    <Star className="w-6 h-6 text-primary" />
+                    <div>
+                      <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white uppercase">
+                        Popular Light Novels
+                      </h2>
+                    </div>
+                  </div>
+                  <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-3 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
+                    {popularLN.length > 0 ? popularLN.map((novel: any, idx: number) => (
+                      <ReaderCard
+                        key={`pop-ln-${novel.id || idx}-${idx}`}
+                        id={novel.id}
+                        title={novel.title}
+                        slug={novel.slug}
+                        image={novel.image}
+                        rating={novel.rating ? novel.rating / 10 : undefined}
+                        countryOfOrigin={novel.countryOfOrigin}
+                        type={novel.type}
+                        chapters={novel.chapters}
+                        priority={idx < 2}
+                      />
+                    )) : (
+                      <div className="col-span-5 py-10 text-center text-white/30 text-sm italic">No popular light novels found.</div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Popular Web Novels */}
+                <section className="mb-16">
+                  <div className="flex items-center gap-4 mb-8">
+                    <Star className="w-6 h-6 text-primary" />
+                    <div>
+                      <h2 className="text-2xl md:text-3xl font-black tracking-tighter text-white uppercase">
+                        Popular Web Novels
+                      </h2>
+                    </div>
+                  </div>
+                  <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-3 xl:grid-cols-5 md:gap-x-4 md:gap-y-8 no-scrollbar momentum-scroll -mx-4 px-4 md:mx-0 md:px-0">
+                    {popularWN.length > 0 ? popularWN.map((novel: any, idx: number) => (
+                      <ReaderCard
+                        key={`pop-wn-${novel.id || idx}-${idx}`}
+                        id={novel.id}
+                        title={novel.title}
+                        slug={novel.slug}
+                        image={novel.image}
+                        rating={novel.rating ? novel.rating / 10 : undefined}
+                        countryOfOrigin={novel.countryOfOrigin}
+                        type={novel.type}
+                        chapters={novel.chapters}
+                        priority={idx < 2}
+                      />
+                    )) : (
+                      <div className="col-span-5 py-10 text-center text-white/30 text-sm italic">No popular web novels found.</div>
+                    )}
+                  </div>
+                </section>
+
               </div>
-            </section>
-          </div>
-        )}
+
+              {/* Sidebar — same as manga tab */}
+              <aside className="hidden lg:block w-full lg:w-96 shrink-0">
+                <ReaderTrendingSidebar initialData={trendingLN} />
+              </aside>
+            </div>
+          );
+        })()}
       </main>
     </div>
   );
 }
+

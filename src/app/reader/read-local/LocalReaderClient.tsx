@@ -17,9 +17,8 @@ interface LocalReaderClientProps {
 export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
   const [loading, setLoading] = useState(true);
   const [storedVolume, setStoredVolume] = useState<StoredVolume | null>(null);
-  const [libLoaded, setLibLoaded] = useState({ epub: false, pdf: false });
-  const [pdfDoc, setPdfDoc] = useState<any>(null);
-  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [libLoaded, setLibLoaded] = useState({ epub: false });
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfControlsVisible, setPdfControlsVisible] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -27,7 +26,6 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
 
   const isPdf = storedVolume?.fileType?.toLowerCase().includes("pdf") ?? false;
 
-  // Viewport detection
   useEffect(() => {
     if (typeof window === "undefined") return;
     const mql = window.matchMedia("(max-width: 768px)");
@@ -37,7 +35,6 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
     return () => mql.removeEventListener("change", handler);
   }, []);
 
-  // Load file from IndexedDB
   useEffect(() => {
     async function load() {
       try {
@@ -54,25 +51,13 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
     load();
   }, [id, vol]);
 
-  // Init PDF.js Document
   useEffect(() => {
-    if (!libLoaded.pdf || !storedVolume || !isPdf) return;
-    async function initPdf() {
-      try {
-        const pdfjs = (window as any).pdfjsLib;
-        pdfjs.GlobalWorkerOptions.workerSrc =
-          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
-        const pdf = await pdfjs.getDocument({
-          data: await storedVolume!.fileBlob.arrayBuffer(),
-        }).promise;
-        setPdfDoc(pdf);
-      } catch (err) {
-        console.error(err);
-        setPdfError("PDF failed to load.");
-      }
+    if (storedVolume && isPdf) {
+      const url = URL.createObjectURL(storedVolume.fileBlob);
+      setPdfUrl(url);
+      return () => URL.revokeObjectURL(url);
     }
-    initPdf();
-  }, [isPdf, libLoaded.pdf, storedVolume]);
+  }, [storedVolume, isPdf]);
 
   const toggleControls = useCallback(() => {
     if (!isMobile) return;
@@ -116,12 +101,7 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
   const documentTitle = storedVolume.fileName.replace(/\.[^/.]+$/, "");
 
   return (
-    <div className={`min-h-screen flex flex-col bg-[#08020c] reader-theme`}>
-      <Script
-        src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"
-        strategy="lazyOnload"
-        onLoad={() => setLibLoaded((p) => ({ ...p, pdf: true }))}
-      />
+    <div className={`min-h-[100dvh] flex flex-col bg-[#08020c] reader-theme`}>
       <Script
         src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"
         strategy="lazyOnload"
@@ -156,22 +136,17 @@ export function LocalReaderClient({ id, slug, vol }: LocalReaderClientProps) {
       )}
 
       <main
-        className={`flex-1 flex flex-col relative ${showMobileHeader ? "pt-16" : ""}`}
+        className={`flex-1 flex flex-col relative w-full h-full ${showMobileHeader ? "pt-16" : ""}`}
       >
         {isPdf ? (
-          pdfDoc ? (
-            <PdfReader
-              pdfDoc={pdfDoc}
-              isMobile={isMobile}
-              pdfControlsVisible={pdfControlsVisible}
-              onToggleControls={toggleControls}
-              documentTitle={documentTitle}
-              backHref={`/reader/${id}/${slug}`}
+          pdfUrl ? (
+            <iframe
+              src={`${pdfUrl}#toolbar=1&navpanes=1&scrollbar=1&view=FitH`}
+              className="w-full h-[calc(100vh-64px)] lg:h-screen border-none bg-white"
+              title={documentTitle}
             />
           ) : (
-            <div className="flex-1 flex items-center justify-center text-white/20 text-xs font-black tracking-widest">
-              {pdfError || "INITIALIZING PDF ENGINE..."}
-            </div>
+            <div className="flex-1 flex items-center justify-center text-white/20 text-xs font-black tracking-widest"></div>
           )
         ) : (
           <EpubReader fileBlob={storedVolume.fileBlob} />

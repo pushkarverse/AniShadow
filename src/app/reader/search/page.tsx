@@ -202,7 +202,7 @@ export default async function ReaderSearchPage({
                           title={getAnimeTitle(item.title)}
                           image={item.image && item.image !== "" ? item.image : "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=500&auto=format&fit=crop"}
                           rating={item.rating ? item.rating / 10 : undefined}
-                          type={currentType}
+                          type={item.type || item.format || currentType}
                           slug={item.slug}
                           chapterNumber={item.episodeNumber}
                           countryOfOrigin={item.countryOfOrigin}

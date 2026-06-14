@@ -27,6 +27,7 @@ interface ReaderCardProps {
   countryOfOrigin?: string;
   href?: string;
   variant?: "default" | "search";
+  priority?: boolean;
 }
 
 const statusOptions = ["Reading", "On-Hold", "Planning", "Completed", "Dropped"];
@@ -49,7 +50,8 @@ export const ReaderCard = ({
   status,
   countryOfOrigin,
   href,
-  variant = "default"
+  variant = "default",
+  priority = false
 }: ReaderCardProps) => {
   const format = getMangaFormat(countryOfOrigin, type, id);
   const isNovelCard = type === "WEBNOVEL" || type === "NOVEL" || id?.startsWith("novelfull-") || id?.startsWith("novelbin-") || id?.startsWith("witchcult-");
@@ -68,7 +70,7 @@ export const ReaderCard = ({
   const [isLibraryLoading, setIsLibraryLoading] = useState(false);
   const [statusMenuPos, setStatusMenuPos] = useState({ top: 0, left: 0 });
   const [isMobileViewport, setIsMobileViewport] = useState(false);
-  
+
   const statusMenuRef = useRef<HTMLDivElement>(null);
   const statusButtonRef = useRef<HTMLButtonElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -109,8 +111,8 @@ export const ReaderCard = ({
           setShowStatusMenu(false);
         }
       }
-      if (popoverRef.current && !popoverRef.current.contains(event.target as Node) && 
-          triggerRef.current && !triggerRef.current.contains(event.target as Node)) {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node) &&
+        triggerRef.current && !triggerRef.current.contains(event.target as Node)) {
         setShowInfo(false);
       }
     };
@@ -177,92 +179,75 @@ export const ReaderCard = ({
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
             className="object-cover transition-all duration-700 group-hover:scale-105"
             unoptimized
+            priority={priority}
           />
-          
+
           {/* Enhanced Overlays */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
         </Link>
 
         {/* Status Badges Overlay */}
-        {variant === "search" ? (
-          <div className="absolute top-2 left-2 flex items-center gap-1 select-none pointer-events-none">
+        <div className="absolute top-2 left-2 flex flex-col gap-1.5 z-10 pointer-events-none pr-8">
+          <div className="flex flex-wrap items-center gap-1">
             <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black text-yellow-400">
               <span>★</span>
-              <span className="text-white font-bold">{rating ? Number(rating).toFixed(1) : "8.5"}</span>
+              <span className="text-white font-bold tracking-widest">{rating ? Number(rating).toFixed(1) : "8.5"}</span>
             </div>
-            <div className="px-1.5 py-0.5 rounded bg-primary/25 backdrop-blur-md border border-primary/30 text-[9px] font-black text-accent uppercase">
+            <div className={`px-1.5 py-0.5 text-[9px] font-black tracking-widest rounded backdrop-blur-md border uppercase whitespace-nowrap ${variant === "search" ? "bg-primary/25 border-primary/30 text-accent" : "bg-primary text-white border-white/10"}`}>
               {format || "MANGA"}
             </div>
           </div>
-        ) : (
-          <div className="absolute top-2 left-2 flex flex-col gap-1.5 z-10 pointer-events-none">
-            <div className="flex items-center gap-1">
-              {rating && (
-                <span className="px-1.5 py-0.5 text-[9px] font-black tracking-widest rounded bg-black/60 text-primary backdrop-blur-md border border-white/10 uppercase">
-                  {Number(rating).toFixed(1)}
-                </span>
-              )}
-              <span className="px-1.5 py-0.5 text-[9px] font-black tracking-widest rounded bg-primary text-white backdrop-blur-md border border-white/10 uppercase">
-                {format}
-              </span>
-            </div>
+        </div>
+
+        {/* Info Button */}
+        {variant !== "search" && (
+          <div className="absolute top-2 right-2 z-20">
+            <button
+              ref={triggerRef}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (!showInfo) {
+                  if (isMobileViewport) {
+                    fetchInfo();
+                    setShowInfo(true);
+                    return;
+                  }
+                  const rect = triggerRef.current?.getBoundingClientRect();
+                  if (rect) {
+                    const windowWidth = window.innerWidth;
+                    const windowHeight = window.innerHeight;
+                    const popoverWidth = 320;
+                    const popoverHeight = 600;
+
+                    let left = rect.right + 10;
+                    let top = rect.top;
+                    let flipX = false;
+
+                    if (left + popoverWidth > windowWidth) {
+                      left = rect.left - popoverWidth - 10;
+                      flipX = true;
+                    }
+
+                    if (top + popoverHeight > windowHeight) {
+                      top = Math.max(10, windowHeight - popoverHeight - 40);
+                    }
+
+                    setPopoverPos({ top, left, flipX, flipY: false });
+                    fetchInfo();
+                  }
+                  setShowInfo(true);
+                } else {
+                  setShowInfo(false);
+                }
+              }}
+              className="p-2 rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg border border-accent/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 scale-90 hover:scale-100"
+            >
+              <Info className="w-4 h-4" />
+            </button>
           </div>
         )}
-
-        {/* Info Button (Top Right) */}
-        <div className="absolute top-2 right-2 z-20">
-          <button 
-            ref={triggerRef}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              
-              if (!showInfo) {
-                if (isMobileViewport) {
-                  fetchInfo();
-                  setShowInfo(true);
-                  return;
-                }
-                const rect = triggerRef.current?.getBoundingClientRect();
-                if (rect) {
-                  const windowWidth = window.innerWidth;
-                  const windowHeight = window.innerHeight;
-                  const popoverWidth = 320; 
-                  const popoverHeight = 600; 
-
-                  let left = rect.right + 10;
-                  let top = rect.top;
-                  let flipX = false;
-                  
-                  if (left + popoverWidth > windowWidth) {
-                    left = rect.left - popoverWidth - 10;
-                    flipX = true;
-                  }
-
-                  if (top + popoverHeight > windowHeight) {
-                    top = Math.max(10, windowHeight - popoverHeight - 40);
-                  }
-
-                  setPopoverPos({ top, left, flipX, flipY: false });
-                  fetchInfo();
-                }
-                setShowInfo(true);
-              } else {
-                setShowInfo(false);
-              }
-            }}
-            className={variant === "search"
-              ? "w-7 h-7 flex items-center justify-center rounded-full bg-black/60 hover:bg-primary text-white border border-white/15 transition-all shadow-lg active:scale-90 cursor-pointer"
-              : "p-2 rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg border border-accent/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-300 scale-90 hover:scale-100"
-            }
-          >
-            {variant === "search" ? (
-              <span className="text-lg font-light leading-none">+</span>
-            ) : (
-              <Info className="w-4 h-4" />
-            )}
-          </button>
-        </div>
 
         {/* Bottom Chapters overlay for Search Variant */}
         {variant === "search" && (
@@ -284,77 +269,75 @@ export const ReaderCard = ({
         </h3>
       </Link>
 
-        {/* Quick Info Popover */}
-        {isMounted && createPortal(
-          <AnimatePresence key={`reader-info-presence-${id}`}>
-            {showInfo && (
-              <>
-                {/* Backdrop Overlay */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={() => setShowInfo(false)}
-                  className="fixed inset-0 bg-black/60 z-[9998] backdrop-blur-xs"
-                />
-                <motion.div
-                  ref={popoverRef}
-                  initial={
-                    isMobileViewport
-                      ? { y: "100%", opacity: 1, scale: 1, x: 0 }
-                      : { x: "100%", opacity: 1, scale: 1, y: 0 }
-                  }
-                  animate={{ x: 0, y: 0 }}
-                  exit={
-                    isMobileViewport
-                      ? { y: "100%" }
-                      : { x: "100%" }
-                  }
-                  transition={{ type: "spring", damping: 25, stiffness: 220 }}
-                  style={
-                    isMobileViewport
-                      ? { 
-                          position: 'fixed',
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          width: '100%',
-                        }
-                      : { 
-                          position: 'fixed',
-                          top: 0,
-                          bottom: 0,
-                          right: 0,
-                          width: '400px',
-                          height: '100vh',
-                        }
-                  }
-                  onClick={(e) => e.stopPropagation()}
-                  className={`z-[9999] bg-card/95 backdrop-blur-xl border-white/10 p-0 shadow-[-20px_0_50px_rgba(0,0,0,0.5),var(--shadow-primary)] flex flex-col overflow-hidden ring-1 ring-white/5 manga-theme ${
-                    isMobileViewport 
-                      ? 'rounded-t-3xl max-h-[80vh] border-t' 
-                      : 'border-l h-screen'
+      {/* Quick Info Popover */}
+      {isMounted && createPortal(
+        <AnimatePresence key={`reader-info-presence-${id}`}>
+          {showInfo && (
+            <>
+              {/* Backdrop Overlay */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowInfo(false)}
+                className="fixed inset-0 bg-black/60 z-[9998] backdrop-blur-xs"
+              />
+              <motion.div
+                ref={popoverRef}
+                initial={
+                  isMobileViewport
+                    ? { y: "100%", opacity: 1, scale: 1, x: 0 }
+                    : { x: "100%", opacity: 1, scale: 1, y: 0 }
+                }
+                animate={{ x: 0, y: 0 }}
+                exit={
+                  isMobileViewport
+                    ? { y: "100%" }
+                    : { x: "100%" }
+                }
+                transition={{ type: "spring", damping: 25, stiffness: 220 }}
+                style={
+                  isMobileViewport
+                    ? {
+                      position: 'fixed',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      width: '100%',
+                    }
+                    : {
+                      position: 'fixed',
+                      top: 0,
+                      bottom: 0,
+                      right: 0,
+                      width: '400px',
+                      height: '100vh',
+                    }
+                }
+                onClick={(e) => e.stopPropagation()}
+                className={`z-[9999] bg-card/95 backdrop-blur-xl border-white/10 p-0 shadow-[-20px_0_50px_rgba(0,0,0,0.5),var(--shadow-primary)] flex flex-col overflow-hidden ring-1 ring-white/5 manga-theme ${isMobileViewport
+                    ? 'rounded-t-3xl max-h-[80vh] border-t'
+                    : 'border-l h-screen'
                   }`}
-                >
-                  {/* Drag handle visible only on mobile bottom sheet */}
-                  {isMobileViewport && (
-                    <div className="w-12 h-1 bg-white/20 rounded-full mx-auto my-3 shrink-0" />
-                  )}
+              >
+                {/* Drag handle visible only on mobile bottom sheet */}
+                {isMobileViewport && (
+                  <div className="w-12 h-1 bg-white/20 rounded-full mx-auto my-3 shrink-0" />
+                )}
 
-                  {/* Header - Fixed */}
-                  <div className={`flex justify-between items-start pb-4 shrink-0 bg-gradient-to-b from-white/[0.02] to-transparent ${
-                    isMobileViewport ? 'px-6 pt-1' : 'p-6'
+                {/* Header - Fixed */}
+                <div className={`flex justify-between items-start pb-4 shrink-0 bg-gradient-to-b from-white/[0.02] to-transparent ${isMobileViewport ? 'px-6 pt-1' : 'p-6'
                   }`}>
-                    <div className="flex flex-col gap-1">
-                      <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
-                         <div className="w-1 h-3 bg-primary rounded-full" />
-                         Reader Preview
-                      </h4>
-                    </div>
-                    <button onClick={() => setShowInfo(false)} className="p-1 rounded-full hover:bg-white/5 text-white/30 hover:text-white transition-all">
-                      <X className="w-4 h-4" />
-                    </button>
+                  <div className="flex flex-col gap-1">
+                    <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-2">
+                      <div className="w-1 h-3 bg-primary rounded-full" />
+                      Reader Preview
+                    </h4>
                   </div>
+                  <button onClick={() => setShowInfo(false)} className="p-1 rounded-full hover:bg-white/5 text-white/30 hover:text-white transition-all">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
 
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar space-y-6">
@@ -394,7 +377,7 @@ export const ReaderCard = ({
                             <div className="flex items-center gap-1.5 text-white/80">
                               <BookOpen className="w-3.5 h-3.5" />
                               <span className="text-sm font-black tracking-tighter">
-                                {format === "Light Novel" 
+                                {format === "Light Novel"
                                   ? ((infoData as any).volumes || (infoData as any).chapters || "N/A")
                                   : ((infoData as any).chapters || "N/A")
                                 }
@@ -470,7 +453,7 @@ export const ReaderCard = ({
                 <div className="p-6 pt-0 shrink-0">
                   <div className="flex items-center gap-3">
                     <Link href={detailsUrl} className="flex-1 flex items-center justify-center py-3 bg-primary text-white hover:bg-primary/90 rounded-xl text-sm font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">
-                    Start Reading
+                      Start Reading
                     </Link>
                     <button
                       type="button"
@@ -495,45 +478,45 @@ export const ReaderCard = ({
               </motion.div>
             </>
           )}
-          </AnimatePresence>,
-          document.body
-        )}
-        {isMounted && createPortal(
-          <AnimatePresence key={`reader-status-presence-${id}`}>
-            {showStatusMenu && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: -10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: -10 }}
-                style={{
-                  position: "fixed",
-                  top: statusMenuPos.top,
-                  left: statusMenuPos.left,
-                  width: "176px"
-                }}
-                className="bg-[#121212] border border-white/10 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-[10000] p-1.5"
-              >
-                {statusOptions.map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => { setCurrentStatus(status); setShowStatusMenu(false); }}
-                    className="w-full px-3 py-2 text-left text-[11px] font-bold rounded-lg hover:bg-white/5 transition-all flex items-center justify-between group/opt"
-                  >
-                    <span className={currentStatus === status ? 'text-primary' : 'text-white/50 group-hover/opt:text-white'}>{status}</span>
-                    {currentStatus === status && <Check className="w-3 h-3 text-primary" />}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>,
-          document.body
-        )}
+        </AnimatePresence>,
+        document.body
+      )}
+      {isMounted && createPortal(
+        <AnimatePresence key={`reader-status-presence-${id}`}>
+          {showStatusMenu && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: -10 }}
+              style={{
+                position: "fixed",
+                top: statusMenuPos.top,
+                left: statusMenuPos.left,
+                width: "176px"
+              }}
+              className="bg-[#121212] border border-white/10 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-[10000] p-1.5"
+            >
+              {statusOptions.map((status) => (
+                <button
+                  key={status}
+                  onClick={() => { setCurrentStatus(status); setShowStatusMenu(false); }}
+                  className="w-full px-3 py-2 text-left text-[11px] font-bold rounded-lg hover:bg-white/5 transition-all flex items-center justify-between group/opt"
+                >
+                  <span className={currentStatus === status ? 'text-primary' : 'text-white/50 group-hover/opt:text-white'}>{status}</span>
+                  {currentStatus === status && <Check className="w-3 h-3 text-primary" />}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
-      <RoomModal 
-        isOpen={isRoomModalOpen} 
-        onClose={() => setIsRoomModalOpen(false)} 
+      <RoomModal
+        isOpen={isRoomModalOpen}
+        onClose={() => setIsRoomModalOpen(false)}
         animeId={id}
-        animeTitle={title} 
+        animeTitle={title}
         slug={mangaSlug}
       />
     </div>

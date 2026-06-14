@@ -12,7 +12,10 @@ export function getAnimeTitle(title: string | { english?: string; romaji?: strin
 export function getMangaFormat(country?: string, formatOrType?: string, id?: string): string {
     if (id?.startsWith('witchcult-')) return 'Web Novel';
     if (formatOrType === 'WEBNOVEL' || formatOrType === 'WEB_NOVEL' || formatOrType?.toLowerCase() === 'webnovel') return 'Web Novel';
-    if (formatOrType === 'NOVEL' || formatOrType?.toLowerCase() === 'novel') return 'Light Novel';
+    if (formatOrType === 'NOVEL' || formatOrType?.toLowerCase() === 'novel') {
+        if (country === 'KR' || country === 'CN') return 'Web Novel';
+        return 'Light Novel';
+    }
     if (country === 'KR') return 'Manhwa';
     if (country === 'CN') return 'Manhua';
     return 'Manga';

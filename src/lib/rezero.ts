@@ -4,9 +4,19 @@ export const WITCHCULT_NOVEL_ID = "witchcult-re-zero-web-novel";
 export const REZERO_ENGLISH_TITLE = "Re:ZERO -Starting Life in Another World-";
 export const REZERO_LIGHT_NOVEL_VOLUME_COUNT = 44;
 
-export const REZERO_COVER = "https://images.pucloud.top/rezero-cover.jpg";
+export const REZERO_COVER = "/rezero-cover.jpg";
 export const REZERO_BANNER =
   "https://witchculttranslation.com/wp-content/uploads/2024/09/Banner_new.jpg?x20762";
+
+export const REZERO_IF_ROUTES = [
+  { title: "Sloth IF (Rem IF)", url: "https://remonwater.wordpress.com/2017/06/04/reif-starting-life-in-a-different-world-prologue-the-beginning/" },
+  { title: "Pride IF (Ayamatsu)", url: "https://witchculttranslation.com/wp-content/uploads/2019/02/ayamatsu-april-fools-2017.pdf?x20762" },
+  { title: "Wrath IF (Oboreru)", url: "https://witchculttranslation.com/2018/08/23/rezero-if-oboreru/" },
+  { title: "Greed IF (Kasaneru)", url: "https://witchculttranslation.com/2019/02/11/kasaneru-if-re-repeating-life-in-another-world-from-zero/" },
+  { title: "Gluttony IF (Tsugihagu)", url: "https://witchculttranslation.com/2019/04/05/tsugihagu-if-re-patching-together-a-life-in-another-world-from-zero/" },
+  { title: "Lust IF (Butterfly Dream)", url: "https://eminenttranslations.com/rezero/side-stories/lust-if-the-butterfly-dream/" },
+  { title: "Sacrifice IF (Sasageru)", url: "https://docs.google.com/document/d/1lg8Mm6agnrWTujHJ_O5oayY5MV-Zyg16glAU-XeoMQs/preview" },
+];
 
 export function isReZeroNovelId(id: string) {
   return id === WITCHCULT_NOVEL_ID;

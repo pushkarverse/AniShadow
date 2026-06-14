@@ -46,8 +46,11 @@ async function scrapeRequest(options: { url: string; method?: string; headers?: 
       ok: res.ok,
       status: res.status
     };
-  } catch (err) {
+  } catch (err: any) {
     clearTimeout(tId);
+    if (err.name === 'AbortError' || err.message === 'The operation was aborted') {
+      return { body: "", ok: false, status: 408 };
+    }
     throw err;
   }
 }
@@ -521,6 +524,8 @@ async function fetchAnilistDirect(id: string): Promise<IAnimeInfo | null> {
         episodes
         nextAiringEpisode {
           episode
+          timeUntilAiring
+          airingAt
         }
         source
         genres
@@ -618,11 +623,21 @@ async function fetchAnilistDirect(id: string): Promise<IAnimeInfo | null> {
       })),
       totalEpisodes: media.episodes,
       currentEpisode: releasedEpisodes,
-      episodes: Array.from({ length: releasedEpisodes }, (_, i) => ({
-        id: `${media.id}-episode-${i + 1}`,
-        number: i + 1,
-        title: `Episode ${i + 1}`
-      })),
+      episodes: [
+        ...Array.from({ length: releasedEpisodes }, (_, i) => ({
+          id: `${media.id}-episode-${i + 1}`,
+          number: i + 1,
+          title: `Episode ${i + 1}`
+        })),
+        ...(media.nextAiringEpisode ? [{
+          id: `${media.id}-episode-${media.nextAiringEpisode.episode}`,
+          number: media.nextAiringEpisode.episode,
+          title: `Episode ${media.nextAiringEpisode.episode}`,
+          isUnaired: true,
+          timeUntilAiring: media.nextAiringEpisode.timeUntilAiring,
+          airingAt: media.nextAiringEpisode.airingAt
+        }] : [])
+      ],
       type: media.type,
       countryOfOrigin: media.countryOfOrigin,
       duration: media.duration,
@@ -2673,6 +2688,7 @@ export async function fetchAniListNovels(page: number, perPage: number, sort: st
           chapters
           volumes
           averageScore
+          countryOfOrigin
         }
       }
     }
@@ -2708,7 +2724,7 @@ export async function fetchAniListNovels(page: number, perPage: number, sort: st
         subEpisodes: volumesCount,
         format: "NOVEL",
         status: m.status || "RELEASING",
-        countryOfOrigin: "JP",
+        countryOfOrigin: m.countryOfOrigin || "JP",
         chapters: volumesCount,
         volumesCount,
         chaptersCount: m.chapters || 0
@@ -2737,6 +2753,7 @@ export async function fetchAnilistNovelDetails(id: string) {
         volumes
         averageScore
         startDate { year }
+        countryOfOrigin
       }
     }
   `;
@@ -2768,7 +2785,7 @@ export async function fetchAnilistNovelDetails(id: string) {
       rating: media.averageScore || 85,
       type: "NOVEL",
       format: "NOVEL",
-      countryOfOrigin: "JP",
+      countryOfOrigin: media.countryOfOrigin || "JP",
       volumesCount,
       volumes: volumesCount,
       chaptersCount: media.chapters || 0,
@@ -2796,6 +2813,7 @@ export async function searchAniListNovels(search: string, page: number = 1) {
           chapters
           volumes
           averageScore
+          countryOfOrigin
         }
       }
     }
@@ -2831,7 +2849,7 @@ export async function searchAniListNovels(search: string, page: number = 1) {
         subEpisodes: volumesCount,
         format: "NOVEL",
         status: m.status || "RELEASING",
-        countryOfOrigin: "JP",
+        countryOfOrigin: m.countryOfOrigin || "JP",
         chapters: volumesCount,
         volumesCount,
         chaptersCount: m.chapters || 0

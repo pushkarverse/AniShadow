@@ -409,7 +409,7 @@ async function fetchWitchCultChapterText(chapterUrlWithHash: string) {
 
   contentEl.find("h1").first().remove();
 
-  contentEl.find("p, li").each((_, el) => {
+  contentEl.find("p, li, a, span").each((_, el) => {
     const text = $(el).text().trim();
     if (
       /^[※\s\u3000\u203B*–\-]+$/u.test(text) ||
@@ -419,11 +419,27 @@ async function fetchWitchCultChapterText(chapterUrlWithHash: string) {
       /japanese\s+web\s+novel\s+source/i.test(text) ||
       /support\s+.*on\s+twitter/i.test(text) ||
       /snusertranslations/i.test(text) ||
-      /snusertl/i.test(text)
+      /snusertl/i.test(text) ||
+      /google\s*doc/i.test(text) ||
+      /^document$/i.test(text)
     ) {
       $(el).remove();
     }
   });
+
+  contentEl.find("p, div, span").each((_, el) => {
+    const text = $(el).text().replace(/\u00a0/g, " ").trim();
+    const children = $(el).children();
+    if (text === "" && children.length === 0) {
+      $(el).remove();
+    } else if (text === "" && children.length > 0) {
+      let hasImg = false;
+      $(el).find("img").each(() => { hasImg = true; });
+      if (!hasImg) $(el).remove();
+    }
+  });
+
+  contentEl.find("br + br").remove();
 
   return contentEl.html() || contentEl.text() || "Content load failed.";
 }
@@ -447,7 +463,38 @@ export async function getWitchCultReaderDetails() {
   };
 }
 
+async function fetchGoogleDocHTML(url: string) {
+  const exportUrl = url.replace(/\/preview|\/edit.*/g, "/export?format=html");
+  const html = await fetchHtml(exportUrl);
+  const $ = load(html);
+  $("head, style, script").remove();
+  $("*").removeAttr("style").removeAttr("class").removeAttr("id");
+  $("p, span").each((_, el) => {
+    const text = $(el).text().replace(/\u00a0/g, " ").trim();
+    if (text === "" && $(el).children().length === 0) {
+      $(el).remove();
+    }
+  });
+
+  return $("body").html() || $("body").text() || "Failed to parse Google Doc.";
+}
+
 export async function getWitchCultChapterPages(chapterUrlWithHash: string) {
+  if (chapterUrlWithHash.includes(".pdf")) {
+    return [{
+      page: 1,
+      text: `<iframe src="${chapterUrlWithHash}" width="100%" height="800px" style="border: none; background: white; border-radius: 8px;"></iframe>`
+    }];
+  }
+
+  if (chapterUrlWithHash.includes("docs.google.com")) {
+    const htmlText = await fetchGoogleDocHTML(chapterUrlWithHash);
+    return [{
+      page: 1,
+      text: htmlText
+    }];
+  }
+
   const htmlText = await fetchWitchCultChapterText(chapterUrlWithHash);
 
   return [{

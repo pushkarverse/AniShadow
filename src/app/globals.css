@@ -188,6 +188,33 @@
   }
 }
 
+/* Custom Scrollbar for PDF Thumbnail Sidebar */
+.thumbnail-scrollbar::-webkit-scrollbar {
+  width: 20px;
+}
+.thumbnail-scrollbar::-webkit-scrollbar-track {
+  background: #ffffff !important;
+}
+.thumbnail-scrollbar::-webkit-scrollbar-thumb {
+  background: #cdcdcd !important;
+  border-radius: 10px;
+  border: 4px solid #ffffff !important; /* Padding effect */
+}
+.thumbnail-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a6a6a6 !important;
+}
+.thumbnail-scrollbar::-webkit-scrollbar-button:vertical:decrement {
+  display: none;
+}
+.thumbnail-scrollbar::-webkit-scrollbar-button:vertical:increment {
+  display: block;
+  background-color: #cdcdcd;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  height: 20px;
+}
+
 
 
 
