@@ -5,7 +5,6 @@ import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import Script from "next/script";
 import { getVolume, StoredVolume } from "@/lib/indexedDb";
-import { PdfReader } from "./PdfReader";
 import { EpubReader } from "./EpubReader";
 
 interface LocalReaderClientProps {
