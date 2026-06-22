@@ -10,11 +10,10 @@ export const dynamic = "force-dynamic";
 
 export default async function LatestPage({
   searchParams,
-  baseUrl = "/anime/latest",
 }: {
   searchParams: Promise<{ page?: string }>;
-  baseUrl?: string;
 }) {
+  const baseUrl = "/anime/latest";
   const { page } = await searchParams;
   const currentPage = parseInt(page || "1");
   const ongoingData = await getOngoingAnime(currentPage, 24, "JP");

@@ -9,11 +9,10 @@ export const dynamic = "force-dynamic";
 
 export default async function TrendingPage({
   searchParams,
-  baseUrl = "/anime/trending",
 }: {
   searchParams: Promise<{ page?: string }>;
-  baseUrl?: string;
 }) {
+  const baseUrl = "/anime/trending";
   const { page } = await searchParams;
   const currentPage = parseInt(page || "1");
   const trendingData = await getTrendingAnime(currentPage, 24);
