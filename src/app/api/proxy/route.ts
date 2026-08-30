@@ -144,7 +144,9 @@ export async function GET(req: NextRequest) {
     };
 
     if (contentRange) responseHeaders["Content-Range"] = contentRange;
-    if (contentLength) responseHeaders["Content-Length"] = contentLength;
+    if (body && body.length > 0) {
+      responseHeaders["Content-Length"] = body.length.toString();
+    }
 
     if (isM3u8) {
       const text = body.toString("utf-8");

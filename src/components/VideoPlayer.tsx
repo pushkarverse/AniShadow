@@ -1185,6 +1185,7 @@ export function VideoPlayer({
               allowFullScreen
               allow="autoplay; encrypted-media; picture-in-picture"
               sandbox="allow-scripts allow-same-origin allow-forms"
+              onLoad={() => setIsBuffering(false)}
             />
           ) : (
             <>
