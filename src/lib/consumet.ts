@@ -580,9 +580,10 @@ async function fetchAnilistDirect(id: string): Promise<IAnimeInfo | null> {
   try {
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Origin': 'https://anilist.co', 'Referer': 'https://anilist.co/' },
       body: JSON.stringify({ query, variables: { id: parseInt(id) } })
     });
+    if (!response.ok) throw new Error('Anilist API error: ' + response.status);
     const data = await response.json();
     const media = data?.data?.Media;
     if (!media) return null;
@@ -674,13 +675,10 @@ export async function getTrendingAnime(page: number = 1, perPage: number = 20, p
 
   const now = new Date();
   const currentYear = now.getFullYear();
-  const month = now.getMonth(); // 0 is Jan, 11 is Dec
+  const month = now.getMonth();
 
-  // Determine current season for Anilist
-  // WINTER (Jan, Feb, Mar), SPRING (Apr, May, Jun), SUMMER (Jul, Aug, Sep), FALL (Oct, Nov, Dec)
   const currentSeason = month < 3 ? "WINTER" : month < 6 ? "SPRING" : month < 9 ? "SUMMER" : "FALL";
 
-  // Map periods to Anilist sorts and filters for better "accuracy"
   if (period === "WEEK") {
     sort = "[TRENDING_DESC]";
     statusIn = "[RELEASING, FINISHED]";
@@ -720,10 +718,11 @@ export async function getTrendingAnime(page: number = 1, perPage: number = 20, p
   try {
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Origin': 'https://anilist.co', 'Referer': 'https://anilist.co/' },
       body: JSON.stringify({ query: query, variables: { page, perPage, season, seasonYear } }),
-      cache: 'no-store'
+      next: { revalidate: 3600 }
     });
+    if (!response.ok) throw new Error('Anilist API error: ' + response.status);
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;
     let results: HeroResult[] = data?.data?.Page?.media?.map((m: AnilistNode & { bannerImage?: string, description?: string, genres?: string[] }) => ({
@@ -771,10 +770,11 @@ export async function getSeasonalAnime(season: string, year: number, page: numbe
   try {
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Origin': 'https://anilist.co', 'Referer': 'https://anilist.co/' },
       body: JSON.stringify({ query, variables: { season, seasonYear: year, page } }),
-      cache: 'no-store'
+      next: { revalidate: 3600 }
     });
+    if (!response.ok) throw new Error('Anilist API error: ' + response.status);
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;
     let results = data?.data?.Page?.media?.map((m: AnilistNode) => ({
@@ -849,7 +849,7 @@ export async function advancedSearchAnime({
     try {
       const response = await fetch('https://graphql.anilist.co', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Origin': 'https://anilist.co', 'Referer': 'https://anilist.co/' },
         body: JSON.stringify({
           query: gqlQuery,
           variables: {
@@ -867,6 +867,7 @@ export async function advancedSearchAnime({
           }
         })
       });
+      if (!response.ok) throw new Error('Anilist API error: ' + response.status);
       const data = await response.json();
       const pageInfo = data?.data?.Page?.pageInfo;
       let results = data?.data?.Page?.media?.map((m: any) => ({
@@ -958,9 +959,10 @@ export async function getMediaByGenre(genres: string[], type: 'ANIME' | 'MANGA' 
   try {
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Origin': 'https://anilist.co', 'Referer': 'https://anilist.co/' },
       body: JSON.stringify({ query, variables: { genres, page, type } })
     });
+    if (!response.ok) throw new Error('Anilist API error: ' + response.status);
     const data = await response.json();
     const results = data?.data?.Page?.media?.map((m: any) => ({
       id: m.id.toString(),
@@ -1006,10 +1008,11 @@ export async function getPopularAnime(page: number = 1, perPage: number = 20) {
   try {
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Origin': 'https://anilist.co', 'Referer': 'https://anilist.co/' },
       body: JSON.stringify({ query, variables: { page, perPage } }),
-      cache: 'no-store'
+      next: { revalidate: 3600 }
     });
+    if (!response.ok) throw new Error('Anilist API error: ' + response.status);
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;
     let results = data?.data?.Page?.media?.map((m: any) => ({
@@ -1541,9 +1544,10 @@ export async function getTrendingManga(page: number = 1, perPage: number = 20, c
   try {
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Origin': 'https://anilist.co', 'Referer': 'https://anilist.co/' },
       body: JSON.stringify({ query, variables: { page, perPage, countryOfOrigin } })
     });
+    if (!response.ok) throw new Error('Anilist API error: ' + response.status);
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;
     const results = data?.data?.Page?.media?.map((m: any) => ({
@@ -1591,9 +1595,10 @@ export async function getPopularManga(page: number = 1, perPage: number = 20, co
   try {
     const response = await fetch('https://graphql.anilist.co', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Origin': 'https://anilist.co', 'Referer': 'https://anilist.co/' },
       body: JSON.stringify({ query, variables: { page, perPage, countryOfOrigin } })
     });
+    if (!response.ok) throw new Error('Anilist API error: ' + response.status);
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;
     const results = data?.data?.Page?.media?.map((m: any) => ({
@@ -2209,9 +2214,10 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
       try {
         const response = await fetch('https://graphql.anilist.co', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Origin': 'https://anilist.co', 'Referer': 'https://anilist.co/' },
           body: JSON.stringify({ query: mediaIdsQuery, variables: { country, page: p } })
         });
+        if (!response.ok) throw new Error('Anilist API error: ' + response.status);
         const data = await response.json();
         return data?.data?.Page?.media?.map((m: any) => m.id) || [];
       } catch (e) {
@@ -2264,7 +2270,7 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
       try {
         const response = await fetch('https://graphql.anilist.co', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Origin': 'https://anilist.co', 'Referer': 'https://anilist.co/' },
           body: JSON.stringify({
             query: schedulesQuery,
             variables: {
@@ -2274,8 +2280,9 @@ export const getOngoingAnime = async (page: number = 1, perPage: number = 20, co
               mediaId_in: mediaIds
             }
           }),
-          cache: 'no-store'
+          next: { revalidate: 3600 }
         });
+        if (!response.ok) throw new Error('Anilist API error: ' + response.status);
         const data = await response.json();
         return data?.data?.Page?.airingSchedules || [];
       } catch (e) {
@@ -2697,11 +2704,12 @@ export async function fetchAniListNovels(page: number, perPage: number, sort: st
   try {
     const res = await fetch('https://graphql.anilist.co', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Origin': 'https://anilist.co', 'Referer': 'https://anilist.co/' },
       body: JSON.stringify({ query, variables: { page, perPage, sort } }),
-      cache: 'no-store'
+      next: { revalidate: 3600 }
     });
     if (!res.ok) throw new Error(`AniList returned status ${res.status}`);
+    if (!res.ok) throw new Error('Anilist API error: ' + res.status);
     const data = await res.json();
     const media = data?.data?.Page?.media || [];
     const hasNextPage = data?.data?.Page?.pageInfo?.hasNextPage || false;
@@ -2761,11 +2769,12 @@ export async function fetchAnilistNovelDetails(id: string) {
   try {
     const res = await fetch('https://graphql.anilist.co', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Origin': 'https://anilist.co', 'Referer': 'https://anilist.co/' },
       body: JSON.stringify({ query, variables: { id: parseInt(id) } }),
-      cache: 'no-store'
+      next: { revalidate: 3600 }
     });
     if (!res.ok) throw new Error(`AniList returned status ${res.status}`);
+    if (!res.ok) throw new Error('Anilist API error: ' + res.status);
     const data = await res.json();
     const media = data?.data?.Media;
     if (!media) return null;
@@ -2822,11 +2831,12 @@ export async function searchAniListNovels(search: string, page: number = 1) {
   try {
     const res = await fetch('https://graphql.anilist.co', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 'Origin': 'https://anilist.co', 'Referer': 'https://anilist.co/' },
       body: JSON.stringify({ query, variables: { search, page } }),
-      cache: 'no-store'
+      next: { revalidate: 3600 }
     });
     if (!res.ok) throw new Error(`AniList returned status ${res.status}`);
+    if (!res.ok) throw new Error('Anilist API error: ' + res.status);
     const data = await res.json();
     const media = data?.data?.Page?.media || [];
     const hasNextPage = data?.data?.Page?.pageInfo?.hasNextPage || false;

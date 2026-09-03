@@ -1240,6 +1240,10 @@ export function VideoPlayer({
                 }}
                 onCanPlay={() => setIsBuffering(false)}
                 onLoadStart={() => setIsBuffering(true)}
+                onError={() => {
+                  setIsBuffering(false);
+                  setError("Video failed to load. Please try a different server.");
+                }}
               >
                 {proxiedSubtitleUrl && isSubtitlesOn && (
                   <track
