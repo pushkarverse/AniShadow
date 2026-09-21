@@ -10,7 +10,7 @@ interface ServerEntry {
   name: string;
   provider: string;
   url: string;
-  kind?: "dub" | "other";
+  kind?: "sub" | "dub" | "hsub" | "other";
   label?: string;
 }
 
@@ -22,6 +22,8 @@ interface VideoPlayerProps {
   allServers?: ServerEntry[];
   isTheaterMode?: boolean;
   onTheaterToggle?: () => void;
+  autoPlay?: boolean;
+  onEnded?: () => void;
 }
 
 function unpackDeanEdwards(html: string): string | null {
@@ -57,13 +59,15 @@ export function VideoPlayer({
   allServers = [],
   isTheaterMode = false,
   onTheaterToggle,
+  autoPlay = false,
+  onEnded,
 }: VideoPlayerProps): ReactElement {
   const [currentVideoUrl, setCurrentVideoUrl] = useState(initialVideoUrl);
   const [isExtracting, setIsExtracting] = useState(false);
 
-  // Audio group switching (Sub/Dub) inside the player
   const [activeAudioGroup, setActiveAudioGroup] = useState<"other" | "dub">("other");
   const [showAudioMenu, setShowAudioMenu] = useState(false);
+  const [showServerMenu, setShowServerMenu] = useState(false);
 
   const groupedServers = useMemo(() => {
     const dub: ServerEntry[] = [];
@@ -84,9 +88,9 @@ export function VideoPlayer({
       setCurrentVideoUrl(nextServer.url);
     }
     setShowAudioMenu(false);
+    setShowServerMenu(false);
   };
 
-  // Responsive auto-hide delay
   const getControlsTimeout = () => typeof window !== 'undefined' && window.innerWidth < 768 ? 6000 : 4000;
 
   const isIframe = useMemo(() => {
@@ -95,21 +99,17 @@ export function VideoPlayer({
     if (urlLower.includes('.m3u8') || urlLower.includes('.mp4') || urlLower.includes('.mkv')) {
       return false;
     }
-    if (
+    return (
       urlLower.includes('vibeplayer.site') ||
       urlLower.includes('otakuhg.site') ||
       urlLower.includes('otakuvid.online') ||
       urlLower.includes('playmogo.com') ||
-      urlLower.includes('embed') ||
-      urlLower.includes('/e/') ||
-      urlLower.includes('player')
-    ) {
-      return true;
-    }
-    return currentVideoUrl.startsWith('http');
+      urlLower.includes('anikoto.cz') ||
+      urlLower.includes('sankanime') ||
+      urlLower.includes('megaplay.buzz')
+    );
   }, [currentVideoUrl]);
 
-  // Update internal URL or extract direct stream if it's an embed provider
   useEffect(() => {
     if (!initialVideoUrl) return;
 
@@ -117,8 +117,11 @@ export function VideoPlayer({
     const isVibe = urlLower.includes("vibeplayer.site");
     const isOtakuHg = urlLower.includes("otakuhg.site");
     const isOtakuVid = urlLower.includes("otakuvid.online");
-
-    if (!isVibe && !isOtakuHg && !isOtakuVid) {
+    const isPlaymogo = urlLower.includes("playmogo.com");
+    const isAniKoto = urlLower.includes("anikoto.cz");
+    const isSankanime = urlLower.includes("sankanime");
+    const isMegaplay = urlLower.includes("megaplay.buzz");
+    if (!isVibe && !isOtakuHg && !isOtakuVid && !isPlaymogo && !isAniKoto && !isSankanime && !isMegaplay) {
       setCurrentVideoUrl(initialVideoUrl);
       setIsExtracting(false);
       return;
@@ -142,17 +145,17 @@ export function VideoPlayer({
         if (!active) return;
 
         let m3u8Url: string | null = null;
-        if (isVibe) {
-          const m3u8Matches = html.match(/https?:\/\/[^"'\s>]+\.m3u8[^"'\s>]*/gi);
-          if (m3u8Matches && m3u8Matches.length > 0) {
-            m3u8Url = m3u8Matches[0];
-          }
-        } else if (isOtakuHg || isOtakuVid) {
+
+        const plainM3u8 = html.match(/https?:\/\/[^"'\s<>]+\.m3u8[^"'\s<>]*/gi);
+        if (plainM3u8 && plainM3u8.length > 0) {
+          m3u8Url = plainM3u8[0].replace(/\\u002F/g, "/");
+        }
+        if (!m3u8Url && (isOtakuHg || isOtakuVid || isMegaplay)) {
           const unpacked = unpackDeanEdwards(html);
           if (unpacked) {
-            const m3u8Matches = unpacked.match(/https?:\/\/[^"'\s>]+\.m3u8[^"'\s>]*/gi);
-            if (m3u8Matches && m3u8Matches.length > 0) {
-              m3u8Url = m3u8Matches[0];
+            const packedMatches = unpacked.match(/https?:\/\/[^"'\s<>]+\.m3u8[^"'\s<>]*/gi);
+            if (packedMatches && packedMatches.length > 0) {
+              m3u8Url = packedMatches[0];
             }
           }
         }
@@ -1128,7 +1131,7 @@ export function VideoPlayer({
             )}
           </AnimatePresence>
 
-          {(isExtracting || isBuffering) && (
+          {(isExtracting || (isBuffering && !isIframe)) && (
             <div className="absolute inset-0 flex items-center justify-center bg-[#080808]/80 backdrop-blur-xs z-20 pointer-events-none">
               <div className="relative w-16 h-16 pointer-events-auto">
                 <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping" />
@@ -1184,7 +1187,6 @@ export function VideoPlayer({
               className="absolute inset-0 w-full h-full border-0"
               allowFullScreen
               allow="autoplay; encrypted-media; picture-in-picture"
-              sandbox="allow-scripts allow-same-origin allow-forms"
               onLoad={() => setIsBuffering(false)}
             />
           ) : (
@@ -1193,6 +1195,8 @@ export function VideoPlayer({
                 ref={videoRef}
                 crossOrigin="anonymous"
                 playsInline
+                autoPlay={autoPlay}
+                onEnded={onEnded}
                 className={`absolute inset-0 w-full h-full ${isMaxView ? 'object-cover' : 'object-contain'}`}
                 onTimeUpdate={() => {
                   const time = videoRef.current?.currentTime || 0;
@@ -1780,7 +1784,7 @@ export function VideoPlayer({
                         {hasBothAudioGroups && (
                           <div className="relative">
                             <button
-                              onClick={() => { setShowAudioMenu(!showAudioMenu); setShowQualityMenu(false); setShowSpeedMenu(false); }}
+                              onClick={() => { setShowAudioMenu(!showAudioMenu); setShowQualityMenu(false); setShowSpeedMenu(false); setShowServerMenu(false); }}
                               className={`transition-all flex items-center gap-1 ${activeAudioGroup === 'dub' ? 'text-primary' : 'text-white hover:text-accent'}`}
                               title="Switch Audio"
                             >
@@ -1828,6 +1832,7 @@ export function VideoPlayer({
                               setShowSpeedMenu(!showSpeedMenu);
                               setShowQualityMenu(false);
                               setShowAudioMenu(false);
+                              setShowServerMenu(false);
                             }}
                             className="text-white hover:text-accent transition-all flex items-center gap-1"
                             title="Playback Speed"

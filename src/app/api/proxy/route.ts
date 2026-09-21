@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-// Pure fetch implementation to avoid got-scraping serverless bundles and ADM-ZIP bugs on Vercel Node runtime.
 export const dynamic = "force-dynamic";
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+  "Access-Control-Allow-Headers": "*",
+  "Access-Control-Expose-Headers": "*",
+  "Access-Control-Max-Age": "86400",
+};
 
 function rewriteM3u8(content: string, originalUrl: string, referer?: string): string {
   const urlObj = new URL(originalUrl);
@@ -135,10 +142,7 @@ export async function GET(req: NextRequest) {
     const isM3u8 = (contentType || "").includes("mpegurl") || (contentType || "").includes("mpeg-url") || url.toLowerCase().includes(".m3u8");
 
     const responseHeaders: Record<string, string> = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-      "Access-Control-Allow-Headers": "*",
-      "Access-Control-Expose-Headers": "*",
+      ...CORS_HEADERS,
       "Cache-Control": "no-cache, no-store, must-revalidate",
       "Content-Type": contentType || "application/octet-stream"
     };
@@ -169,3 +173,10 @@ export async function GET(req: NextRequest) {
   }
 }
 
+export async function HEAD(req: NextRequest) {
+  return await GET(req);
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}

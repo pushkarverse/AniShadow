@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  allowedDevOrigins: ["172.27.16.1", "192.168.29.10"],
+  allowedDevOrigins: ["172.27.16.1", "192.168.29.10", "100.109.137.14"],
 };
 
 export default nextConfig;

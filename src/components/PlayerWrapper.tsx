@@ -2,6 +2,14 @@
 
 import dynamic from "next/dynamic";
 
+interface ServerEntry {
+  name: string;
+  provider: string;
+  url: string;
+  kind?: "dub" | "other";
+  label?: string;
+}
+
 const VideoPlayer = dynamic(() => import("./VideoPlayer").then((mod) => mod.VideoPlayer), {
   ssr: false,
   loading: () => (
@@ -19,8 +27,11 @@ interface PlayerWrapperProps {
   title: string;
   episodeTitle: string;
   poster?: string;
+  allServers?: ServerEntry[];
   isTheaterMode?: boolean;
   onTheaterToggle?: () => void;
+  autoPlay?: boolean;
+  onEnded?: () => void;
 }
 
 export function PlayerWrapper(props: PlayerWrapperProps) {

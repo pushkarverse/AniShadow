@@ -69,11 +69,8 @@ let animesaturn: InstanceType<typeof ANIME.AnimeSaturn> | null = null;
 let animeunity: InstanceType<typeof ANIME.AnimeUnity> | null = null;
 let animesama: InstanceType<typeof ANIME.AnimeSama> | null = null;
 
-const hianimeCountsCache = new Map<string, { sub: number; dub: number }>();
-const hianimeNoMatchCache = new Map<string, number>();
-
-const HIANIME_LOOKUP_TIMEOUT_MS = 3500;
-const HIANIME_NO_MATCH_TTL_MS = 30 * 60 * 1000;
+const ANIKOTO_BASE_URL = "https://anikoto.cz";
+const SANKANIME_BASE_URL = "https://sankanime.web.id";
 const MAX_TITLE_VARIANTS = 2;
 const MAX_ENRICH_ITEMS_PER_PAGE = 10;
 const ENRICH_CONCURRENCY = 3;
@@ -285,6 +282,23 @@ function scoreTitleMatch(a: string, b: string): number {
   return Math.max(0, score);
 }
 
+async function fetchWithTimeout(input: string, init: RequestInit = {}, timeoutMs = 5000): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const timeout = new Promise<Response>((_, reject) => {
+    setTimeout(() => reject(new Error(`Request timed out after ${timeoutMs}ms`)), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([
+      fetch(input, { ...init, signal: controller.signal, cache: "no-store" }),
+      timeout
+    ]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 function buildTitleVariants(title: HeroResult["title"] | string): string[] {
   const rawTitles = typeof title === "string"
     ? [title]
@@ -343,93 +357,6 @@ function isReZeroTitle(title: string) {
   return normalized === "rezero" || normalized.includes("re zero") || normalized.includes("rezero");
 }
 
-async function getHianimeSubDubCounts(titleVariants: string[]): Promise<{ sub: number; dub: number } | null> {
-  const variants = titleVariants.filter(Boolean);
-  if (!variants.length) return null;
-
-  const now = Date.now();
-  for (const variant of variants) {
-    const key = normalizeCompareTitle(variant);
-    const missUntil = hianimeNoMatchCache.get(key);
-    if (typeof missUntil === "number" && missUntil > now) return null;
-  }
-
-  for (const variant of variants) {
-    const cached = hianimeCountsCache.get(normalizeCompareTitle(variant));
-    if (cached) return cached;
-  }
-
-  try {
-    let bestCounts: { sub: number; dub: number } | null = null;
-    let bestScore = 0;
-
-    for (const queryTitle of variants) {
-      const searchUrl = `https://anineko.to/browser?keyword=${encodeURIComponent(queryTitle.replace(/[\W_]+/g, ' '))}`;
-      const response = await fetch(searchUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-          'Referer': 'https://anineko.to/'
-        }
-      });
-      if (!response.ok) continue;
-      const html = await response.text();
-      const $ = load(html);
-
-      $('.nv-anime-body').each((i, el) => {
-        const titleLink = $(el).find('.nv-anime-title a');
-        const candidateTitle = titleLink.text().trim();
-        const score = Math.max(...variants.map((variant) => scoreTitleMatch(variant, candidateTitle)));
-
-        const parent = $(el).parent();
-        const cardThumb = parent.find('.nv-anime-thumb');
-
-        let subVal = 0;
-        const subBadgeText = cardThumb.find('.nv-stat-cc').text().trim();
-        const subMatch = subBadgeText.match(/\d+/);
-        if (subMatch) subVal = parseInt(subMatch[0]);
-
-        let dubVal = 0;
-        const dubBadgeText = cardThumb.find('.nv-stat-dub span').text().trim();
-        const dubMatch = dubBadgeText.match(/\d+/);
-        if (dubMatch) dubVal = parseInt(dubMatch[0]);
-
-        const candidateCounts = {
-          sub: Math.max(0, subVal),
-          dub: Math.max(0, dubVal)
-        };
-
-        if (score < 0.55) return;
-
-        const shouldReplace =
-          !bestCounts ||
-          score > bestScore ||
-          (score === bestScore && candidateCounts.dub > bestCounts.dub);
-
-        if (shouldReplace) {
-          bestScore = score;
-          bestCounts = candidateCounts;
-        }
-      });
-    }
-
-    if (!bestCounts) return null;
-
-    for (const variant of variants) {
-      hianimeCountsCache.set(normalizeCompareTitle(variant), bestCounts);
-    }
-
-    return bestCounts;
-  } catch (err) {
-    console.error("AniNeko sub/dub count resolution error:", err);
-    const missUntil = Date.now() + HIANIME_NO_MATCH_TTL_MS;
-    for (const variant of variants) {
-      hianimeNoMatchCache.set(normalizeCompareTitle(variant), missUntil);
-    }
-    return null;
-  }
-}
-
 async function enrichAnimeResultsWithSubDub<T extends {
   title: HeroResult["title"] | string;
   type?: string;
@@ -437,39 +364,7 @@ async function enrichAnimeResultsWithSubDub<T extends {
   subEpisodes?: number;
   dubEpisodes?: number;
 }>(results: T[]): Promise<T[]> {
-  const shouldEnrich =
-    process.env.NODE_ENV === "development" &&
-    process.env.VERCEL !== "1" &&
-    process.env.DISABLE_ENRICHMENT !== "true";
-
-  if (!shouldEnrich) {
-    return results;
-  }
-
-  if (!results.length) return results;
-
-  const enriched = [...results];
-  const animeFormats = ["TV", "TV_SHORT", "MOVIE", "SPECIAL", "OVA", "ONA", "MUSIC"];
-  const candidates = enriched
-    .filter((item) => item.type && animeFormats.includes(item.type))
-    .slice(0, MAX_ENRICH_ITEMS_PER_PAGE);
-  const concurrency = ENRICH_CONCURRENCY;
-
-  for (let i = 0; i < candidates.length; i += concurrency) {
-    const batch = candidates.slice(i, i + concurrency);
-    await Promise.all(batch.map(async (item) => {
-      const titleVariants = buildTitleVariants(item.title);
-      if (!titleVariants.length) return;
-
-      const counts = await getHianimeSubDubCounts(titleVariants);
-      if (!counts) return;
-
-      item.subEpisodes = counts.sub > 0 ? counts.sub : (item.subEpisodes ?? item.episodeNumber ?? 0);
-      item.dubEpisodes = counts.dub;
-    }));
-  }
-
-  return enriched;
+  return results;
 }
 
 interface AnilistRelationEdge {
@@ -1106,119 +1001,195 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs = 10000): Promise<T
   return Promise.race([promise, timeout]);
 }
 
-function inferAudioKind(...values: Array<string | undefined>): "dub" | "other" {
+const STREAMING_RESOLUTION_TIMEOUT_MS = 30000;
+
+function inferAudioKind(...values: Array<string | undefined>): "dub" | "hsub" | "sub" | "other" {
   const combined = values.filter(Boolean).join(" ").toLowerCase();
   if (/(english\s*dub|dual\s*audio|multi\s*audio|dubbed|\bdub\b)/i.test(combined)) {
     return "dub";
   }
-  return "other";
+  if (/(hardsub|hsub|\bhs\b)/i.test(combined)) {
+    return "hsub";
+  }
+  if (/(softsub|\bsub\b|raw)/i.test(combined)) {
+    return "sub";
+  }
+  return "sub"; // Default to sub
 }
 
-async function attemptAniNekoStreaming(
-  titleCandidates: string[],
-  allVariations: string[],
-  noSeasonVariations: string[],
-  episodeNumber: number
-): Promise<any> {
-  const titleVariants = [...new Set([...titleCandidates, ...allVariations, ...noSeasonVariations])].filter(q => q && q.length > 2);
-  console.log(`[AniNeko] Attempting streaming resolution for ep ${episodeNumber} with queries:`, titleVariants);
+function providerHeaders(referer: string, accept = "text/html,application/xhtml+xml") {
+  return {
+    Accept: accept,
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+    Referer: referer
+  };
+}
 
-  for (const query of titleVariants) {
-    try {
-      const searchUrl = `https://anineko.to/browser?keyword=${encodeURIComponent(query.replace(/[\W_]+/g, ' '))}`;
-      const res = await fetch(searchUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-          'Referer': 'https://anineko.to/'
-        }
+async function attemptAniKotoStreaming(titleCandidates: string[], episodeNumber: number): Promise<any> {
+  const query = titleCandidates.find(Boolean);
+  if (!query) return null;
+
+  try {
+    const searchUrl = `${ANIKOTO_BASE_URL}/filter?keyword=${encodeURIComponent(query)}`;
+    const searchResponse = await fetchWithTimeout(searchUrl, { headers: providerHeaders(ANIKOTO_BASE_URL) }, 6000);
+    if (!searchResponse.ok) return null;
+    const search$ = load(await searchResponse.text());
+    const shows = new Map<string, { title: string; href: string }>();
+    search$("a[href*='/watch/']").each((_, element) => {
+      const href = search$(element).attr("href") || "";
+      let title = search$(element).text().trim();
+      title = title.replace(/\s+[\d.]+\s+(TV|Movie|OVA|ONA|Special)\s+[\d]+\s+(min|hr).*/i, "").trim();
+      const showHref = href.replace(/\/ep-\d+\/?$/, "");
+      if (showHref && title) shows.set(showHref, { title, href: showHref });
+    });
+    const match = [...shows.values()].sort((a, b) => scoreTitleMatch(query, b.title) - scoreTitleMatch(query, a.title))[0];
+    if (!match) {
+        console.log("[AniKoto Debug] No match found. Shows were:", shows);
+        return null;
+    }
+    console.log("[AniKoto Debug] Selected match:", match);
+
+    const showUrl = new URL(match.href, ANIKOTO_BASE_URL).href.replace(/\/ep-\d+\/?$/, "");
+    const showResponse = await fetchWithTimeout(showUrl, { headers: providerHeaders(ANIKOTO_BASE_URL) }, 6000);
+    if (!showResponse.ok) return null;
+    const showHtml = await showResponse.text();
+    const show$ = load(showHtml);
+    const showId = show$("#watch-main").attr("data-id");
+    if (!showId) return null;
+
+    const ajaxHeaders = { ...providerHeaders(showUrl, "application/json, text/javascript, */*; q=0.01"), "X-Requested-With": "XMLHttpRequest" };
+    const episodesResponse = await fetchWithTimeout(`${ANIKOTO_BASE_URL}/ajax/episode/list/${showId}`, { headers: ajaxHeaders }, 6000);
+    if (!episodesResponse.ok) return null;
+    const episodesData: any = JSON.parse(await episodesResponse.text());
+    const episodes$ = load(episodesData?.result || "");
+    const episodeLink = episodes$("a[data-num]").filter((_, element) => Number(episodes$(element).attr("data-num")) === episodeNumber).first();
+    const serverToken = episodeLink.attr("data-ids");
+    if (!serverToken) return null;
+
+    const serverResponse = await fetchWithTimeout(`${ANIKOTO_BASE_URL}/ajax/server/list?servers=${encodeURIComponent(serverToken)}`, { headers: ajaxHeaders }, 6000);
+    if (!serverResponse.ok) return null;
+    const serverData: any = JSON.parse(await serverResponse.text());
+    const servers$ = load(serverData?.result || "");
+    const linkIds = new Map<string, { name: string; kind: string }>();
+    servers$(".type").each((_, group) => {
+      const typeAttr = servers$(group).attr("data-type") || "sub";
+      const kind = typeAttr.toLowerCase() as string;
+      servers$(group).find("li[data-link-id]").each((__, element) => {
+        const linkId = servers$(element).attr("data-link-id");
+        const name = servers$(element).text().trim();
+        if (linkId) linkIds.set(linkId, { name: name || "AniKoto", kind });
       });
-      if (!res.ok) continue;
-      const html = await res.text();
-      const $ = load(html);
+    });
 
-      const results: { id: string; title: string }[] = [];
-      $('.nv-anime-body').each((i, el) => {
-        const titleLink = $(el).find('.nv-anime-title a');
-        const title = titleLink.text().trim();
-        const href = titleLink.attr('href') || '';
-        const id = href.replace('/watch/', '');
-        if (id) {
-          results.push({ id, title });
-        }
-      });
+    const servers: any[] = [];
+    for (const [linkId, serverInfo] of linkIds) {
+      const linkResponse = await fetchWithTimeout(`${ANIKOTO_BASE_URL}/ajax/server?get=${encodeURIComponent(linkId)}`, { headers: ajaxHeaders }, 6000);
+      if (!linkResponse.ok) continue;
+      const linkData: any = JSON.parse(await linkResponse.text());
+      const url = linkData?.result?.url;
+      if (typeof url !== "string" || !/^https?:\/\//i.test(url)) continue;
 
-      if (results.length === 0) continue;
+      const urlLower = url.toLowerCase();
+      const isDirectMedia = urlLower.includes(".m3u8") || urlLower.includes(".mp4") || urlLower.includes(".mkv");
 
-      let bestMatch: typeof results[0] | null = null;
-      let bestScore = 0;
-      for (const item of results) {
-        const score = Math.max(...titleVariants.map(q => scoreTitleMatch(q, item.title)));
-        if (score > bestScore) {
-          bestScore = score;
-          bestMatch = item;
-        }
-      }
-
-      if (!bestMatch || bestScore < 0.55) continue;
-
-      console.log(`[AniNeko] Found best match: "${bestMatch.title}" (ID: ${bestMatch.id}, Score: ${bestScore})`);
-
-      const epUrl = `https://anineko.to/watch/${bestMatch.id}/ep-${episodeNumber}`;
-      console.log(`[AniNeko] Fetching episode page: ${epUrl}`);
-      const epRes = await fetch(epUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-          'Referer': `https://anineko.to/watch/${bestMatch.id}`
-        }
-      });
-      if (!epRes.ok) {
-        console.warn(`[AniNeko] Episode page not found: ${epUrl}`);
+      if (isDirectMedia) {
+        servers.push({ name: serverInfo.name, provider: "AniKoto", url, kind: serverInfo.kind, label: serverInfo.kind === "dub" ? "English Dub" : "Sub" });
         continue;
       }
-
-      const epHtml = await epRes.text();
-      const ep$ = load(epHtml);
-
-      const allFoundServers: any[] = [];
-      ep$('button.nv-server-btn').each((i, el) => {
-        const videoUrl = ep$(el).attr('data-video') || '';
-        if (!videoUrl) return;
-
-        const tab = ep$(el).attr('data-tab') || '';
-        const btnText = ep$(el).text().trim().replace(/\s+/g, ' ');
-
-        const isDub = tab === 'tab_2' || btnText.toUpperCase().includes('DUB');
-        const audioKind = isDub ? 'dub' : 'other';
-        const audioLabel = isDub ? 'English Dub' : 'Sub';
-
-        const serverName = btnText.split(' ')[0] || `HD-${i + 1}`;
-
-        allFoundServers.push({
-          name: `${serverName} (${audioLabel})`,
-          provider: 'AniNeko',
-          url: videoUrl,
-          kind: audioKind,
-          label: audioLabel
-        });
-      });
-
-      if (allFoundServers.length > 0) {
-        console.log(`[AniNeko] Successfully resolved ${allFoundServers.length} server(s) for episode ${episodeNumber}.`);
-        return {
-          sources: [
-            {
-              url: allFoundServers[0].url,
-              quality: 'auto'
-            }
-          ],
-          allServers: allFoundServers
-        };
+      try {
+        const embedRes = await fetchWithTimeout(url, { headers: providerHeaders(ANIKOTO_BASE_URL) }, 3000);
+        if (!embedRes.ok) continue;
+        const embedHtml = await embedRes.text();
+        const m3u8Matches = embedHtml.match(/https?:\/\/[^\s"'<>]+\.m3u8[^\s"'<>]*/gi);
+        if (m3u8Matches && m3u8Matches.length > 0) {
+          const extractedUrl = m3u8Matches[0].replace(/\\u002F/g, "/");
+          servers.push({ name: serverInfo.name, provider: "AniKoto", url: extractedUrl, kind: serverInfo.kind, label: serverInfo.kind === "dub" ? "English Dub" : "Sub" });
+          continue;
+        }
+        const knownExtractable = urlLower.includes("vibeplayer.site") || urlLower.includes("otakuhg.site") || urlLower.includes("otakuvid.online") || urlLower.includes("playmogo.com") || urlLower.includes("anikoto.cz") || urlLower.includes("sankanime") || urlLower.includes("megaplay.buzz");
+        if (knownExtractable) {
+          servers.push({ name: serverInfo.name, provider: "AniKoto", url, kind: serverInfo.kind, label: serverInfo.kind === "dub" ? "English Dub" : "Sub" });
+        }
+      } catch {
+        const knownExtractable = urlLower.includes("vibeplayer.site") || urlLower.includes("otakuhg.site") || urlLower.includes("otakuvid.online") || urlLower.includes("playmogo.com") || urlLower.includes("anikoto.cz") || urlLower.includes("sankanime") || urlLower.includes("megaplay.buzz");
+        if (knownExtractable) {
+          servers.push({ name: serverInfo.name, provider: "AniKoto", url, kind: serverInfo.kind, label: serverInfo.kind === "dub" ? "English Dub" : "Sub" });
+        }
+        continue;
       }
-    } catch (err: any) {
-      console.error(`[AniNeko] Error resolving streams:`, err.message || err);
     }
+    if (!servers.length) return null;
+
+    console.log(`[AniKoto] Resolved episode ${episodeNumber} for "${match.title}".`);
+    return {
+      sources: [{ url: servers[0].url, quality: "auto" }],
+      allServers: servers,
+      providerName: "AniKoto",
+      matchedTitle: match.title,
+      sourceQuery: query
+    };
+  } catch (error) {
+    console.warn("[AniKoto Debug] Streaming lookup failed:", error instanceof Error ? error.message : error, error);
+    return null;
+  }
+}
+
+async function attemptSankanimeStreaming(titleCandidates: string[], episodeNumber: number): Promise<any> {
+  const query = titleCandidates.find(Boolean);
+  if (!query) return null;
+
+  try {
+    const slug = slugify(query);
+    const candidateUrls = [
+      `${SANKANIME_BASE_URL}/search/${encodeURIComponent(query)}`,
+      `${SANKANIME_BASE_URL}/search?keyword=${encodeURIComponent(query)}`,
+      `${SANKANIME_BASE_URL}/anime/${slug}`
+    ];
+
+    let pageHtml = "";
+    let pageUrl = "";
+    for (const candidateUrl of candidateUrls) {
+      const response = await fetchWithTimeout(candidateUrl, { headers: providerHeaders(SANKANIME_BASE_URL) }, 1500);
+      if (!response.ok) continue;
+      pageHtml = await response.text();
+      pageUrl = candidateUrl;
+      if (pageHtml.length > 0) break;
+    }
+    if (!pageHtml) return null;
+
+    const $ = load(pageHtml);
+    const episodeUrls = new Set<string>();
+    $("a[href]").each((_, element) => {
+      const href = $(element).attr("href") || "";
+      const text = $(element).text().trim();
+      if (new RegExp(`(?:episode|ep)[\\s-]*${episodeNumber}(?:\\D|$)`, "i").test(`${href} ${text}`)) {
+        episodeUrls.add(new URL(href, pageUrl).href);
+      }
+    });
+
+    for (const episodeUrl of episodeUrls) {
+      const response = await fetchWithTimeout(episodeUrl, { headers: providerHeaders(pageUrl) }, 1500);
+      if (!response.ok) continue;
+      const episode$ = load(await response.text());
+      const streams = new Set<string>();
+      episode$("iframe, video, source, a").each((_, element) => {
+        const url = episode$(element).attr("src") || episode$(element).attr("data-src") || episode$(element).attr("href") || "";
+        if (/^https?:\/\//i.test(url) && /(?:m3u8|mp4|embed|player|stream)/i.test(url)) streams.add(url);
+      });
+      if (!streams.size) continue;
+
+      const servers = [...streams].map((url, index) => ({
+        name: `Sankanime ${index + 1}`,
+        provider: "Sankanime",
+        url,
+        kind: /dub|dual|multi/i.test(url) ? "dub" as const : "other" as const,
+        label: /dub|dual|multi/i.test(url) ? "English Dub" : "Sub"
+      }));
+      console.log(`[Sankanime] Resolved episode ${episodeNumber} for "${query}".`);
+      return { sources: [{ url: servers[0].url, quality: "auto" }], allServers: servers, providerName: "Sankanime", matchedTitle: query, sourceQuery: query };
+    }
+  } catch (error) {
+    console.warn("[Sankanime] Streaming lookup failed:", error instanceof Error ? error.message : error);
   }
   return null;
 }
@@ -1229,6 +1200,8 @@ export async function getStreamingLinks(
   absoluteEpisodeNumber?: number,
   animeTitle?: string | { english?: string; romaji?: string; native?: string }
 ) {
+  const resolutionStartedAt = Date.now();
+  const hasResolutionTime = () => Date.now() - resolutionStartedAt < STREAMING_RESOLUTION_TIMEOUT_MS;
   const absEp = absoluteEpisodeNumber || relativeEpisodeNumber;
   const rawTitles = typeof animeTitle === 'string' ? { english: animeTitle } : animeTitle;
   const titleCandidates = [rawTitles?.english, rawTitles?.romaji, rawTitles?.native].filter(Boolean) as string[];
@@ -1238,15 +1211,26 @@ export async function getStreamingLinks(
     ...titleCandidates.map((t) => stripSeasonMarkers(t))
   ].filter(Boolean))];
 
-  // Try AniNeko.to first as a fast and stable provider
-  const nekoResult = await attemptAniNekoStreaming(titleCandidates, allVariations, noSeasonVariations, absEp);
-  if (nekoResult && nekoResult.sources?.length > 0) {
-    return nekoResult;
+  const customResults = await Promise.all([
+    hasResolutionTime() ? withTimeout(attemptAniKotoStreaming(titleCandidates, absEp), 10000).catch(() => null) : Promise.resolve(null)
+  ]);
+  const workingCustomResults = customResults.filter((result) => result?.sources?.length > 0);
+  if (workingCustomResults.length > 0) {
+    const allCustomServers = [...new Map(
+      workingCustomResults.flatMap((result) => result.allServers || []).map((server) => [server.url, server])
+    ).values()];
+    const preferredResult = workingCustomResults[0];
+    return {
+      ...preferredResult,
+      sources: [preferredResult.sources[0]],
+      allServers: allCustomServers
+    };
   }
 
   const primaryTitles = [rawTitles?.english, rawTitles?.romaji].filter(Boolean) as string[];
 
   const attemptProvider = async (provider: any, query: string, isStrict: boolean = true): Promise<any> => {
+    if (!hasResolutionTime()) return null;
     try {
       // Global resiliency wrapper: prevent ECONNRESET and scrape errors from crashing next.js
       const searchResults: any = await withSuppressedScraperErrors(() => withTimeout(provider.search(query), 5000)).catch(() => null);
@@ -1269,6 +1253,7 @@ export async function getStreamingLinks(
 
       // Try top 3 matches for better accuracy, prioritizing TV format
       const matches = searchResults.results.slice(0, 3);
+      console.log(`[Streaming-Debug] Provider ${provider?.name} search for "${query}" got ${matches.length} matches`);
       const sortedMatches = matches.sort((a: any, b: any) => {
         const titleA = getResultTitle(a);
         const titleB = getResultTitle(b);
@@ -1324,7 +1309,7 @@ export async function getStreamingLinks(
               // Validation: Check for "Throttled" or error manifest content
               const mainSource = sources.sources[0].url;
               try {
-                const manifestRes = await fetch(mainSource, {
+                const manifestRes = await fetchWithTimeout(mainSource, {
                   method: 'GET',
                   headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -1332,7 +1317,7 @@ export async function getStreamingLinks(
                     'Accept': '*/*'
                   },
                   next: { revalidate: 0 }
-                });
+                }, 4000);
 
                 if (manifestRes.status === 403 || manifestRes.status === 401) {
                   console.warn(`[Streaming] Caution with ${provider.name}: Forbidden access to manifest (${manifestRes.status}). Returning source anyway.`);
@@ -1378,15 +1363,7 @@ export async function getStreamingLinks(
     return null;
   };
 
-  const providers = [
-    getAnimePahe(),
-    getHianime(),
-    getAnimeKai(),
-    getAnimeSaturn(),
-    getKickAssAnime(),
-    getAnimeUnity(),
-    getAnimeSama()
-  ].filter(Boolean);
+  const providers: any[] = [];
 
   const allFoundServers: any[] = [];
 
@@ -1402,7 +1379,7 @@ export async function getStreamingLinks(
       sources.sources?.[0]?.name,
       sources.sources?.[0]?.url
     );
-    const audioLabel = audioKind === "dub" ? "English Dub" : "Other";
+    const audioLabel = audioKind === "dub" ? "English Dub" : audioKind === "hsub" ? "Hardsub" : "Sub";
 
     // Add to global server list for the UI selector
     const serverName = p.name;
@@ -1435,7 +1412,7 @@ export async function getStreamingLinks(
   // Primary Race: Try English & Romaji concurrently (STRICT)
   // Sequential providers to avoid rate-limiting/403, but concurrent titles for speed
   for (const p of providers) {
-    if (!p) continue;
+    if (!p || !hasResolutionTime()) break;
     try {
       const result = await Promise.any(
         primaryTitles.map(async (t) => {
@@ -1454,7 +1431,7 @@ export async function getStreamingLinks(
 
   // Secondary Race: Broad variations (STRICT)
   for (const p of providers) {
-    if (!p) continue;
+    if (!p || !hasResolutionTime()) break;
     try {
       const result = await Promise.any(
         allVariations.slice(2).map(async (v) => {
@@ -1474,7 +1451,7 @@ export async function getStreamingLinks(
   // Final Pass: Relaxed (Non-Strict) fallback with BASE TITLE (removes "Season X")
   const baseTitles = [...new Set([...noSeasonVariations, ...allVariations.map(t => stripSeasonMarkers(t))])];
   for (const p of providers) {
-    if (!p) continue;
+    if (!p || !hasResolutionTime()) break;
     try {
       const result = await Promise.any(
         baseTitles.map(async (t) => {
@@ -1498,10 +1475,11 @@ export async function getStreamingLinks(
     ...titleCandidates.map((t) => stripSeasonMarkers(t))
   ].filter(Boolean))];
   for (const p of providers) {
-    if (!p) continue;
+    if (!p || !hasResolutionTime()) break;
     try {
       const result = await Promise.any(
         titleFallbacks.map(async (t) => {
+          console.log(`[Streaming-Debug] Fallback attempting provider ${p?.name} with title "${t}"`);
           const res = await attemptProvider(p, t, false);
           if (res) {
             console.log(`[Streaming] Success with ${p.name} (Loose Fallback) for "${t}"`);

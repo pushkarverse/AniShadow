@@ -5,9 +5,40 @@ export const dynamic = "force-dynamic";
 /**
  * Enhanced M3U8 Rewriter for Kwik/AnimePahe
  */
+const CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+    "Access-Control-Allow-Headers": "*",
+    "Access-Control-Expose-Headers": "*",
+    "Access-Control-Max-Age": "86400",
+};
+
+/**
+ * Check if a URL is likely an AES-128 decryption key.
+ * CDNs serve keys at many different URL patterns.
+ */
+function isKeyUrl(url: string, contentType: string): boolean {
+    const u = url.split('?')[0].toLowerCase();
+    if (contentType.includes("octet-stream") || contentType.includes("application/binary") || contentType.includes("application/octet")) return true;
+    // Common key URL patterns
+    if (u.endsWith(".key") || u.endsWith("/key") || u.endsWith("/enc.key") || u.endsWith("/dec")) return true;
+    if (u.includes(".key?") || u.includes("/key?") || u.includes("/enc?")) return true;
+    if (/\/(?:enc|dec|aes|hls)[._-]?key/i.test(u)) return true;
+    if (/\/(?:k|key|enc|dec)\/[a-zA-Z0-9_\-]+$/.test(u)) return true;
+    return false;
+}
+
 function rewriteM3u8(content: string, originalUrl: string, referer?: string): string {
-    const urlObj = new URL(originalUrl);
-    const baseUrl = originalUrl.substring(0, originalUrl.lastIndexOf("/") + 1);
+    // Build a safe base URL that handles CDN URLs with query strings correctly
+    let baseUrl: string;
+    try {
+        const parsed = new URL(originalUrl);
+        const pathname = parsed.pathname;
+        const lastSlash = pathname.lastIndexOf("/");
+        baseUrl = `${parsed.origin}${pathname.substring(0, lastSlash + 1)}`;
+    } catch {
+        baseUrl = originalUrl.substring(0, originalUrl.lastIndexOf("/") + 1);
+    }
     const proxyBaseUrl = "/api/stream";
 
     // Detect if this is actually a manifest and not an obfuscated JS blob
@@ -80,15 +111,12 @@ async function handleResponse(response: Response, url: string, referer: string) 
     const contentType = (response.headers.get("Content-Type") || "").toLowerCase();
     
     const isM3u8 = contentType.includes("mpegurl") || contentType.includes("mpeg-url") || url.split('?')[0].endsWith(".m3u8");
-    const isKey = url.includes(".key") || url.includes("mon.key") || contentType.includes("octet-stream");
+    const isKey = !isM3u8 && isKeyUrl(url, contentType);
     const isSegment = url.includes("segment-") || url.includes(".ts") || url.includes(".jpg") || url.includes(".png") || url.includes(".mp4");
 
 
     const responseHeaders: Record<string, string> = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-      "Access-Control-Allow-Headers": "*",
-      "Access-Control-Expose-Headers": "*",
+      ...CORS_HEADERS,
       "Cache-Control": "no-cache, no-store, must-revalidate",
       "Content-Type": contentType || "application/octet-stream",
       "Accept-Ranges": "bytes"
@@ -146,6 +174,8 @@ export async function GET(req: NextRequest) {
         url.includes("uwucdn") ? "https://megacloud.tv/" : 
         url.includes("animeunity") ? "https://www.animeunity.tv/" :
         url.includes("animesama") ? "https://anime-sama.me/" :
+        url.includes("anikoto") ? "https://anikoto.cz/" :
+        url.includes("sankanime") ? "https://sankanime.web.id/" :
         new URL(url).origin
     );
     
@@ -226,4 +256,8 @@ export async function GET(req: NextRequest) {
 
 export async function HEAD(req: NextRequest) {
     return await GET(req);
+}
+
+export async function OPTIONS() {
+    return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }

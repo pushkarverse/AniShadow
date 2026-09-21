@@ -2,15 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PlayerWrapper } from "@/components/PlayerWrapper";
-import { List, X, ChevronLeft } from "lucide-react";
+import { List, X, ChevronLeft, Radio, Square, CheckSquare, Lightbulb, Bookmark } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ServerEntry {
   name: string;
   provider: string;
   url: string;
-  kind?: "dub" | "other";
+  kind?: "dub" | "hsub" | "sub" | "other";
   label?: string;
 }
 
@@ -105,14 +106,19 @@ export function WatchPlayerSection({
   animeSlug,
   anime
 }: WatchPlayerSectionProps) {
+  const router = useRouter();
   const [currentVideoUrl, setCurrentVideoUrl] = useState(videoUrl);
   const [selectedServer, setSelectedServer] = useState(allServers[0]?.name || "Primary");
-  const [activeServerGroup, setActiveServerGroup] = useState<"dub" | "other">("other");
+  const [activeServerGroup, setActiveServerGroup] = useState<"dub" | "hsub" | "sub" | "other">("sub");
   const [showEpisodesSheet, setShowEpisodesSheet] = useState(false);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [episodeSearch, setEpisodeSearch] = useState<string>("");
   const [isDescExpanded, setIsDescExpanded] = useState(false);
   const [activeMobileSeason, setActiveMobileSeason] = useState(0);
+
+  const [isAutoPlay, setIsAutoPlay] = useState(false);
+  const [isAutoNext, setIsAutoNext] = useState(true);
+  const [isAutoSkip, setIsAutoSkip] = useState(false);
 
   // Load theater mode preference on mount
   useEffect(() => {
@@ -133,38 +139,59 @@ export function WatchPlayerSection({
 
   const groupedServers = useMemo(() => {
     const dub: ServerEntry[] = [];
+    const hsub: ServerEntry[] = [];
+    const sub: ServerEntry[] = [];
     const other: ServerEntry[] = [];
 
     for (const server of allServers) {
-      if (server.kind === "dub") {
+      const isDub = server.kind === "dub" || /dub|dual audio|multi audio/i.test(`${server.label || ""} ${server.name}`);
+      const isHsub = server.kind === "hsub" || /hsub|hardsub|\bhs\b/i.test(`${server.label || ""} ${server.name}`);
+      const isSub = server.kind === "sub" || /sub|softsub|raw/i.test(`${server.label || ""} ${server.name}`);
+      
+      if (isDub) {
         dub.push(server);
+      } else if (isHsub) {
+        hsub.push(server);
+      } else if (isSub) {
+        sub.push(server);
       } else {
         other.push(server);
       }
     }
 
-    return { dub, other };
+    return { dub, hsub, sub, other };
   }, [allServers]);
 
-  const activeGroupServers = activeServerGroup === "dub" ? groupedServers.dub : groupedServers.other;
-  const activeServerLabel = activeServerGroup === "dub" ? "English Dub" : "Sub";
+  const activeGroupServers = activeServerGroup === "dub" ? groupedServers.dub : activeServerGroup === "hsub" ? groupedServers.hsub : activeServerGroup === "sub" ? groupedServers.sub : groupedServers.other;
+  const activeServerLabel = activeServerGroup === "dub" ? "English Dub" : activeServerGroup === "hsub" ? "Hardsub" : "Sub";
 
   useEffect(() => {
     setCurrentVideoUrl(videoUrl);
 
-    const preferredGroup = groupedServers.other.length > 0 ? "other" : "dub";
+    const preferredGroup = groupedServers.sub.length > 0 ? "sub" : groupedServers.hsub.length > 0 ? "hsub" : groupedServers.other.length > 0 ? "other" : "dub";
     setActiveServerGroup(preferredGroup);
 
-    const preferredServer = (preferredGroup === "other" ? groupedServers.other : groupedServers.dub)[0] || allServers[0];
+    const preferredServer = (
+      preferredGroup === "sub" ? groupedServers.sub :
+      preferredGroup === "hsub" ? groupedServers.hsub :
+      preferredGroup === "other" ? groupedServers.other :
+      groupedServers.dub
+    )[0] || allServers[0];
+    
     if (preferredServer) {
       setSelectedServer(preferredServer.name);
       setCurrentVideoUrl(preferredServer.url);
     }
-  }, [videoUrl, groupedServers.dub, groupedServers.other, allServers]);
+  }, [videoUrl, groupedServers.dub, groupedServers.hsub, groupedServers.sub, groupedServers.other, allServers]);
 
-  const switchGroup = (kind: "dub" | "other") => {
+  const switchGroup = (kind: "dub" | "hsub" | "sub" | "other") => {
     setActiveServerGroup(kind);
-    const nextServer = (kind === "dub" ? groupedServers.dub : groupedServers.other)[0];
+    const nextServer = (
+      kind === "dub" ? groupedServers.dub :
+      kind === "hsub" ? groupedServers.hsub :
+      kind === "sub" ? groupedServers.sub :
+      groupedServers.other
+    )[0];
     if (!nextServer) return;
     setSelectedServer(nextServer.name);
     setCurrentVideoUrl(nextServer.url);
@@ -180,48 +207,80 @@ export function WatchPlayerSection({
     </Link>
   );
 
-  const renderAudioSwitcher = () => (
-    <div className="px-4 md:px-0">
-      <div className="grid grid-cols-3 items-center rounded-2xl border border-white/5 bg-black/80 px-4 py-3">
-        {/* Left: Sub button */}
-        <div className="flex items-center justify-start">
-          <button
-            onClick={() => switchGroup("other")}
-            disabled={groupedServers.other.length === 0}
-            suppressHydrationWarning={true}
-            className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest border transition-all ${activeServerGroup === "other"
-                ? "bg-primary/15 border-primary text-primary"
-                : "bg-white/5 border-white/10 text-white/35 hover:text-white"
-              } ${groupedServers.other.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
-          >
-            Sub
-          </button>
+  const renderAudioSwitcher = () => {
+    const renderProviderGroup = (kind: "dub" | "hsub" | "sub" | "other", label: string, servers: ServerEntry[], icon: React.ReactNode) => {
+      if (servers.length === 0) return (
+        <div className="flex flex-col gap-4 py-4 px-4 h-full">
+          <div className="flex items-center gap-2 text-white/30 bg-white/5 py-2 px-3 rounded-lg w-fit">
+            {icon}
+            <span className="text-xs font-black uppercase tracking-widest">{label}</span>
+          </div>
+          <div className="py-2 text-white/30 text-sm font-medium">No providers available</div>
         </div>
+      );
+      
+      return (
+        <div className="flex flex-col gap-4 py-4 px-4 h-full">
+          <div className="flex items-center gap-2 text-white/60 bg-white/5 py-2 px-3 rounded-lg w-fit">
+            {icon}
+            <span className="text-xs font-black uppercase tracking-widest">{label}</span>
+          </div>
+          <div className="flex flex-col gap-2 flex-1">
+            {servers.map((server) => {
+              const isSelected = currentVideoUrl === server.url && activeServerGroup === kind;
+              return (
+                <button
+                  key={`${server.url}-${server.name}`}
+                  type="button"
+                  onClick={() => {
+                    setActiveServerGroup(kind);
+                    setSelectedServer(server.name);
+                    setCurrentVideoUrl(server.url);
+                  }}
+                  className={`flex items-center justify-between gap-2 rounded-lg px-4 py-3 transition-all ${
+                    isSelected
+                      ? "bg-primary text-white shadow-[0_0_15px_rgba(var(--primary),0.3)] font-bold"
+                      : "bg-white/[0.03] text-white/60 hover:bg-white/[0.08] hover:text-white font-semibold"
+                  }`}
+                  title={`${server.provider} provider`}
+                >
+                  <span className="text-xs tracking-tight">{server.name}</span>
+                  <div className={`w-3 h-3 rounded-full flex items-center justify-center border-2 shrink-0 ${isSelected ? "border-white bg-white/20" : "border-white/40"}`}>
+                    {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    };
 
-        {/* Center: Label */}
-        <div className="flex items-center justify-center">
-          <span className="text-[10px] font-black uppercase tracking-[0.25em] text-white/30 whitespace-nowrap">
-            Switch Audio
-          </span>
+    return (
+      <section className="px-4 md:px-0 mt-2" aria-label="Providers">
+        <div className="rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-xl overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/10">
+            {renderProviderGroup("sub", "SUB", groupedServers.sub, (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="2" y="7" width="20" height="10" rx="2" ry="2"></rect><path d="M7 11h2"></path><path d="M15 11h2"></path></svg>
+            ))}
+            {renderProviderGroup("hsub", "HSUB", groupedServers.hsub, (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="2" y="7" width="20" height="10" rx="2" ry="2"></rect><path d="M7 11h2"></path><path d="M15 11h2"></path></svg>
+            ))}
+            {renderProviderGroup("dub", "DUB", groupedServers.dub, (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
+            ))}
+          </div>
+          {groupedServers.other.length > 0 && (
+            <div className="border-t border-white/10 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/10">
+              {renderProviderGroup("other", "OTHER", groupedServers.other, (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+              ))}
+            </div>
+          )}
         </div>
-
-        {/* Right: Dub button */}
-        <div className="flex items-center justify-end">
-          <button
-            onClick={() => switchGroup("dub")}
-            disabled={groupedServers.dub.length === 0}
-            suppressHydrationWarning={true}
-            className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest border transition-all ${activeServerGroup === "dub"
-                ? "bg-primary/15 border-primary text-primary"
-                : "bg-white/5 border-white/10 text-white/35 hover:text-white"
-              } ${groupedServers.dub.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
-          >
-            Dub
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+      </section>
+    );
+  };
 
   const renderPlayer = () => {
     const currentEpisodeObj = episodes.find(e => e.number === currentEpisodeNumber);
@@ -260,8 +319,18 @@ export function WatchPlayerSection({
             title={title}
             episodeTitle={episodeTitle}
             poster={poster}
+            allServers={allServers}
             isTheaterMode={isTheaterMode}
             onTheaterToggle={handleTheaterToggle}
+            autoPlay={isAutoPlay}
+            onEnded={() => {
+              if (isAutoNext) {
+                const nextEp = episodes.find(e => e.number === (currentEpisodeNumber || 0) + 1);
+                if (nextEp) {
+                  router.push(`/anime/watch/${animeId}/${animeSlug}?ep=${nextEp.number}`);
+                }
+              }
+            }}
           />
         ) : (
           <div className="aspect-video relative flex items-center justify-center bg-[#080808] overflow-hidden">
@@ -284,6 +353,50 @@ export function WatchPlayerSection({
       </div>
     );
   };
+
+  const renderControlsBar = () => (
+    <div className="flex flex-wrap items-center justify-center gap-6 px-4 py-4 md:px-0">
+      <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 bg-white/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 w-full md:w-auto overflow-x-auto">
+        <button 
+          onClick={() => setIsAutoPlay(!isAutoPlay)}
+          className={`flex items-center gap-2 text-sm font-semibold transition-colors shrink-0 ${isAutoPlay ? 'text-primary' : 'text-white/60 hover:text-white'}`}
+        >
+          {isAutoPlay ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+          Auto Play
+        </button>
+        <button 
+          onClick={() => setIsAutoNext(!isAutoNext)}
+          className={`flex items-center gap-2 text-sm font-semibold transition-colors shrink-0 ${isAutoNext ? 'text-primary' : 'text-white/60 hover:text-white'}`}
+        >
+          {isAutoNext ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+          Auto Next
+        </button>
+        <button 
+          onClick={() => setIsAutoSkip(!isAutoSkip)}
+          className={`flex items-center gap-2 text-sm font-semibold transition-colors shrink-0 ${isAutoSkip ? 'text-primary' : 'text-white/60 hover:text-white'}`}
+        >
+          {isAutoSkip ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+          Auto Skip
+        </button>
+        
+        <div className="w-px h-5 bg-white/10 hidden md:block shrink-0" />
+        
+        <button 
+          onClick={handleTheaterToggle}
+          className={`flex items-center gap-2 text-sm font-semibold transition-colors shrink-0 ${isTheaterMode ? 'text-yellow-400' : 'text-white/60 hover:text-white'}`}
+        >
+          <Lightbulb className="w-4 h-4" />
+          Theater Mode
+        </button>
+        <button 
+          className="flex items-center gap-2 text-sm font-semibold text-white/60 hover:text-white transition-colors shrink-0"
+        >
+          <Bookmark className="w-4 h-4" />
+          Add Bookmark
+        </button>
+      </div>
+    </div>
+  );
 
   const renderMobileEpisodesSection = () => {
     if (!episodes || episodes.length === 0) return null;
@@ -651,9 +764,10 @@ export function WatchPlayerSection({
     return (
       <div className="flex flex-col lg:flex-row gap-8 w-full">
         {/* Left Column: Player & Details */}
-        <div className="flex-1 flex flex-col gap-6 min-w-0">
+        <div className="flex-1 flex flex-col gap-4 min-w-0">
           {renderBackButton()}
           {renderPlayer()}
+          {renderControlsBar()}
           {renderAudioSwitcher()}
           {renderMobileEpisodesSection()}
           {renderMobileSheetTrigger()}
@@ -673,9 +787,10 @@ export function WatchPlayerSection({
   return (
     <div className="flex flex-col gap-6 w-full">
       {/* Top: Widescreen Video Player */}
-      <div className="w-full flex flex-col gap-6">
+      <div className="w-full flex flex-col gap-4">
         {renderBackButton()}
         {renderPlayer()}
+        {renderControlsBar()}
         {renderAudioSwitcher()}
         {renderMobileSheetTrigger()}
       </div>

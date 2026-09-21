@@ -20,6 +20,7 @@ interface CommunityWatchClientProps {
   };
   streamData: {
     sources: { url: string; quality?: string }[];
+    allServers?: { name: string; provider: string; url: string; kind?: "dub" | "hsub" | "sub" | "other"; label?: string }[];
   };
 }
 
@@ -85,6 +86,7 @@ export default function CommunityWatchClient({ id, slug, episodeNumber, anime, s
                     title={titleString}
                     episodeTitle={episodeTitle}
                     poster={anime.cover || anime.image || ""}
+                    allServers={streamData.allServers}
                   />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-amber-500/20 bg-[#080B12] gap-6">
