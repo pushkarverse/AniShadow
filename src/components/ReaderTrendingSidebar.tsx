@@ -1,8 +1,7 @@
-"use client";
 
 import { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
+import Image from "@/compat/Image";
+import Link from "@/compat/Link";
 import { getAnimeTitle, getMangaFormat, slugify } from "@/lib/anime-utils";
 
 interface ReaderTrendingSidebarProps {

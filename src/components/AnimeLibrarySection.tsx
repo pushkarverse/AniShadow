@@ -1,8 +1,7 @@
-"use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
-import Link from "next/link";
+import Image from "@/compat/Image";
+import Link from "@/compat/Link";
 import { motion } from "framer-motion";
 import { Play, X, ChevronLeft, ChevronRight, MonitorPlay, Trash2 } from "lucide-react";
 

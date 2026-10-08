@@ -23,9 +23,13 @@ echo "--> Managing PM2 Process..."
 if pm2 show ani-shadow > /dev/null 2>&1; then
   echo "--> App is already running in PM2. Restarting..."
   pm2 restart ani-shadow
+  # Optional Scrapling sidecar (needs python + scrapling[fetchers])
+  if pm2 show ani-shadow-sidecar > /dev/null 2>&1; then
+    pm2 restart ani-shadow-sidecar
+  fi
 else
-  echo "--> Starting App for the first time in PM2..."
-  pm2 start ecosystem.config.js
+  echo "--> Starting App (API + optional sidecar) for the first time in PM2..."
+  pm2 start ecosystem.config.cjs
 fi
 
 # 5. Save PM2 state
@@ -34,5 +38,6 @@ pm2 save
 
 echo "====================================="
 echo "Deployment successful! App is running on port 3000."
-echo "Check logs using: pm2 logs ani-shadow"
+echo "Check logs using: pnpm pm2 logs ani-shadow"
+echo "Sidecar (optional): pip install \"scrapling[fetchers]\" && pm2 start ani-shadow-sidecar"
 echo "====================================="

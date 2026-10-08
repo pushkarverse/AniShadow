@@ -1,7 +1,6 @@
-"use client";
 
 import { useEffect } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "@/compat/navigation";
 import NProgress from "nprogress";
 
 let isConfigured = false;

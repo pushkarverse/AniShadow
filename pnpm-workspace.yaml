@@ -4,7 +4,9 @@ packages:
 allowBuilds:
   sharp: true
   unrs-resolver: true
+  esbuild: true
 
 onlyBuiltDependencies:
   - sharp
-  - unrs-resolver
+  - unrs-resolver
+  - esbuild

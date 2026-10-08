@@ -1,10 +1,9 @@
-"use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/compat/navigation";
 import { Search, X, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
+import Image from "@/compat/Image";
 import { slugify, getAnimeTitle } from "@/lib/anime-utils";
 
 interface SearchModalProps {

@@ -1,8 +1,7 @@
-"use client";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, LogIn, Users } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/compat/navigation";
 
 interface RoomModalProps {
   isOpen: boolean;

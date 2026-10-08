@@ -1,5 +1,6 @@
 import { ANIME, META, MANGA, IAnimeInfo } from "@consumet/extensions";
 import { load } from "cheerio";
+import { DEFAULT_REGION, orderedProviders, runtimeUrl, type ProviderEntry } from "../../server/providers/registry";
 
 async function scrapeRequest(options: { url: string; method?: string; headers?: any; body?: any; json?: any; timeout?: { request?: number } | number; http2?: boolean }) {
   const url = options.url;
@@ -68,6 +69,11 @@ let animekai: InstanceType<typeof ANIME.AnimeKai> | null = null;
 let animesaturn: InstanceType<typeof ANIME.AnimeSaturn> | null = null;
 let animeunity: InstanceType<typeof ANIME.AnimeUnity> | null = null;
 let animesama: InstanceType<typeof ANIME.AnimeSama> | null = null;
+let mangahere: InstanceType<typeof MANGA.MangaHere> | null = null;
+let mangapill: InstanceType<typeof MANGA.MangaPill> | null = null;
+let asurascans: InstanceType<typeof MANGA.AsuraScans> | null = null;
+let weebcentral: InstanceType<typeof MANGA.WeebCentral> | null = null;
+let mangakakalot: InstanceType<typeof MANGA.MangaKakalot> | null = null;
 
 const ANIKOTO_BASE_URL = "https://anikoto.cz";
 const SANKANIME_BASE_URL = "https://sankanime.web.id";
@@ -141,6 +147,58 @@ const getAnimeSama = () => {
   if (!animesama) animesama = new ANIME.AnimeSama();
   return animesama;
 };
+
+const getMangaHere = () => {
+  if (typeof window !== 'undefined') return null;
+  if (!mangahere) mangahere = new MANGA.MangaHere();
+  return mangahere;
+};
+
+const getMangaPill = () => {
+  if (typeof window !== 'undefined') return null;
+  if (!mangapill) mangapill = new MANGA.MangaPill();
+  return mangapill;
+};
+
+const getAsuraScans = () => {
+  if (typeof window !== 'undefined') return null;
+  if (!asurascans) asurascans = new MANGA.AsuraScans();
+  return asurascans;
+};
+
+const getWeebCentral = () => {
+  if (typeof window !== 'undefined') return null;
+  if (!weebcentral) weebcentral = new MANGA.WeebCentral();
+  return weebcentral;
+};
+
+const getMangaKakalot = () => {
+  if (typeof window !== 'undefined') return null;
+  if (!mangakakalot) mangakakalot = new MANGA.MangaKakalot();
+  return mangakakalot;
+};
+
+/** Registry parser id ("consumet:<key>") → lazy provider factory. */
+function parserFactory(parser: string): (() => any) | null {
+  switch (parser) {
+    case "consumet:animepahe": return getAnimePahe;
+    case "consumet:hianime": return getHianime;
+    case "consumet:animekai": return getAnimeKai;
+    case "consumet:kickassanime": return getKickAssAnime;
+    case "consumet:animesaturn": return getAnimeSaturn;
+    case "consumet:animeunity": return getAnimeUnity;
+    case "consumet:animesama": return getAnimeSama;
+    case "consumet:mangadex": return getMangaDex;
+    case "consumet:comick": return getComicK;
+    case "consumet:mangareader": return getMangaReader;
+    case "consumet:mangahere": return getMangaHere;
+    case "consumet:mangapill": return getMangaPill;
+    case "consumet:asurascans": return getAsuraScans;
+    case "consumet:weebcentral": return getWeebCentral;
+    case "consumet:mangakakalot": return getMangaKakalot;
+    default: return null;
+  }
+}
 
 
 interface AnilistNode {
@@ -244,7 +302,7 @@ function scoreTitleMatch(a: string, b: string): number {
 
   if (!qClean || !cClean) return 0;
 
-  let score = 0;
+  let score: number;
   if (qClean === cClean) {
     score = 1.0;
   } else if (qClean.includes(cClean) || cClean.includes(qClean)) {
@@ -401,6 +459,91 @@ import {
   getWitchCultReaderDetails,
   isWitchCultSearch
 } from "./witchcult";
+
+/** Registry-ordered streaming providers (main first, region-reachable first). */
+function buildStreamProviders(): any[] {
+  try {
+    let entries: ProviderEntry[] = orderedProviders("anime").filter(
+      (e) => e.parser && e.status !== "down"
+    );
+    // Prefer providers reachable from this region; blocked ones only as last resort.
+    const reachable = entries.filter((e) => e.regions?.[DEFAULT_REGION] !== "blocked");
+    if (reachable.length) entries = reachable;
+
+    const built: any[] = [];
+    for (const entry of entries) {
+      const factory = parserFactory(entry.parser!);
+      if (!factory) continue;
+      const inst = factory();
+      if (!inst) continue;
+      try {
+        const target = runtimeUrl(entry).replace(/\/+$/, "");
+        if (target && typeof inst.baseUrl === "string" && inst.baseUrl.replace(/\/+$/, "") !== target) {
+          inst.baseUrl = target;
+        }
+      } catch { /* keep class default */ }
+      built.push(inst);
+    }
+    if (built.length) return built;
+  } catch (err) {
+    console.warn("[Registry] falling back to default providers:", err);
+  }
+  return [
+    getAnimePahe(),
+    getHianime(),
+    getAnimeKai(),
+    getAnimeSaturn(),
+    getKickAssAnime(),
+    getAnimeUnity(),
+    getAnimeSama(),
+  ].filter(Boolean);
+}
+
+/** Registry-ordered reader parsers for a category, minus already-tried ids. */
+function orderedReaderFactories(
+  category: "manga" | "manhwa",
+  skipIds: string[]
+): { id: string; factory: () => any }[] {
+  try {
+    let entries = orderedProviders(category).filter(
+      (e) => e.parser && e.status !== "down" && !skipIds.includes(e.id)
+    );
+    const reachable = entries.filter((e) => e.regions?.[DEFAULT_REGION] !== "blocked");
+    if (reachable.length) entries = reachable;
+
+    const out: { id: string; factory: () => any }[] = [];
+    for (const entry of entries) {
+      const factory = parserFactory(entry.parser!);
+      if (factory) out.push({ id: entry.id, factory });
+    }
+    return out;
+  } catch {
+    return category === "manga"
+      ? [{ id: "mangareader", factory: getMangaReader }]
+      : [{ id: "mangadex", factory: getMangaDex }];
+  }
+}
+
+/** Search → best match → chapter list (sorted latest-first, id prefixed). */
+async function chaptersViaSearch(
+  factory: () => any,
+  prefix: string,
+  searchTitle: string,
+  originalTitle: any
+): Promise<any[] | null> {
+  const provider = factory();
+  if (!provider) return null;
+  const searchResults = await provider.search(searchTitle);
+  if (!searchResults?.results?.length) return null;
+  const bestMatch = findBestMangaMatch(searchResults.results, originalTitle);
+  if (!bestMatch) return null;
+  const info = await provider.fetchMangaInfo(bestMatch.id);
+  const chapters = (info as any)?.chapters || [];
+  if (!chapters.length) return null;
+  return [...chapters]
+    .sort((a: any, b: any) => parseFloat(b.number || b.chap || "0") - parseFloat(a.number || a.chap || "0"))
+    .map((c: any) => ({ ...c, id: `${prefix}:${c.id}` }));
+}
 
 
 
@@ -620,7 +763,7 @@ export async function getTrendingAnime(page: number = 1, perPage: number = 20, p
     if (!response.ok) throw new Error('Anilist API error: ' + response.status);
     const data = await response.json();
     const pageInfo = data?.data?.Page?.pageInfo;
-    let results: HeroResult[] = data?.data?.Page?.media?.map((m: AnilistNode & { bannerImage?: string, description?: string, genres?: string[] }) => ({
+    const results: HeroResult[] = data?.data?.Page?.media?.map((m: AnilistNode & { bannerImage?: string, description?: string, genres?: string[] }) => ({
       id: m.id.toString(),
       title: m.title,
       slug: slugify(getAnimeTitle(m.title)),
@@ -787,7 +930,7 @@ export async function advancedSearchAnime({
   };
 
   // 1. Run main query
-  let searchRes = await executeQuery(search);
+  const searchRes = await executeQuery(search);
 
   // 2. If no results found, run fallback fuzzy checks
   if (!exact && searchRes.results.length === 0 && search) {
@@ -1363,7 +1506,7 @@ export async function getStreamingLinks(
     return null;
   };
 
-  const providers: any[] = [];
+  const providers: any[] = buildStreamProviders();
 
   const allFoundServers: any[] = [];
 
@@ -1630,7 +1773,7 @@ function findBestMangaMatch(results: any[], queryInfo: string | { english?: stri
     // Find the best match score among all clean queries
     let maxBaseScore = -1;
     for (const cleanQuery of cleanQueries) {
-      let score = 0;
+      let score: number;
       if (cleanTitle === cleanQuery) {
         score = 1.0;
       } else if (cleanTitle.includes(cleanQuery) || cleanQuery.includes(cleanTitle)) {
@@ -1805,12 +1948,12 @@ export async function getReaderDetails(id: string) {
       const $ = load(res.body);
 
       const title = $('.title').text().trim() || $('h3.title').text().trim() || realId.replace(/-/g, ' ');
-      let image = $('.book img').attr('src') || "";
+      const image = $('.book img').attr('src') || "";
 
       let author = '';
-      let genres: string[] = [];
+      const genres: string[] = [];
       let status = 'RELEASING';
-      let source = 'Webnovel';
+      const source = 'Webnovel';
 
       $('.info-meta li, .info-holder .info > div').each((idx, el) => {
         const text = $(el).text().trim().toLowerCase();
@@ -1830,7 +1973,7 @@ export async function getReaderDetails(id: string) {
       const description = $('.desc-text').html() || $('.desc-text').text() || "No description available.";
 
       const novelId = $('#rating').attr('data-novel-id') || realId;
-      let chapters: any[] = [];
+      const chapters: any[] = [];
 
       if (novelId) {
         const ajaxUrl = `https://novelbin.net/ajax/chapter-option?novelId=${novelId}`;
@@ -1892,7 +2035,7 @@ export async function getReaderDetails(id: string) {
       }
 
       let author = '';
-      let genres: string[] = [];
+      const genres: string[] = [];
       let status = 'RELEASING';
       let source = 'Webnovel';
 
@@ -1920,7 +2063,7 @@ export async function getReaderDetails(id: string) {
       const description = $('.desc-text').html() || $('.desc-text').text() || "No description available.";
 
       const truyenId = $('#truyen-id').val() || '';
-      let chapters: any[] = [];
+      const chapters: any[] = [];
 
       if (truyenId) {
         const ajaxUrl = `https://novelfull.net/ajax/chapter-option?novelId=${truyenId}`;
@@ -2002,6 +2145,19 @@ export async function getReaderDetails(id: string) {
           console.error("[ReaderDetails] Manhwatop (ComicK) fetch failed:", e);
         }
       }
+
+      // Registry-ordered manhwa fallbacks (MangaDex, Asura Scans, WeebCentral, ...)
+      for (const { id, factory } of orderedReaderFactories("manhwa", ["comick"])) {
+        try {
+          const chapters = await chaptersViaSearch(factory, id, searchTitle, mangaInfo.title);
+          if (chapters?.length) {
+            console.log(`[ReaderDetails] Manhwa chapters resolved via ${id}`);
+            return { ...mangaInfo, chapters };
+          }
+        } catch (e) {
+          console.warn(`[ReaderDetails] Manhwa fallback ${id} failed:`, e);
+        }
+      }
     } else {
       // Manga -> use MangaFire (represented by ComicK) and AllManga (represented by MangaReader / MangaDex)
       console.log(`[ReaderDetails] Manga detected. Attempting MangaFire (ComicK) for search: ${searchTitle}`);
@@ -2033,35 +2189,16 @@ export async function getReaderDetails(id: string) {
         }
       }
 
-      // Fallback: AllManga -> MangaReader
-      console.log(`[ReaderDetails] Attempting AllManga (MangaReader) for search: ${searchTitle}`);
-      const reader = getMangaReader();
-      if (reader) {
+      // Fallbacks: registry-ordered parsers (MangaReader, MangaKakalot, WeebCentral, ...)
+      for (const { id, factory } of orderedReaderFactories("manga", ["comick", "mangadex"])) {
         try {
-          const searchResults = await reader.search(searchTitle);
-          if (searchResults.results?.length > 0) {
-            const bestMatch = findBestMangaMatch(searchResults.results, mangaInfo.title);
-            if (bestMatch) {
-              const fullMangaInfo = await reader.fetchMangaInfo(bestMatch.id);
-              const chapters = (fullMangaInfo as any).chapters || [];
-              if (chapters.length > 0) {
-                // Ensure chapters are sorted descending (latest first)
-                const sortedChapters = [...chapters].sort((a: any, b: any) => {
-                  return parseFloat(b.number || b.chap || "0") - parseFloat(a.number || a.chap || "0");
-                });
-
-                return {
-                  ...mangaInfo,
-                  chapters: sortedChapters.map((c: any) => ({
-                    ...c,
-                    id: `mangareader:${c.id}`
-                  }))
-                };
-              }
-            }
+          const chapters = await chaptersViaSearch(factory, id, searchTitle, mangaInfo.title);
+          if (chapters?.length) {
+            console.log(`[ReaderDetails] Manga chapters resolved via ${id}`);
+            return { ...mangaInfo, chapters };
           }
         } catch (e) {
-          console.warn("[ReaderDetails] MangaReader (AllManga) search failed, falling to MangaDex:", e);
+          console.warn(`[ReaderDetails] ${id} search failed, trying next:`, e);
         }
       }
 
@@ -2164,6 +2301,9 @@ export async function getReaderChapterPages(chapterId: string) {
       const dex = getMangaDex();
       if (dex) return await dex.fetchChapterPages(realChapterId);
     } else {
+      const factory = parserFactory(`consumet:${providerName}`);
+      const inst = factory ? factory() : null;
+      if (inst) return await inst.fetchChapterPages(realChapterId);
       const comick = getComicK();
       if (comick) return await comick.fetchChapterPages(realChapterId);
     }
@@ -2459,7 +2599,7 @@ async function searchNovelBinScraper(query: string, page: number = 1) {
         const href = titleEl.attr('href') || "";
         const id = href.replace('https://novelbin.com/b/', '').replace('https://novelbin.net/b/', '').replace(/^\//, '');
 
-        let img = $(el).find('img').attr('src') || "";
+        const img = $(el).find('img').attr('src') || "";
 
         const chapterText = $(el).find('.chr-text, .chapter-text').text().trim();
         const chapMatch = chapterText.match(/chapter\s+(\d+(\.\d+)?)/i);

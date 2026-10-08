@@ -1,9 +1,8 @@
-"use client";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Info, Star, ThumbsUp, Users, FolderOpen, ChevronDown, Check, X } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+import Image from "@/compat/Image";
+import Link from "@/compat/Link";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 

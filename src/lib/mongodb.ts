@@ -28,6 +28,6 @@ export async function getDb() {
   if (!client) {
     throw new Error("Database is temporarily disabled per user request.");
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   return (client as any).db("shadowanime");
 }

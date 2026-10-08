@@ -1,10 +1,9 @@
-"use client";
 
 import { useState, useRef, useEffect, ReactElement, useMemo } from "react";
 import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, RotateCw, Settings, Subtitles, Mic, Gauge, ChevronLeft, Sparkles, Monitor, Tv, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Hls from "hls.js";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/compat/navigation";
 
 interface ServerEntry {
   name: string;
@@ -757,7 +756,7 @@ export function VideoPlayer({
           skipForward();
           showControlsTemporarily();
           break;
-        case "ArrowUp":
+        case "ArrowUp": {
           e.preventDefault();
           const newVolUp = Math.min(1, video.volume + 0.1);
           video.volume = newVolUp;
@@ -767,12 +766,14 @@ export function VideoPlayer({
           }
           showControlsTemporarily();
           break;
-        case "ArrowDown":
+        }
+        case "ArrowDown": {
           e.preventDefault();
           const newVolDown = Math.max(0, video.volume - 0.1);
           video.volume = newVolDown;
           showControlsTemporarily();
           break;
+        }
         case "f":
         case "F":
           e.preventDefault();

@@ -1,10 +1,9 @@
-"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { PlayerWrapper } from "@/components/PlayerWrapper";
 import { List, X, ChevronLeft, Radio, Square, CheckSquare, Lightbulb, Bookmark } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from "@/compat/Link";
+import { useRouter } from "@/compat/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ServerEntry {

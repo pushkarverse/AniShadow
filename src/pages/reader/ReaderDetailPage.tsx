@@ -1,0 +1,315 @@
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { Navbar } from "@/components/Navbar";
+import { PageLoader } from "@/components/PageLoader";
+import { getAnimeTitle, getMangaFormat } from "@/lib/anime-utils";
+import Image from "@/compat/Image";
+import Link from "@/compat/Link";
+import { BookOpen, Star, Calendar, Info } from "lucide-react";
+import { ReaderCard } from "@/components/ReaderCard";
+import { ReaderActions } from "@/components/ReaderActions";
+import { ReaderProgressPosterBadge, ReaderProgressText, ReaderProgressButton } from "@/components/ReaderProgressTracker";
+import { ReaderDetailTabs } from "@/components/ReaderDetailTabs";
+import { CollapsibleDescription } from "@/components/CollapsibleDescription";
+import { REZERO_COVER, WITCHCULT_NOVEL_ID, isReZeroNovelId, REZERO_IF_ROUTES, getReaderChapterPath } from "@/lib/rezero";
+
+import { slugify } from "@/lib/anime-utils";
+
+export default function MangaDetailPage() {
+  const { id = "", slug = "" } = useParams();
+
+  const [manga, setManga] = useState<any>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setManga(null);
+    setLoaded(false);
+
+    if (!id) {
+      setLoaded(true);
+      return;
+    }
+
+    fetch(`/api/reader/details/${id}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        setManga((data && data.details) || null);
+        setLoaded(true);
+      })
+      .catch((err) => {
+        console.error("Reader details fetch failed:", err);
+        if (cancelled) return;
+        setManga(null);
+        setLoaded(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (!loaded) {
+    return (
+      <div className="min-h-screen bg-background text-foreground pb-20">
+        <Navbar />
+        <main className="container mx-auto px-6 md:px-12 pt-32">
+          <PageLoader />
+        </main>
+      </div>
+    );
+  }
+
+  if (!manga) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center px-4">
+        <h1 className="text-3xl font-black text-primary mb-4 uppercase italic tracking-tighter">Manga Not Found</h1>
+        <p className="text-white/40 mb-8 max-w-md">The requested title could not be retrieved from our providers. Please try again later.</p>
+        <Link href={`/reader/${id}/${slug}`} className="px-8 py-3 bg-primary text-white rounded-xl font-bold uppercase tracking-widest shadow-xl shadow-primary/20">Check Again</Link>
+      </div>
+    );
+  }
+
+  const title = getAnimeTitle(manga.title);
+  const chapters = manga.chapters || [];
+  const arcs = manga.arcs || [];
+  const relations = (manga.relations || []).filter((r: any) => r.type !== 'ANIME');
+  const recommendations = manga.recommendations || [];
+
+  const formatText = getMangaFormat(manga.countryOfOrigin, manga.format || manga.type, id);
+  const isNovel = id.startsWith("novelfull-") || id.startsWith("novelbin-") || id.startsWith("witchcult-") || formatText === 'Light Novel' || formatText === 'Web Novel';
+  const themeClass = isNovel ? "novel-theme" : "manga-theme";
+  const arcCount = arcs.length;
+  const volumeCount = Number(manga.volumesCount || manga.volumes || 0);
+  const countLabel = formatText === 'Light Novel' && volumeCount > 0
+    ? `${volumeCount} Volumes`
+    : `${chapters.length} Chapters${arcCount > 0 ? ` - ${arcCount} Arcs` : ""}`;
+  const posterImage = manga.image || (id === WITCHCULT_NOVEL_ID ? REZERO_COVER : "");
+
+  return (
+    <div className={`min-h-screen bg-background text-foreground pb-20 ${themeClass}`}>
+      <Navbar />
+
+      {/* Hero Header */}
+      <div className="relative w-full min-h-[60vh] flex items-end">
+        <div className="absolute inset-0">
+          <Image
+            src={manga.cover || manga.image || ""}
+            alt={title}
+            fill
+            sizes="100vw"
+            className="object-cover object-top opacity-20"
+            priority
+            loading="eager"
+          />
+          {isNovel && (
+            <div className="absolute inset-0 bg-gradient-to-br from-[#120826]/80 via-[#080b11]/90 to-[#0d1622]/95" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-transparent" />
+        </div>
+
+        <div className="container relative z-10 px-6 md:px-12 mx-auto pb-16 pt-32">
+          <div className="flex flex-col lg:flex-row gap-12 items-start lg:items-end">
+            <div className="w-48 sm:w-56 lg:w-64 shrink-0 rounded-3xl overflow-hidden shadow-2xl border border-white/5 relative aspect-[2/3] mx-auto lg:mx-0">
+              <Image
+                src={posterImage}
+                alt="Poster"
+                fill
+                sizes="256px"
+                className="object-cover"
+                priority
+                loading="eager"
+              />
+              <ReaderProgressPosterBadge mangaId={id} />
+            </div>
+
+            <div className="flex-1 space-y-6">
+              <div>
+                <h1 className="text-4xl md:text-6xl font-black mb-4 tracking-tighter text-white uppercase italic">
+                  {title}
+                </h1>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-4 text-xs font-black uppercase tracking-[0.2em] text-primary/60">
+                    <span>{getMangaFormat(manga.countryOfOrigin, manga.format || manga.type, id)}</span>
+                    <div className="w-1 h-1 bg-white/10 rounded-full" />
+                    <span>{manga.status?.replace(/_/g, ' ') || "Unknown"}</span>
+                    <div className="w-1 h-1 bg-white/10 rounded-full" />
+                    <span>{countLabel}</span>
+                  </div>
+                  <ReaderProgressText mangaId={id} />
+                </div>
+              </div>
+
+              <div className="max-w-3xl">
+                <CollapsibleDescription htmlContent={manga.description || "No description available."} />
+              </div>
+
+              <div className="flex items-center gap-6 pt-6 flex-wrap">
+                {chapters.length > 0 && (
+                  <ReaderProgressButton 
+                    mangaId={id}
+                    slug={slug}
+                    chapters={chapters}
+                  />
+                )}
+
+                <div className="flex items-center gap-6">
+                   <ReaderActions 
+                      mangaId={id}
+                      title={title}
+                      slug={slug}
+                      image={manga.image || ""}
+                   />
+                   
+                   <div className="flex flex-col">
+                     <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Score</span>
+                     <div className="flex items-center gap-2 text-primary">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="text-lg font-black italic">{(manga.rating || 85) / 10}</span>
+                     </div>
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-6 md:px-12 mt-12">
+        <div className="flex flex-col lg:flex-row gap-12">
+          {/* Chapter List */}
+          <div className="flex-1">
+            <ReaderDetailTabs
+              mangaId={id}
+              slug={slug}
+              title={manga.title}
+              volumesCount={volumeCount}
+              chapters={chapters}
+              arcs={arcs}
+              isNovel={isNovel}
+            />
+          </div>
+
+          {/* Sidebar Info */}
+          <aside className="w-full lg:w-96 shrink-0 space-y-8">
+            <div className="p-8 bg-card/40 border border-white/5 rounded-[2.5rem] space-y-8">
+              <h3 className="text-lg font-black uppercase tracking-widest text-white flex items-center gap-3">
+                 <div className="w-2 h-2 bg-primary rounded-full shadow-[var(--shadow-primary)]" />
+                 Media Details
+              </h3>
+              
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 rounded-lg bg-white/5 text-primary">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-white/20 uppercase tracking-widest block mb-0.5">Release Date</span>
+                    <span className="text-sm font-bold text-white/80">{manga.releaseDate || "2024"}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="p-2 rounded-lg bg-white/5 text-primary">
+                    <Info className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-white/20 uppercase tracking-widest block mb-0.5">Genres</span>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {manga.genres?.map((genre: string, idx: number) => (
+                        <span key={`${genre}-${idx}`} className="px-2 py-0.5 bg-white/5 text-[10px] font-black text-white/60 rounded-md uppercase tracking-tight">
+                          {genre}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+
+                
+                {relations.length > 0 && (
+                  <div className="pt-6 border-t border-white/5 space-y-4">
+                    <span className="text-[10px] font-black text-white/20 uppercase tracking-widest block">Relations</span>
+                     {relations.slice(0, 3).map((rel: any, idx: number) => {
+                       const relTitle = getAnimeTitle(rel.title);
+                       const relSlug = slugify(relTitle);
+                       return (
+                         <Link key={`rel-${rel.id || idx}-${idx}`} href={rel.type === 'MANGA' ? `/reader/${rel.id}/${relSlug}` : `/anime/${rel.id}/${relSlug}`} className="flex items-center gap-3 group">
+                           <div className="w-12 h-16 rounded-lg overflow-hidden bg-white/5 relative shrink-0">
+                             <Image src={rel.image || ""} alt="" fill sizes="48px" className="object-cover" />
+                           </div>
+                           <div>
+                             <h5 className="text-xs font-black text-white/70 group-hover:text-primary transition-colors line-clamp-2">{relTitle}</h5>
+                             <span className="text-[10px] font-black text-primary/50 uppercase tracking-widest">{rel.type === 'ANIME' ? 'Watch Now' : 'Read Now'}</span>
+                           </div>
+                         </Link>
+                       );
+                     })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* IF Routes Card */}
+            {isReZeroNovelId(manga.id) && (
+              <div className="p-8 bg-card/40 border border-white/5 rounded-[2.5rem] space-y-8">
+                <h3 className="text-lg font-black uppercase tracking-widest text-white flex items-center gap-3">
+                   <div className="w-2 h-2 bg-primary rounded-full shadow-[var(--shadow-primary)]" />
+                   IF Routes
+                </h3>
+                
+                <div className="space-y-6">
+                  <div className="flex flex-col gap-3">
+                    {REZERO_IF_ROUTES.map((route, idx) => (
+                      <Link 
+                        key={`if-route-${idx}`} 
+                        href={getReaderChapterPath(manga.id, manga.slug, `witchcult:${route.url}`)}
+                        className="flex items-center gap-4 group p-3 rounded-2xl bg-white/5 hover:bg-primary/10 transition-colors border border-transparent hover:border-primary/20"
+                      >
+                        <div className="p-2.5 rounded-xl bg-white/5 text-primary group-hover:bg-primary/20 group-hover:scale-110 transition-all shrink-0">
+                          <BookOpen className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-black text-white/80 group-hover:text-primary transition-colors">{route.title}</span>
+                          <span className="text-[10px] font-black text-white/30 uppercase tracking-widest mt-0.5">Side Story</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-6 md:px-12 mt-20">
+        {recommendations.length > 0 && (
+          <div className="space-y-8">
+            <h2 className="text-2xl md:text-3xl font-black uppercase tracking-widest text-white/40 flex items-center gap-4">
+               Similar Manga
+               <div className="h-[2px] flex-1 bg-white/10" />
+            </h2>
+            <div className="flex overflow-x-auto gap-4 pb-6 md:grid md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 md:gap-x-6 md:gap-y-6 no-scrollbar momentum-scroll -mx-6 px-6 md:mx-0 md:px-0">
+              {recommendations.map((rec: any, idx: number) => (
+                <ReaderCard 
+                  key={`rec-${rec.id || idx}-${idx}`}
+                  id={rec.id}
+                  title={getAnimeTitle(rec.title)}
+                  slug={slugify(getAnimeTitle(rec.title))}
+                  image={rec.image}
+                  rating={8.5}
+                  type={rec.type}
+                  countryOfOrigin={rec.countryOfOrigin}
+                  chapters={rec.chapters}
+                  chapterNumber={rec.chapters}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

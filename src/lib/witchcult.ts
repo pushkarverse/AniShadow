@@ -412,7 +412,7 @@ async function fetchWitchCultChapterText(chapterUrlWithHash: string) {
   contentEl.find("p, li, a, span").each((_, el) => {
     const text = $(el).text().trim();
     if (
-      /^[※\s\u3000\u203B*–\-]+$/u.test(text) ||
+      /^[※\s\u3000\u203B*–-]+$/u.test(text) ||
       /translated\s+by/i.test(text) ||
       /translation\s+of\s+the\s+free\s+japanese/i.test(text) ||
       /all\s+rights\s+belong\s+to\s+tappei/i.test(text) ||

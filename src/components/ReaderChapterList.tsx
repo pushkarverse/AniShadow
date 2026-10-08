@@ -1,6 +1,5 @@
-"use client";
 
-import Link from "next/link";
+import Link from "@/compat/Link";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Check, BookOpen } from "lucide-react";
 import {

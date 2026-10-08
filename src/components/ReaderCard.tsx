@@ -1,16 +1,14 @@
-"use client";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Info, Star, FolderOpen, ChevronDown, Check, X, BookOpen, BookmarkPlus, BookmarkCheck } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+import Image from "@/compat/Image";
+import Link from "@/compat/Link";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 
-import { IAnimeInfo } from "@consumet/extensions";
+import type { IAnimeInfo } from "@consumet/extensions";
 import { RoomModal } from "./RoomModal";
 
-import { getReaderDetails } from "@/lib/consumet";
 import { getMangaFormat, slugify } from "@/lib/anime-utils";
 import { REZERO_COVER, WITCHCULT_NOVEL_ID } from "@/lib/rezero";
 

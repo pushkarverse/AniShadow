@@ -1,7 +1,6 @@
-"use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/compat/Link";
 import { BookOpen } from "lucide-react";
 import { getReaderChapterPath, readerChapterIdsMatch } from "@/lib/rezero";
 

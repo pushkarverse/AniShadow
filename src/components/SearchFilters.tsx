@@ -1,6 +1,5 @@
-"use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "@/compat/navigation";
 import { useState, useEffect } from "react";
 import { ChevronDown, Filter } from "lucide-react";
 

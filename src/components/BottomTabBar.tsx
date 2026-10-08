@@ -1,7 +1,6 @@
-"use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "@/compat/Link";
+import { usePathname } from "@/compat/navigation";
 import { Home, Search, BookOpen, Heart, Menu } from "lucide-react";
 import { motion } from "framer-motion";
 

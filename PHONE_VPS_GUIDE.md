@@ -197,29 +197,50 @@ pm2 save
 
 ## Phase 5: Standardizing Project Deployment
 
-Use this template to deploy **any** Next.js or Node.js project onto your Phone VPS.
+Use this template to deploy **any** Node.js project onto your Phone VPS.
 
-### 1. Create `ecosystem.config.js`
+### 1. Create `ecosystem.config.cjs`
 Place this in the root of the project to tell PM2 how to run it.
 ```javascript
 module.exports = {
   apps: [
     {
       name: "your-app-name",
-      script: "node_modules/next/dist/bin/next",
-      args: "start",
+      script: "dist-server/index.mjs",
       instances: 1,
-      exec_mode: "fork",  # 'fork' is recommended over 'cluster' in proot/Termux
+      exec_mode: "fork",  // 'fork' is recommended over 'cluster' in proot/Termux
       watch: false,
       max_memory_restart: "512M",
       env: {
         NODE_ENV: "production",
-        PORT: 3000,       # Custom port for this app
+        PORT: 3000,       // Custom port for this app
       },
+    },
+    {
+      // Optional Scrapling sidecar (Python) — remove if you don't use it.
+      // The API keeps working with native fetch when this app is down.
+      name: "your-app-name-sidecar",
+      script: "scripts/run-sidecar.mjs",
+      instances: 1,
+      exec_mode: "fork",
+      watch: false,
+      max_memory_restart: "400M",
+      max_restarts: 5,
+      env: { SCRAPLING_PORT: "3002" },
     },
   ],
 };
 ```
+*Use the `.cjs` extension when `package.json` has `"type": "module"` — Node treats `.js` files as ESM then, and `module.exports` would fail.*
+
+**Optional anti-bot sidecar setup (Python/Scrapling):**
+```bash
+pkg install python        # Termux — or use proot-distro Ubuntu's python3
+pip install "scrapling[fetchers]"
+python -m patchright install chromium   # stealth browser (~150 MB; skip on tight storage)
+```
+Without Python the sidecar app shows as errored in PM2 — harmless, the app
+falls back to native fetch automatically (one warning in `pm2 logs`).
 
 ### 2. Create `deploy.sh`
 Place this script in the root of the project to automate the deploy/update process.
@@ -242,7 +263,7 @@ echo "--> Restarting process..."
 if pm2 show $APP_NAME > /dev/null 2>&1; then
   pm2 restart $APP_NAME
 else
-  pm2 start ecosystem.config.js
+  pm2 start ecosystem.config.cjs
 fi
 
 pm2 save
@@ -254,14 +275,9 @@ echo "=== Deployment Successful! ==="
 
 ## Phase 6: Troubleshooting & Workarounds
 
-### 1. Turbopack Symlink Panics
-Next.js 15/16's default Turbopack build engine uses a native Rust file resolver that panics on `proot`'s virtualized symlinks.
-* **Fix:** Force Webpack in your `package.json` build script:
-  ```json
-  "scripts": {
-    "build": "next build --webpack"
-  }
-  ```
+### 1. Server Can't Find `dist/`
+The production server (`server/index.ts`) serves the built frontend from `./dist` **relative to the process working directory**. If PM2 starts it from anywhere else, pages will 404.
+* **Fix:** Always launch PM2 from the project root (`pm2 start ecosystem.config.cjs` inside the repo), and don't `cd` away before starting.
 
 ### 2. PNPM Ignored Build Scripts
 Modern PNPM security features ignore build scripts (`postinstall`, etc.) by default, which can break dependencies like `sharp` or `canvas` on compilation.

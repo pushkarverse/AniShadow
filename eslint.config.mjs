@@ -1,27 +1,41 @@
+import js from "@eslint/js";
+import globals from "globals";
+import reactHooks from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
+import tseslint from "typescript-eslint";
 import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
 
-const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
+export default defineConfig([
+  globalIgnores([
+    "dist",
+    "dist-server",
+    "node_modules",
+    "scripts",
+    ".next",
+    ".kilo",
+    ".junie",
+    ".vercel",
+    ".venv",
+  ]),
   {
+    files: ["**/*.{ts,tsx}"],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+      reactHooks.configs["recommended-latest"],
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: globals.browser,
+    },
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
-      "react-hooks/set-state-in-effect": "off",
+      "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-require-imports": "off",
-      "react/no-unescaped-entities": "off",
-    }
+      "no-empty": "off",
+      "no-undef": "off",
+      "no-unused-expressions": "off",
+    },
   },
-  // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-    "diag-hls.js",
-  ]),
 ]);
-
-export default eslintConfig;

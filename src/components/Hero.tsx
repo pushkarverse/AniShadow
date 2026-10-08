@@ -1,9 +1,8 @@
-"use client";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, ChevronLeft, ChevronRight, Play, Info } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+import Image from "@/compat/Image";
+import Link from "@/compat/Link";
 import { useState, useEffect, useCallback } from "react";
 import { slugify } from "@/lib/anime-utils";
 

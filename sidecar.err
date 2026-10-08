@@ -1,0 +1,50 @@
+[sidecar] AniShadow Scrapling sidecar on http://127.0.0.1:3002
+[sidecar] "GET /health HTTP/1.1" 200 -
+[2026-10-08 15:41:27] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:28] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:28] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://www.google.com/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:29] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:29] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://www.google.com/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:30] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:30] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[2026-10-08 15:41:30] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:30] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:30] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:30] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:31] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:31] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:32] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://www.google.com/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:32] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:33] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:33] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://www.google.com/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:34] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[2026-10-08 15:41:34] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:34] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:34] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:41:35] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://anilist.co/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:43:05] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://www.google.com/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -
+[2026-10-08 15:43:06] INFO: Fetched (400) <POST https://graphql.anilist.co/> (referer: https://www.google.com/)
+[sidecar] "POST /fetch HTTP/1.1" 200 -

@@ -1,0 +1,436 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-08T10:28:09.752Z",
+  "providers": [
+    {
+      "id": "anikoto",
+      "name": "AniKoto",
+      "baseUrl": "https://anikoto.cz",
+      "categories": [
+        "anime"
+      ],
+      "parser": "custom:anikoto",
+      "main": true,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "ok"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "Primary streaming source (custom scraper in consumet.ts)."
+    },
+    {
+      "id": "sankanime",
+      "name": "Sankanime",
+      "baseUrl": "https://sankanime.web.id",
+      "categories": [
+        "anime"
+      ],
+      "parser": "custom:sankanime",
+      "main": true,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "ok"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z"
+    },
+    {
+      "id": "animepahe",
+      "name": "AnimePahe",
+      "baseUrl": "https://animepahe.si",
+      "categories": [
+        "anime"
+      ],
+      "parser": "consumet:animepahe",
+      "main": true,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "blocked"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "Popular lightweight source; domain rotates often."
+    },
+    {
+      "id": "hianime",
+      "name": "HiAnime",
+      "baseUrl": "https://hianime.to",
+      "categories": [
+        "anime"
+      ],
+      "parser": "consumet:hianime",
+      "main": true,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "blocked"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "Zoro successor; blocked by many Indian ISPs (probe timeout)."
+    },
+    {
+      "id": "animekai",
+      "name": "AnimeKai",
+      "baseUrl": "https://anikai.to",
+      "categories": [
+        "anime"
+      ],
+      "parser": "consumet:animekai",
+      "main": true,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "blocked"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z"
+    },
+    {
+      "id": "kickassanime",
+      "name": "KickAssAnime",
+      "baseUrl": "https://kickass-anime.ru",
+      "categories": [
+        "anime"
+      ],
+      "parser": "consumet:kickassanime",
+      "main": true,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "ok"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z"
+    },
+    {
+      "id": "animesaturn",
+      "name": "AnimeSaturn",
+      "baseUrl": "https://www.animesaturn.cx",
+      "categories": [
+        "anime"
+      ],
+      "parser": "consumet:animesaturn",
+      "main": true,
+      "status": "degraded",
+      "source": "seed",
+      "regions": {
+        "IN": "ok"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "Italian site; origin returned 502 at last probe."
+    },
+    {
+      "id": "animeunity",
+      "name": "AnimeUnity",
+      "baseUrl": "https://www.animeunity.to",
+      "categories": [
+        "anime"
+      ],
+      "parser": "consumet:animeunity",
+      "main": true,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "ok"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "Italian site behind a bot wall (403 to plain clients)."
+    },
+    {
+      "id": "animesama",
+      "name": "AnimeSama",
+      "baseUrl": "https://anime-sama.org",
+      "categories": [
+        "anime"
+      ],
+      "parser": "consumet:animesama",
+      "main": true,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "ok"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "French site; multi-server (kiwi/telli/jet players)."
+    },
+    {
+      "id": "gogoanime",
+      "name": "Gogoanime",
+      "baseUrl": "https://gogoanime.by",
+      "categories": [
+        "anime"
+      ],
+      "parser": null,
+      "main": false,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "blocked"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "Rotating domains; active 2026 domain per community wikis. Blocked by Indian ISPs. No parser in @consumet v1.8.8."
+    },
+    {
+      "id": "animefreak",
+      "name": "AnimeFreak",
+      "baseUrl": "https://animefreak.tv",
+      "categories": [
+        "anime"
+      ],
+      "parser": null,
+      "main": false,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "ok"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z"
+    },
+    {
+      "id": "miruro",
+      "name": "Miruro",
+      "baseUrl": "https://miruro.tv",
+      "categories": [
+        "anime"
+      ],
+      "parser": null,
+      "main": false,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "blocked"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "Open-source multi-scraper UI, popular on reddit 2026."
+    },
+    {
+      "id": "hikari",
+      "name": "Hikari",
+      "baseUrl": "https://hikarime.app",
+      "categories": [
+        "anime"
+      ],
+      "parser": null,
+      "main": false,
+      "status": "active",
+      "source": "seed",
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "Working 2026 mirror of hikari.gg."
+    },
+    {
+      "id": "mangadex",
+      "name": "MangaDex",
+      "baseUrl": "https://mangadex.org",
+      "categories": [
+        "manga",
+        "manhwa"
+      ],
+      "parser": "consumet:mangadex",
+      "main": true,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "ok"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z"
+    },
+    {
+      "id": "comick",
+      "name": "ComicK",
+      "baseUrl": "https://comick.art",
+      "categories": [
+        "manga",
+        "manhwa"
+      ],
+      "parser": "consumet:comick",
+      "main": true,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "ok"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "Primary reader source for manga + Korean manhwa."
+    },
+    {
+      "id": "mangareader",
+      "name": "MangaReader",
+      "baseUrl": "https://mangareader.to",
+      "categories": [
+        "manga"
+      ],
+      "parser": "consumet:mangareader",
+      "main": true,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "blocked"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "Blocked by Indian ISPs (probe timeout)."
+    },
+    {
+      "id": "mangakakalot",
+      "name": "MangaKakalot",
+      "baseUrl": "https://www.mangakakalot.gg",
+      "categories": [
+        "manga"
+      ],
+      "parser": "consumet:mangakakalot",
+      "main": false,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "ok"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z"
+    },
+    {
+      "id": "weebcentral",
+      "name": "WeebCentral",
+      "baseUrl": "https://weebcentral.com",
+      "categories": [
+        "manga",
+        "manhwa"
+      ],
+      "parser": "consumet:weebcentral",
+      "main": false,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "ok"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "Community-recommended 2026; parser available but unused."
+    },
+    {
+      "id": "mangahere",
+      "name": "MangaHere",
+      "baseUrl": "https://mangahere.cc",
+      "categories": [
+        "manga"
+      ],
+      "parser": "consumet:mangahere",
+      "main": false,
+      "status": "active",
+      "source": "seed",
+      "lastChecked": "2026-10-08T00:00:00.000Z"
+    },
+    {
+      "id": "mangapill",
+      "name": "MangaPill",
+      "baseUrl": "https://mangapill.com",
+      "categories": [
+        "manga"
+      ],
+      "parser": "consumet:mangapill",
+      "main": false,
+      "status": "active",
+      "source": "seed",
+      "lastChecked": "2026-10-08T00:00:00.000Z"
+    },
+    {
+      "id": "bato",
+      "name": "Bato.to",
+      "baseUrl": "https://bato.to",
+      "categories": [
+        "manga",
+        "manhwa"
+      ],
+      "parser": null,
+      "main": false,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "ok"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "High-quality scans; community favorite (was intermittently down early 2026)."
+    },
+    {
+      "id": "komix",
+      "name": "Komix",
+      "baseUrl": "https://komix.to",
+      "categories": [
+        "manga",
+        "manhwa"
+      ],
+      "parser": null,
+      "main": false,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "ok"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "Active 2026 multi-source reader."
+    },
+    {
+      "id": "asurascans",
+      "name": "Asura Scans",
+      "baseUrl": "https://asuracomic.net",
+      "categories": [
+        "manhwa"
+      ],
+      "parser": "consumet:asurascans",
+      "main": false,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "ok"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "Top manhwa scanlation site; parser available but unused."
+    },
+    {
+      "id": "reaperscans",
+      "name": "Reaper Scans",
+      "baseUrl": "https://reaperscans.com",
+      "categories": [
+        "manhwa"
+      ],
+      "parser": null,
+      "main": false,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "blocked"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "Probe timeout from Indian network."
+    },
+    {
+      "id": "webtoons",
+      "name": "WEBTOON",
+      "baseUrl": "https://www.webtoons.com",
+      "categories": [
+        "manhwa"
+      ],
+      "parser": null,
+      "main": false,
+      "status": "active",
+      "source": "seed",
+      "regions": {
+        "IN": "ok"
+      },
+      "lastChecked": "2026-10-08T00:00:00.000Z",
+      "notes": "Official platform (reference metadata only)."
+    },
+    {
+      "id": "mangatoon-mobi",
+      "name": "Read free manga, comics and stories online",
+      "baseUrl": "https://mangatoon.mobi",
+      "categories": [
+        "manga"
+      ],
+      "parser": null,
+      "main": false,
+      "status": "active",
+      "source": "discovery",
+      "regions": {
+        "IN": "ok"
+      },
+      "firstSeen": "2026-10-08T10:28:09.752Z",
+      "lastChecked": "2026-10-08T10:28:09.752Z"
+    }
+  ]
+}

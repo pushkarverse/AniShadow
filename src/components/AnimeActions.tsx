@@ -1,4 +1,3 @@
-"use client";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, FolderOpen, ChevronDown, Check, BookmarkPlus, BookmarkCheck } from "lucide-react";

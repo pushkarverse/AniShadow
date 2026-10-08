@@ -1,4 +1,3 @@
-"use client";
 
 import { useEffect, useState, useRef } from "react";
 import {
@@ -15,7 +14,7 @@ import {
   saveVolume,
   deleteVolume,
 } from "@/lib/indexedDb";
-import Link from "next/link";
+import Link from "@/compat/Link";
 
 interface ReaderVolumeSectionProps {
   mangaId: string;

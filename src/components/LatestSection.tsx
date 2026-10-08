@@ -1,8 +1,7 @@
-"use client";
 
 import { AnimeCard } from "./AnimeCard";
 import { getAnimeTitle } from "@/lib/anime-utils";
-import Link from "next/link";
+import Link from "@/compat/Link";
 
 interface LatestSectionProps {
   initialItems: any[];

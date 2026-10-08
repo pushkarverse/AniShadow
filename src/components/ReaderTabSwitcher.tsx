@@ -1,8 +1,7 @@
-"use client";
 
 import { motion } from "framer-motion";
 import { BookOpen, BookText } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "@/compat/navigation";
 import NProgress from "nprogress";
 
 interface ReaderTabSwitcherProps {

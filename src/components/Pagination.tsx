@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/compat/Link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PaginationProps {

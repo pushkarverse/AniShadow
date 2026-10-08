@@ -1,9 +1,8 @@
-"use client";
 
 import { useState, useRef, useEffect, Suspense } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { useRouter, usePathname } from "next/navigation";
+import Link from "@/compat/Link";
+import Image from "@/compat/Image";
+import { useRouter, usePathname } from "@/compat/navigation";
 import { Search, Menu, SlidersHorizontal, Shuffle, Users, Bell, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SearchFilters } from "./SearchFilters";
